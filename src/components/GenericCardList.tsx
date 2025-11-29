@@ -1,27 +1,35 @@
 import { For, type JSX } from "solid-js";
 import { Card, CardContent, CardHeader } from "~/components/ui/card";
 import { cn } from "~/lib/utils";
+import { 
+  GenericCardListPropsSchema, 
+  type GenericCardListProps, 
+  type CardAction 
+} from "~/schemas/card.schema";
 
-export interface CardAction<T> {
-  label: string;
-  icon?: JSX.Element;
-  onClick: (item: T) => void;
-}
-
-export interface GenericCardListProps<T extends Record<string, any>> {
-  items: T[];
-  getId: (item: T) => string;
-  renderHeader: (item: T) => JSX.Element;
-  renderContent?: (item: T) => JSX.Element;
-  onItemClick?: (item: T) => void;
-  actions?: CardAction<T>[];
-  cardClass?: string;
-  listClass?: string;
-}
+export type { CardAction, GenericCardListProps };
 
 export default function GenericCardList<T extends Record<string, any>>(
   props: GenericCardListProps<T>
 ) {
+  // Runtime validation with Zod
+  try {
+    GenericCardListPropsSchema.parse({
+      items: props.items,
+      getId: props.getId,
+      renderHeader: props.renderHeader,
+      renderContent: props.renderContent,
+      onItemClick: props.onItemClick,
+      actions: props.actions,
+      cardClass: props.cardClass,
+      listClass: props.listClass,
+      gridConfig: props.gridConfig,
+    });
+  } catch (error) {
+    console.error("GenericCardList validation error:", error);
+    throw new Error("Invalid props provided to GenericCardList");
+  }
+
   const handleCardClick = (item: T) => {
     if (props.onItemClick) {
       props.onItemClick(item);
@@ -37,13 +45,28 @@ export default function GenericCardList<T extends Record<string, any>>(
     action.onClick(item);
   };
 
+  // Build grid classes from config
+  const getGridClasses = () => {
+    const config = props.gridConfig;
+    if (!config?.cols) {
+      return "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+    }
+    
+    const { sm = 1, md = 2, lg = 3, xl = 4 } = config.cols;
+    const gap = config.gap || "gap-4";
+    
+    return cn(
+      "grid",
+      `grid-cols-${sm}`,
+      md && `sm:grid-cols-${md}`,
+      lg && `lg:grid-cols-${lg}`,
+      xl && `xl:grid-cols-${xl}`,
+      gap
+    );
+  };
+
   return (
-    <div
-      class={cn(
-        "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
-        props.listClass
-      )}
-    >
+    <div class={cn(getGridClasses(), props.listClass)}>
       <For each={props.items}>
         {(item) => (
           <Card
