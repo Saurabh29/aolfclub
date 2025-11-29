@@ -1,11 +1,11 @@
 import { A, useLocation } from "@solidjs/router";
 import { For, Show } from "solid-js";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
-import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
 import { cn } from "~/lib/utils";
 import { NavigationItemSchema, SummaryCardSchema, type NavigationItem, type SummaryCard } from "~/schemas/dashboard.schema";
+import AuthDropdown from "~/components/AuthDropdown";
 
 // ============================================================================
 // SAMPLE DATA
@@ -119,15 +119,7 @@ function Header() {
           <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-600 text-white font-bold text-lg">A</div>
           <span class="hidden sm:inline-block text-lg font-semibold text-gray-900">AOLF Club</span>
         </div>
-        <div class="flex items-center gap-3">
-          <div class="hidden sm:block text-right">
-            <p class="text-sm font-medium text-gray-900">Alex</p>
-            <p class="text-xs text-gray-500">Administrator</p>
-          </div>
-          <Avatar>
-            <AvatarFallback class="bg-gradient-to-br from-sky-400 to-sky-600 text-white font-semibold">A</AvatarFallback>
-          </Avatar>
-        </div>
+        <AuthDropdown />
       </div>
     </header>
   );

@@ -11,6 +11,45 @@ This is a **SolidStart** application using SolidJS with file-based routing, Tail
 - **Vinxi** as the build tool and dev server
 - **Tailwind CSS v4** via `@tailwindcss/vite` plugin
 - **TypeScript** with `jsxImportSource: "solid-js"`
+- **solid-ui** (v2.6.1) - Official component library from https://www.solid-ui.com/
+
+### UI Component Library - solid-ui
+**IMPORTANT: Always use solid-ui components when available before writing custom code.**
+
+- **Documentation**: https://www.solid-ui.com/docs/components/
+- **Installation**: `pnpx solidui-cli@latest add <component-name>`
+- **Import Pattern**: `import { Component } from "~/components/ui/component-name"`
+
+**Available Components** (always check docs for latest):
+- Layout: Flex, Grid
+- UI: Accordion, Alert, AlertDialog, Avatar, Badge, Button, Card, Carousel, Checkbox, Collapsible, Combobox, Command, ContextMenu, Dialog, DropdownMenu, HoverCard, Input, Label, Menubar, NavigationMenu, Popover, Progress, RadioGroup, ScrollArea, Select, Separator, Sheet, Skeleton, Slider, Switch, Tabs, Textarea, Toast, Toggle, ToggleGroup, Tooltip
+- Data Display: Table, DataTable
+- Visualizations: BarList, Charts, DeltaBar, Progress, ProgressCircle
+- Forms: Form validation with Zod integration
+
+**Component Usage Priority**:
+1. **First**: Check if solid-ui has the component (https://www.solid-ui.com/docs/components/)
+2. **Second**: Install via CLI if not already present: `pnpx solidui-cli@latest add <component>`
+3. **Last Resort**: Create custom component only if solid-ui doesn't provide it
+
+**Example solid-ui Usage**:
+```tsx
+// Instead of custom dropdown, use solid-ui DropdownMenu
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "~/components/ui/dropdown-menu";
+
+// Instead of custom card, use solid-ui Card
+import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
+
+// Instead of custom badge, use solid-ui Badge
+import { Badge } from "~/components/ui/badge";
+```
+
+**Benefits of Using solid-ui**:
+- Built-in accessibility (ARIA attributes, keyboard navigation)
+- Consistent styling across the app
+- Less custom code to maintain
+- Battle-tested components from Kobalte (underlying UI library)
+- Automatic click-outside, focus management, animations
 
 ### Routing
 File-based routing in `src/routes/`:
