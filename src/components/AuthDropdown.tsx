@@ -42,7 +42,7 @@ export default function AuthDropdown() {
   };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu preventScroll={false}>
       <DropdownMenuTrigger
         class={cn(
           "flex items-center justify-center",
