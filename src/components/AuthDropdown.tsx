@@ -42,7 +42,7 @@ export default function AuthDropdown() {
   };
 
   return (
-    <DropdownMenu preventScroll={false}>
+    <DropdownMenu preventScroll={false} modal={false}>
       <DropdownMenuTrigger
         class={cn(
           "flex items-center justify-center",
@@ -50,9 +50,8 @@ export default function AuthDropdown() {
           "bg-gradient-to-br from-sky-400 to-sky-600",
           "text-white font-semibold",
           "transition-all duration-200",
-          "hover:shadow-lg hover:scale-105",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2",
-          "active:scale-95"
+          "hover:shadow-lg",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
         )}
         aria-label="Open authentication menu"
       >
