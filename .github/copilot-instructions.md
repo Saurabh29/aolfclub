@@ -68,8 +68,15 @@ Navigation uses `<A>` component from `@solidjs/router`, NOT standard `<a>` for S
 Uses **Tailwind CSS v4** with:
 - CSS variables for design tokens in `src/app.css` (`:root` with `--background`, `--primary`, etc.)
 - `tailwind.config.cjs` extends theme with semantic color system (primary, secondary, destructive, info, success, warning, error)
-- Dark mode via variant: `[.dark &]` and `[data-kb-theme="dark"] &`
+- **LIGHT MODE ONLY**: Dark mode is NOT supported - never use `dark:` classes or dark mode variants
 - `cn()` utility in `src/lib/utils.ts` combines `clsx` and `tailwind-merge` for conditional class merging
+
+**CRITICAL STYLING RULES**:
+- **NO DARK MODE**: This application only supports light mode
+- **NEVER** use `dark:` prefix in class names (e.g., ~~`dark:bg-gray-900`~~)
+- **NEVER** use `[.dark &]` or `[data-kb-theme="dark"] &` selectors
+- Use explicit light mode colors: `bg-white`, `text-gray-900`, `border-gray-200`, etc.
+- The dark mode CSS variables in `app.css` are disabled and should not be used
 
 **Example pattern** (see `src/components/Counter.tsx`):
 ```tsx

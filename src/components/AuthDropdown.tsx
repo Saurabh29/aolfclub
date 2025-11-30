@@ -71,12 +71,12 @@ export default function AuthDropdown() {
         </svg>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent class="w-72 bg-white dark:bg-gray-900">
+      <DropdownMenuContent class="w-72 bg-white border border-gray-200">
         <div class="px-2 py-2">
-          <DropdownMenuLabel class="text-base font-semibold">
+          <DropdownMenuLabel class="text-base font-semibold text-gray-900">
             Sign In
           </DropdownMenuLabel>
-          <p class="px-2 text-sm text-muted-foreground">
+          <p class="px-2 text-sm text-gray-600">
             Choose a provider to continue
           </p>
         </div>
@@ -112,7 +112,7 @@ export default function AuthDropdown() {
             </svg>
           </div>
           
-          <span class="text-sm font-medium">
+          <span class="text-sm font-medium text-gray-900">
             Continue with Google
           </span>
         </DropdownMenuItem>
@@ -135,7 +135,7 @@ export default function AuthDropdown() {
             </svg>
           </div>
           
-          <span class="text-sm font-medium">
+          <span class="text-sm font-medium text-gray-900">
             Continue with GitHub
           </span>
         </DropdownMenuItem>
@@ -143,7 +143,7 @@ export default function AuthDropdown() {
         <DropdownMenuSeparator />
 
         <div class="px-4 py-2">
-          <p class="text-xs text-muted-foreground text-center">
+          <p class="text-xs text-gray-600 text-center">
             By signing in, you agree to our Terms of Service
           </p>
         </div>
