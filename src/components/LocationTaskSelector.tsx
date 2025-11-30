@@ -289,7 +289,7 @@ type TaskListProps = {
   selectedLocationId: string;
 };
 
-function TaskList(props: TaskListProps) {
+export function TaskList(props: TaskListProps) {
   /**
    * Current tasks for the selected location.
    * Empty array during loading or when no tasks exist.

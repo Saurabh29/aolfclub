@@ -6,7 +6,7 @@ import { Separator } from "~/components/ui/separator";
 import { cn } from "~/lib/utils";
 import { NavigationItemSchema, SummaryCardSchema, type NavigationItem, type SummaryCard } from "~/schemas/dashboard.schema";
 import AuthDropdown from "~/components/AuthDropdown";
-import { MOCK_LOCATIONS, type Location } from "~/components/LocationTaskSelector";
+import { MOCK_LOCATIONS, TaskList, type Location } from "~/components/LocationTaskSelector";
 
 // ============================================================================
 // SAMPLE DATA
@@ -225,6 +225,12 @@ export default function Dashboard() {
           </section>
 
           <Separator class="my-6" />
+
+          {/* Task List - Shows tasks for selected location */}
+          <Show when={selectedLocationId()}>
+            <TaskList selectedLocationId={selectedLocationId()} />
+            <Separator class="my-6" />
+          </Show>
 
           {/* Summary Cards using solid-ui Card components */}
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
