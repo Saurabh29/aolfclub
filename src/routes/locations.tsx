@@ -1,4 +1,4 @@
-import { createSignal, createEffect, For, Show } from "solid-js";
+import { createResource, For, Show, createSignal } from "solid-js";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
@@ -16,30 +16,11 @@ export default function LocationsPage() {
   // STATE
   // ============================================================================
 
-  const [locations, setLocations] = createSignal<Location[]>([]);
+  // Use createResource for proper async data handling
+  const [locations, { refetch, mutate }] = createResource(() => locationsApi.getAll());
+  
   const [showAddModal, setShowAddModal] = createSignal(false);
   const [editingLocation, setEditingLocation] = createSignal<Location | null>(null);
-  const [loading, setLoading] = createSignal(true);
-
-  // ============================================================================
-  // LOAD LOCATIONS
-  // ============================================================================
-
-  createEffect(() => {
-    loadLocations();
-  });
-
-  const loadLocations = async () => {
-    setLoading(true);
-    try {
-      const data = await locationsApi.getAll();
-      setLocations(data);
-    } catch (error) {
-      console.error("Failed to load locations:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // ============================================================================
   // HANDLERS
@@ -62,7 +43,7 @@ export default function LocationsPage() {
 
     try {
       await locationsApi.delete(locationId);
-      await loadLocations();
+      refetch();
     } catch (error) {
       console.error("Failed to delete location:", error);
       alert("Failed to delete location");
@@ -75,7 +56,7 @@ export default function LocationsPage() {
   };
 
   const handleSaveLocation = async () => {
-    await loadLocations();
+    await refetch();
     setEditingLocation(null);
   };
 
@@ -109,16 +90,24 @@ export default function LocationsPage() {
       {/* Main Content */}
       <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Show
-          when={!loading()}
+          when={!locations.loading}
           fallback={
             <div class="text-center py-12">
               <p class="text-gray-500">Loading locations...</p>
             </div>
           }
         >
-          <Show
-            when={locations().length > 0}
-            fallback={
+          <Show when={locations.error}>
+            <div class="text-center py-12">
+              <p class="text-red-600">Error loading locations: {locations.error.message}</p>
+              <Button onClick={() => refetch()} class="mt-4">Retry</Button>
+            </div>
+          </Show>
+          
+          <Show when={locations()}>
+            <Show
+              when={(locations() || []).length > 0}
+              fallback={
               <div class="text-center py-12">
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -198,6 +187,7 @@ export default function LocationsPage() {
                 )}
               </For>
             </div>
+          </Show>
           </Show>
         </Show>
       </main>

@@ -1,4 +1,4 @@
-import { createSignal, createEffect, For, Show } from "solid-js";
+import { createResource, createSignal, For, Show, createMemo } from "solid-js";
 import { A, useNavigate } from "@solidjs/router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -29,43 +29,26 @@ export default function TaskListPage() {
   // STATE
   // ============================================================================
 
-  const [tasks, setTasks] = createSignal<Task[]>([]);
-  const [users, setUsers] = createSignal<User[]>([]);
-  const [loading, setLoading] = createSignal(true);
+  // Use createResource for proper async data handling
+  const [tasks, { refetch: refetchTasks }] = createResource(() => tasksApi.getAll());
+  const [users] = createResource(() => usersApi.getAll());
+  
   const [searchQuery, setSearchQuery] = createSignal("");
   const [filterStatus, setFilterStatus] = createSignal<string>("all");
   const [filterPriority, setFilterPriority] = createSignal<string>("all");
   const [filterAssignee, setFilterAssignee] = createSignal<string>("all");
 
-  createEffect(() => {
-    loadData();
-  });
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [tasksData, usersData] = await Promise.all([
-        tasksApi.getAll(),
-        usersApi.getAll(),
-      ]);
-      setTasks(tasksData);
-      setUsers(usersData);
-    } catch (error) {
-      console.error("Failed to load data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // ============================================================================
   // FILTERING
   // ============================================================================
 
-  const teachersAndVolunteers = () =>
-    users().filter((u) => u.role === UserRole.TEACHER || u.role === UserRole.VOLUNTEER);
+  const teachersAndVolunteers = createMemo(() => {
+    const userList = users() || [];
+    return userList.filter((u) => u.role === UserRole.TEACHER || u.role === UserRole.VOLUNTEER);
+  });
 
-  const filteredTasks = () => {
-    let filtered = tasks();
+  const filteredTasks = createMemo(() => {
+    let filtered = tasks() || [];
 
     // Search
     const query = searchQuery().toLowerCase();
@@ -93,7 +76,7 @@ export default function TaskListPage() {
     }
 
     return filtered;
-  };
+  });
 
   // ============================================================================
   // ACTIONS
@@ -104,7 +87,7 @@ export default function TaskListPage() {
 
     try {
       await tasksApi.delete(taskId);
-      await loadData();
+      refetchTasks();
     } catch (error) {
       console.error("Failed to delete task:", error);
       alert("Failed to delete task");
@@ -116,8 +99,9 @@ export default function TaskListPage() {
   // ============================================================================
 
   const getUserNames = (userIds: string[]): string => {
+    const userList = users() || [];
     const names = userIds.map((id) => {
-      const user = users().find((u) => u.id === id);
+      const user = userList.find((u) => u.id === id);
       return user?.fullName || "Unknown";
     });
     return names.join(", ");
@@ -281,7 +265,7 @@ export default function TaskListPage() {
         <Card>
           <CardContent class="p-0">
             <Show
-              when={!loading()}
+              when={!tasks.loading}
               fallback={
                 <div class="text-center py-12">
                   <p class="text-gray-500">Loading tasks...</p>

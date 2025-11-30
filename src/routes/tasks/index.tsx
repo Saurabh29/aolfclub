@@ -1,10 +1,10 @@
-import { createSignal, createEffect, For, Show } from "solid-js";
+import { createResource, createSignal, For, Show, createMemo } from "solid-js";
 import { A, useNavigate } from "@solidjs/router";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { cn } from "~/lib/utils";
-import { tasksApi, usersApi, MOCK_TASKS } from "~/lib/user-api";
+import { tasksApi, usersApi } from "~/lib/user-api";
 import { TaskStatus, TaskPriority } from "~/schemas/task.schema";
 import type { Task } from "~/schemas/task.schema";
 import type { User } from "~/schemas/user.schema";
@@ -26,38 +26,19 @@ export default function TaskBoardPage() {
   // STATE
   // ============================================================================
 
-  const [tasks, setTasks] = createSignal<Task[]>([]);
-  const [users, setUsers] = createSignal<User[]>([]);
-  const [loading, setLoading] = createSignal(true);
+  // Use createResource for proper async data handling
+  const [tasks, { refetch: refetchTasks }] = createResource(() => tasksApi.getAll());
+  const [users] = createResource(() => usersApi.getAll());
+  
   const [draggedTaskId, setDraggedTaskId] = createSignal<string | null>(null);
-
-  createEffect(() => {
-    loadData();
-  });
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [tasksData, usersData] = await Promise.all([
-        tasksApi.getAll(),
-        usersApi.getAll(),
-      ]);
-      setTasks(tasksData);
-      setUsers(usersData);
-    } catch (error) {
-      console.error("Failed to load data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // ============================================================================
   // TASK FILTERING
   // ============================================================================
 
-  const todoTasks = () => tasks().filter((t) => t.status === TaskStatus.TO_DO);
-  const inProgressTasks = () => tasks().filter((t) => t.status === TaskStatus.IN_PROGRESS);
-  const completedTasks = () => tasks().filter((t) => t.status === TaskStatus.COMPLETED);
+  const todoTasks = createMemo(() => (tasks() || []).filter((t) => t.status === TaskStatus.TO_DO));
+  const inProgressTasks = createMemo(() => (tasks() || []).filter((t) => t.status === TaskStatus.IN_PROGRESS));
+  const completedTasks = createMemo(() => (tasks() || []).filter((t) => t.status === TaskStatus.COMPLETED));
 
   // ============================================================================
   // DRAG & DROP
@@ -78,7 +59,7 @@ export default function TaskBoardPage() {
 
     try {
       await tasksApi.updateStatus(taskId, newStatus);
-      await loadData();
+      refetchTasks();
     } catch (error) {
       console.error("Failed to update task status:", error);
       alert("Failed to update task status");
@@ -92,8 +73,9 @@ export default function TaskBoardPage() {
   // ============================================================================
 
   const getUserNames = (userIds: string[]): string => {
+    const userList = users() || [];
     const names = userIds.map((id) => {
-      const user = users().find((u) => u.id === id);
+      const user = userList.find((u) => u.id === id);
       return user?.fullName || "Unknown";
     });
     return names.join(", ");
@@ -164,7 +146,7 @@ export default function TaskBoardPage() {
 
       {/* Main Content */}
       <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Show when={!loading()} fallback={
+        <Show when={!tasks.loading} fallback={
           <div class="text-center py-12">
             <p class="text-gray-500">Loading tasks...</p>
           </div>

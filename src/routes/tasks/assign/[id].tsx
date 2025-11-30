@@ -1,4 +1,4 @@
-import { createSignal, createEffect, For, Show } from "solid-js";
+import { createSignal, createEffect, createResource, createMemo, For, Show, onMount } from "solid-js";
 import { useParams, useNavigate } from "@solidjs/router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -31,11 +31,26 @@ export default function AssignParticipantsPage() {
   // STATE
   // ============================================================================
 
-  const [task, setTask] = createSignal<Task | null>(null);
-  const [assignedUsers, setAssignedUsers] = createSignal<User[]>([]);
-  const [allLeads, setAllLeads] = createSignal<Lead[]>([]);
-  const [allMembers, setAllMembers] = createSignal<User[]>([]);
-  const [loading, setLoading] = createSignal(true);
+  // Fetch data with createResource
+  const [task, { refetch: refetchTask }] = createResource(async () => {
+    const taskId = params.id;
+    if (!taskId) {
+      alert("Task ID not found");
+      navigate("/tasks");
+      return null;
+    }
+    const taskData = await tasksApi.getById(taskId);
+    if (!taskData) {
+      alert("Task not found");
+      navigate("/tasks");
+      return null;
+    }
+    return taskData;
+  });
+
+  const [users] = createResource(() => usersApi.getAll());
+  const [leads] = createResource(() => leadsApi.getAll());
+
   const [saving, setSaving] = createSignal(false);
   const [showSuccess, setShowSuccess] = createSignal(false);
 
@@ -51,86 +66,60 @@ export default function AssignParticipantsPage() {
   const [memberSearchQuery, setMemberSearchQuery] = createSignal("");
 
   // ============================================================================
-  // LOAD DATA
+  // COMPUTED DATA
   // ============================================================================
 
-  createEffect(() => {
-    loadData();
+  const assignedUsers = createMemo(() => {
+    const taskData = task();
+    const usersData = users();
+    if (!taskData || !usersData) return [];
+    return usersData.filter((u) => taskData.assignedTo.includes(u.id));
   });
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const taskId = params.id;
-      if (!taskId) {
-        alert("Task ID not found");
-        navigate("/tasks");
-        return;
-      }
+  const allMembers = createMemo(() => {
+    const usersData = users();
+    if (!usersData) return [];
+    return usersData.filter((u) => u.role === UserRole.MEMBER);
+  });
 
-      const [taskData, usersData, leadsData] = await Promise.all([
-        tasksApi.getById(taskId),
-        usersApi.getAll(),
-        leadsApi.getAll(),
-      ]);
-
-      if (!taskData) {
-        alert("Task not found");
-        navigate("/tasks");
-        return;
-      }
-
-      setTask(taskData);
-
-      // Get assigned users (Teachers/Volunteers)
-      const assigned = usersData.filter((u) => taskData.assignedTo.includes(u.id));
-      setAssignedUsers(assigned);
-
-      // Get all leads
-      setAllLeads(leadsData);
-
-      // Get all members
-      const members = usersData.filter((u) => u.role === UserRole.MEMBER);
-      setAllMembers(members);
-
-      // Pre-select already assigned leads/members
+  // Pre-populate selections when task loads
+  createEffect(() => {
+    const taskData = task();
+    if (taskData) {
       setSelectedLeadIds(taskData.assignedLeads || []);
       setSelectedMemberIds(taskData.assignedParticipants || []);
-    } catch (error) {
-      console.error("Failed to load data:", error);
-      alert("Failed to load task data");
-    } finally {
-      setLoading(false);
     }
-  };
+  });
 
   // ============================================================================
   // FILTERING
   // ============================================================================
 
-  const filteredLeads = () => {
+  const filteredLeads = createMemo(() => {
     const query = leadSearchQuery().toLowerCase();
-    if (!query) return allLeads();
+    const leadsData = leads() || [];
+    if (!query) return leadsData;
 
-    return allLeads().filter(
+    return leadsData.filter(
       (l) =>
         l.fullName.toLowerCase().includes(query) ||
         l.phone.includes(query) ||
         (l.email && l.email.toLowerCase().includes(query))
     );
-  };
+  });
 
-  const filteredMembers = () => {
+  const filteredMembers = createMemo(() => {
     const query = memberSearchQuery().toLowerCase();
-    if (!query) return allMembers();
+    const membersData = allMembers();
+    if (!query) return membersData;
 
-    return allMembers().filter(
+    return membersData.filter(
       (m) =>
         m.fullName.toLowerCase().includes(query) ||
         m.email.toLowerCase().includes(query) ||
         m.phone.includes(query)
     );
-  };
+  });
 
   // ============================================================================
   // SELECTION HANDLERS
@@ -200,7 +189,7 @@ export default function AssignParticipantsPage() {
       setShowSuccess(true);
       
       // Reload task data
-      await loadData();
+      refetchTask();
     } catch (error) {
       console.error("Failed to assign participants:", error);
       alert("Failed to assign participants. Please try again.");
@@ -278,7 +267,7 @@ export default function AssignParticipantsPage() {
 
       {/* Main Content */}
       <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Show when={!loading()} fallback={
+        <Show when={!task.loading} fallback={
           <div class="text-center py-12">
             <p class="text-gray-500">Loading task...</p>
           </div>

@@ -1,4 +1,4 @@
-import { createSignal, createEffect, For, Show } from "solid-js";
+import { createResource, createSignal, For, Show, createMemo } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { UserTable } from "~/components/UserTable";
 import { Button } from "~/components/ui/button";
@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/com
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
 import AddUserLeadDialog from "~/components/AddUserLeadDialog";
-import { usersApi, exportUsersCSV, downloadCSV, MOCK_USERS } from "~/lib/user-api";
+import { usersApi, exportUsersCSV, downloadCSV } from "~/lib/user-api";
 import type { User } from "~/schemas/user.schema";
 import { cn } from "~/lib/utils";
 
@@ -33,49 +33,31 @@ export default function UsersListPage() {
   // STATE
   // ============================================================================
 
-  const [users, setUsers] = createSignal<User[]>([]);
-  const [loading, setLoading] = createSignal(true);
+  // Use createResource for proper async data handling
+  const [users, { refetch, mutate }] = createResource(() => usersApi.getAll());
+  
   const [searchQuery, setSearchQuery] = createSignal("");
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
   const [showImportDialog, setShowImportDialog] = createSignal(false);
   const [showAddDialog, setShowAddDialog] = createSignal(false);
 
   // ============================================================================
-  // LOAD USERS
-  // ============================================================================
-
-  createEffect(() => {
-    loadUsers();
-  });
-
-  const loadUsers = async () => {
-    setLoading(true);
-    try {
-      const data = await usersApi.getAll();
-      setUsers(data);
-    } catch (error) {
-      console.error("Failed to load users:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ============================================================================
   // FILTERED USERS (SEARCH)
   // ============================================================================
 
-  const filteredUsers = () => {
+  const filteredUsers = createMemo(() => {
     const query = searchQuery().toLowerCase();
-    if (!query) return users();
+    const userList = users() || [];
+    if (!query) return userList;
 
-    return users().filter(
+    return userList.filter(
       (u) =>
         u.fullName.toLowerCase().includes(query) ||
         u.email.toLowerCase().includes(query) ||
         u.phone.includes(query) ||
         u.role.toLowerCase().includes(query)
     );
-  };
+  });
 
   // ============================================================================
   // ACTIONS
@@ -90,7 +72,7 @@ export default function UsersListPage() {
 
     try {
       await usersApi.delete(userId);
-      await loadUsers();
+      refetch();
       // Remove from selection if it was selected
       setSelectedIds(selectedIds().filter(id => id !== userId));
     } catch (error) {
@@ -107,7 +89,7 @@ export default function UsersListPage() {
 
     try {
       await usersApi.bulkDelete(selectedIds());
-      await loadUsers();
+      refetch();
       setSelectedIds([]);
     } catch (error) {
       console.error("Failed to delete users:", error);
@@ -116,7 +98,7 @@ export default function UsersListPage() {
   };
 
   const handleExport = () => {
-    const csv = exportUsersCSV();
+    const csv = exportUsersCSV(users() || []);
     downloadCSV(csv, `users-${new Date().toISOString().split('T')[0]}.csv`);
   };
 
@@ -130,6 +112,10 @@ export default function UsersListPage() {
     // In production, you would parse the CSV and create users
     alert(`File "${file.name}" uploaded successfully! (Parsing not implemented in demo)`);
     target.value = ""; // Reset input
+  };
+
+  const handleUserSaved = () => {
+    refetch();
   };
 
   // ============================================================================
@@ -238,14 +224,14 @@ export default function UsersListPage() {
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardContent class="pt-6">
-              <div class="text-2xl font-bold text-gray-900">{users().length}</div>
+              <div class="text-2xl font-bold text-gray-900">{users()?.length || 0}</div>
               <p class="text-xs text-gray-600 mt-1">Total Users</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent class="pt-6">
               <div class="text-2xl font-bold text-gray-900">
-                {users().filter(u => u.role === "Member").length}
+                {users()?.filter(u => u.role === "Member").length || 0}
               </div>
               <p class="text-xs text-gray-600 mt-1">Members</p>
             </CardContent>
@@ -253,7 +239,7 @@ export default function UsersListPage() {
           <Card>
             <CardContent class="pt-6">
               <div class="text-2xl font-bold text-gray-900">
-                {users().filter(u => u.role === "Teacher").length}
+                {users()?.filter(u => u.role === "Teacher").length || 0}
               </div>
               <p class="text-xs text-gray-600 mt-1">Teachers</p>
             </CardContent>
@@ -261,7 +247,7 @@ export default function UsersListPage() {
           <Card>
             <CardContent class="pt-6">
               <div class="text-2xl font-bold text-gray-900">
-                {users().filter(u => u.role === "Volunteer").length}
+                {users()?.filter(u => u.role === "Volunteer").length || 0}
               </div>
               <p class="text-xs text-gray-600 mt-1">Volunteers</p>
             </CardContent>
@@ -270,7 +256,7 @@ export default function UsersListPage() {
 
         {/* Users Table */}
         <Show
-          when={!loading()}
+          when={!users.loading}
           fallback={
             <Card>
               <CardContent class="py-12">
@@ -291,7 +277,7 @@ export default function UsersListPage() {
         {/* Pagination placeholder */}
         <div class="mt-4 flex items-center justify-between">
           <p class="text-sm text-gray-600">
-            Showing {filteredUsers().length} of {users().length} users
+            Showing {filteredUsers().length} of {users()?.length || 0} users
           </p>
           <div class="text-sm text-gray-500">
             {/* Pagination controls would go here */}
@@ -303,7 +289,7 @@ export default function UsersListPage() {
       <AddUserLeadDialog
         open={showAddDialog()}
         onClose={() => setShowAddDialog(false)}
-        onSave={loadUsers}
+        onSave={handleUserSaved}
       />
     </div>
   );

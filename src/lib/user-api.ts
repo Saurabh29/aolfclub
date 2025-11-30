@@ -1,8 +1,24 @@
 import type { User, Lead } from "~/schemas/user.schema";
-import { UserRole, LeadSource } from "~/schemas/user.schema";
+import { UserRole, LeadSource, UserSchema, LeadSchema } from "~/schemas/user.schema";
 import type { Task, Attachment } from "~/schemas/task.schema";
-import { TaskStatus, TaskPriority, TaskRecurrence } from "~/schemas/task.schema";
+import { TaskStatus, TaskPriority, TaskRecurrence, TaskSchema } from "~/schemas/task.schema";
 import type { Location } from "~/schemas/location.schema";
+import { LocationSchema } from "~/schemas/location.schema";
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+/**
+ * Generate a UUID v4 compatible string
+ */
+function generateId(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 
 // ============================================================================
 // MOCK DATABASES
@@ -231,9 +247,13 @@ export const usersApi = {
    */
   create: async (user: Omit<User, "id" | "createdAt" | "updatedAt">): Promise<User> => {
     await delay();
+    
+    // Validate input
+    const validated = UserSchema.omit({ id: true, createdAt: true, updatedAt: true }).parse(user);
+    
     const newUser: User = {
-      ...user,
-      id: `user-${Date.now()}`,
+      ...validated,
+      id: generateId(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -249,9 +269,12 @@ export const usersApi = {
     const index = MOCK_USERS.findIndex((u) => u.id === id);
     if (index === -1) return null;
 
+    // Validate partial updates
+    const validated = UserSchema.partial().omit({ id: true, createdAt: true, updatedAt: true }).parse(updates);
+
     MOCK_USERS[index] = {
       ...MOCK_USERS[index],
-      ...updates,
+      ...validated,
       updatedAt: new Date().toISOString(),
     };
     return MOCK_USERS[index];
@@ -325,9 +348,13 @@ export const leadsApi = {
    */
   create: async (lead: Omit<Lead, "id" | "createdAt" | "updatedAt">): Promise<Lead> => {
     await delay();
+    
+    // Validate input
+    const validated = LeadSchema.omit({ id: true, createdAt: true, updatedAt: true }).parse(lead);
+    
     const newLead: Lead = {
-      ...lead,
-      id: `lead-${Date.now()}`,
+      ...validated,
+      id: generateId(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -343,9 +370,12 @@ export const leadsApi = {
     const index = MOCK_LEADS.findIndex((l) => l.id === id);
     if (index === -1) return null;
 
+    // Validate partial updates
+    const validated = LeadSchema.partial().omit({ id: true, createdAt: true, updatedAt: true }).parse(updates);
+
     MOCK_LEADS[index] = {
       ...MOCK_LEADS[index],
-      ...updates,
+      ...validated,
       updatedAt: new Date().toISOString(),
     };
     return MOCK_LEADS[index];
@@ -428,9 +458,13 @@ export const tasksApi = {
    */
   create: async (task: Omit<Task, "id" | "createdAt" | "updatedAt">): Promise<Task> => {
     await delay();
+    
+    // Validate input
+    const validated = TaskSchema.omit({ id: true, createdAt: true, updatedAt: true }).parse(task);
+    
     const newTask: Task = {
-      ...task,
-      id: `task-${Date.now()}`,
+      ...validated,
+      id: generateId(),
       status: TaskStatus.DRAFT, // Starts as draft until participants assigned
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -447,9 +481,12 @@ export const tasksApi = {
     const index = MOCK_TASKS.findIndex((t) => t.id === id);
     if (index === -1) return null;
 
+    // Validate partial updates
+    const validated = TaskSchema.partial().omit({ id: true, createdAt: true, updatedAt: true }).parse(updates);
+
     MOCK_TASKS[index] = {
       ...MOCK_TASKS[index],
-      ...updates,
+      ...validated,
       updatedAt: new Date().toISOString(),
     };
     return MOCK_TASKS[index];
@@ -612,9 +649,13 @@ export const locationsApi = {
    */
   create: async (location: Omit<Location, "id" | "createdAt" | "updatedAt">): Promise<Location> => {
     await delay();
+    
+    // Validate input
+    const validated = LocationSchema.omit({ id: true, createdAt: true, updatedAt: true }).parse(location);
+    
     const newLocation: Location = {
-      ...location,
-      id: `loc-${Date.now()}`,
+      ...validated,
+      id: generateId(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -630,9 +671,12 @@ export const locationsApi = {
     const index = MOCK_LOCATIONS.findIndex((l) => l.id === id);
     if (index === -1) return null;
 
+    // Validate partial updates
+    const validated = LocationSchema.partial().omit({ id: true, createdAt: true, updatedAt: true }).parse(updates);
+
     MOCK_LOCATIONS[index] = {
       ...MOCK_LOCATIONS[index],
-      ...updates,
+      ...validated,
       updatedAt: new Date().toISOString(),
     };
     return MOCK_LOCATIONS[index];

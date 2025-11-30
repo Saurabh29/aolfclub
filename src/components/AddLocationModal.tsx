@@ -14,27 +14,6 @@ type AddLocationModalProps = {
   editingLocation?: Location | null; // Location to edit (if provided)
 };
 
-// Google Places API Types
-type PlacePrediction = {
-  description: string;
-  place_id: string;
-  structured_formatting: {
-    main_text: string;
-    secondary_text: string;
-  };
-};
-
-type PlaceDetails = {
-  formatted_address: string;
-  geometry: {
-    location: {
-      lat: () => number;
-      lng: () => number;
-    };
-  };
-  name: string;
-};
-
 /**
  * AddLocationModal Component
  * 
@@ -65,15 +44,18 @@ export default function AddLocationModal(props: AddLocationModalProps) {
   const [longitude, setLongitude] = createSignal<number | undefined>(undefined);
   const [saving, setSaving] = createSignal(false);
 
-  // Google Places Autocomplete
+  // Google Places Autocomplete - Use signals for proper cleanup
   const [searchQuery, setSearchQuery] = createSignal("");
-  const [predictions, setPredictions] = createSignal<PlacePrediction[]>([]);
+  const [predictions, setPredictions] = createSignal<google.maps.places.PlacePrediction[]>([]);
   const [showPredictions, setShowPredictions] = createSignal(false);
   const [googleLoaded, setGoogleLoaded] = createSignal(false);
+  const [autocompleteService, setAutocompleteService] = 
+    createSignal<google.maps.places.AutocompleteService | null>(null);
+  const [placesService, setPlacesService] = 
+    createSignal<google.maps.places.PlacesService | null>(null);
 
-  let autocompleteService: google.maps.places.AutocompleteService | null = null;
-  let placesService: google.maps.places.PlacesService | null = null;
   let searchTimeoutId: number | undefined;
+  let scriptElement: HTMLScriptElement | null = null;
 
   // ============================================================================
   // GOOGLE PLACES API SETUP
@@ -93,40 +75,51 @@ export default function AddLocationModal(props: AddLocationModalProps) {
     if (searchTimeoutId) {
       clearTimeout(searchTimeoutId);
     }
+    // Clean up services
+    setAutocompleteService(null);
+    setPlacesService(null);
   });
 
   const loadGoogleMapsAPI = () => {
-    // Check if script is already added
-    if (document.querySelector('script[src*="maps.googleapis.com"]')) {
+    // Check for existing script more robustly
+    const existingScript = document.querySelector(
+      'script[src*="maps.googleapis.com"]'
+    ) as HTMLScriptElement;
+    
+    if (existingScript) {
+      // Wait for it to load if it's still loading
+      if (typeof google !== "undefined" && google.maps?.places) {
+        initializeGoogleServices();
+      } else {
+        existingScript.addEventListener("load", initializeGoogleServices, { once: true });
+      }
       return;
     }
 
-    const script = document.createElement("script");
-    // TODO: Replace with your actual Google Maps API key
-    const API_KEY = "YOUR_GOOGLE_MAPS_API_KEY";
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      initializeGoogleServices();
-    };
-    script.onerror = () => {
+    const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "YOUR_GOOGLE_MAPS_API_KEY";
+    scriptElement = document.createElement("script");
+    scriptElement.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places&loading=async`;
+    scriptElement.async = true;
+    scriptElement.defer = true;
+    scriptElement.onload = initializeGoogleServices;
+    scriptElement.onerror = () => {
       console.error("Failed to load Google Maps API");
-      setMode("manual"); // Fallback to manual mode
+      setMode("manual");
+      setGoogleLoaded(false);
     };
-    document.head.appendChild(script);
+    document.head.appendChild(scriptElement);
   };
 
   const initializeGoogleServices = () => {
     try {
-      autocompleteService = new google.maps.places.AutocompleteService();
-      // Create a dummy div for PlacesService (required by Google API)
+      setAutocompleteService(new google.maps.places.AutocompleteService());
       const dummyDiv = document.createElement("div");
-      placesService = new google.maps.places.PlacesService(dummyDiv);
+      setPlacesService(new google.maps.places.PlacesService(dummyDiv));
       setGoogleLoaded(true);
     } catch (error) {
       console.error("Failed to initialize Google Places services:", error);
       setMode("manual");
+      setGoogleLoaded(false);
     }
   };
 
@@ -150,11 +143,13 @@ export default function AddLocationModal(props: AddLocationModalProps) {
     }
   });
 
-  // Google Places autocomplete search
+  // Google Places autocomplete search - properly track dependencies
   createEffect(() => {
     const query = searchQuery();
+    const currentMode = mode();
+    const service = autocompleteService();
     
-    if (!query || query.trim().length < 3 || mode() !== "google") {
+    if (!query || query.trim().length < 3 || currentMode !== "google" || !service) {
       setPredictions([]);
       setShowPredictions(false);
       return;
@@ -170,19 +165,20 @@ export default function AddLocationModal(props: AddLocationModalProps) {
   });
 
   const fetchPredictions = (query: string) => {
-    if (!autocompleteService) {
+    const service = autocompleteService();
+    if (!service) {
       console.warn("AutocompleteService not initialized");
       return;
     }
 
-    autocompleteService.getPlacePredictions(
+    service.getPlacePredictions(
       {
         input: query,
         types: ["establishment", "geocode"], // Allows both places and addresses
       },
       (predictions, status) => {
         if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
-          setPredictions(predictions as PlacePrediction[]);
+          setPredictions(predictions);
           setShowPredictions(true);
         } else {
           setPredictions([]);
@@ -218,32 +214,32 @@ export default function AddLocationModal(props: AddLocationModalProps) {
     setMode("google");
   };
 
-  const handleSelectPrediction = async (prediction: PlacePrediction) => {
+  const handleSelectPrediction = async (prediction: google.maps.places.PlacePrediction) => {
     setSearchQuery(prediction.description);
     setShowPredictions(false);
 
-    if (!placesService) {
+    const service = placesService();
+    if (!service) {
       console.error("PlacesService not initialized");
       return;
     }
 
     // Fetch place details
-    placesService.getDetails(
+    service.getDetails(
       {
         placeId: prediction.place_id,
         fields: ["name", "formatted_address", "geometry"],
       },
       (place, status) => {
         if (status === google.maps.places.PlacesServiceStatus.OK && place) {
-          const details = place as unknown as PlaceDetails;
-          setName(details.name || prediction.structured_formatting.main_text);
-          setFormattedAddress(details.formatted_address);
-          setAddress(details.formatted_address);
+          setName(place.name || prediction.structured_formatting.main_text);
+          setFormattedAddress(place.formatted_address || "");
+          setAddress(place.formatted_address || "");
           setPlaceId(prediction.place_id);
           
-          if (details.geometry && details.geometry.location) {
-            setLatitude(details.geometry.location.lat());
-            setLongitude(details.geometry.location.lng());
+          if (place.geometry?.location) {
+            setLatitude(place.geometry.location.lat());
+            setLongitude(place.geometry.location.lng());
           }
         }
       }

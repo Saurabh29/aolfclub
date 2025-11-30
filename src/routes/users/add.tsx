@@ -180,7 +180,7 @@ export default function AddUserPage() {
                 <Label for="role">Role *</Label>
                 <Select
                   value={role()}
-                  onChange={setRole as any}
+                  onChange={(value) => value && setRole(value as UserRole)}
                   options={["Admin", "Teacher", "Volunteer", "Member"]}
                   placeholder="Select a role"
                   itemComponent={(props) => (

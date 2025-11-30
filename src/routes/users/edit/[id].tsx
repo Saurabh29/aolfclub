@@ -222,25 +222,23 @@ export default function EditUserPage() {
                 </div>
 
                 {/* Role */}
-                <div class="space-y-2">
-                  <Label for="role">Role *</Label>
-                  <Select
-                    value={role()}
-                    onChange={setRole as any}
-                    options={["Admin", "Teacher", "Volunteer", "Member"]}
-                    placeholder="Select a role"
-                    itemComponent={(props) => (
-                      <SelectItem item={props.item}>{props.item.rawValue}</SelectItem>
-                    )}
-                  >
-                    <SelectTrigger>
-                      <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent />
-                  </Select>
-                </div>
-
-                {/* Programs Done (Members only) */}
+                  <div class="space-y-2">
+                    <Label for="role">Role *</Label>
+                    <Select
+                      value={role()}
+                      onChange={(value) => value && setRole(value as UserRole)}
+                      options={["Admin", "Teacher", "Volunteer", "Member"]}
+                      placeholder="Select a role"
+                      itemComponent={(props) => (
+                        <SelectItem item={props.item}>{props.item.rawValue}</SelectItem>
+                      )}
+                    >
+                      <SelectTrigger>
+                        <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent />
+                    </Select>
+                  </div>                {/* Programs Done (Members only) */}
                 <Show when={showProgramsDone()}>
                   <div class="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
                     <Label class="text-sm font-semibold text-blue-900">

@@ -1,4 +1,4 @@
-import { createSignal, createEffect, For, Show } from "solid-js";
+import { createResource, createSignal, For, Show, createMemo } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { Badge } from "~/components/ui/badge";
 import { cn } from "~/lib/utils";
-import { tasksApi, usersApi, MOCK_USERS } from "~/lib/user-api";
-import { TaskPriority, TaskRecurrence } from "~/schemas/task.schema";
+import { tasksApi, usersApi } from "~/lib/user-api";
+import { TaskPriority, TaskRecurrence, TaskStatus } from "~/schemas/task.schema";
 import type { Task, Attachment } from "~/schemas/task.schema";
 import type { User } from "~/schemas/user.schema";
 import { UserRole } from "~/schemas/user.schema";
@@ -42,24 +42,15 @@ export default function CreateTaskPage() {
   const [uploading, setUploading] = createSignal(false);
   const [saving, setSaving] = createSignal(false);
 
-  // Load teachers and volunteers
-  const [availableUsers, setAvailableUsers] = createSignal<User[]>([]);
-
-  createEffect(() => {
-    loadTeachersAndVolunteers();
+  // Load teachers and volunteers using createResource
+  const [users] = createResource(() => usersApi.getAll());
+  
+  const availableUsers = createMemo(() => {
+    const userList = users() || [];
+    return userList.filter(
+      (u) => u.role === UserRole.TEACHER || u.role === UserRole.VOLUNTEER
+    );
   });
-
-  const loadTeachersAndVolunteers = async () => {
-    try {
-      const users = await usersApi.getAll();
-      const filtered = users.filter(
-        (u) => u.role === UserRole.TEACHER || u.role === UserRole.VOLUNTEER
-      );
-      setAvailableUsers(filtered);
-    } catch (error) {
-      console.error("Failed to load users:", error);
-    }
-  };
 
   // ============================================================================
   // VALIDATION
@@ -158,17 +149,23 @@ export default function CreateTaskPage() {
         attachments: attachments(),
         assignedLeads: [],
         assignedParticipants: [],
-        status: "Draft" as any, // Will be set by API
+        status: TaskStatus.DRAFT, // Use proper enum value
         createdBy: "user-1", // Mock current user
       };
 
+      console.log("Creating task with data:", taskData);
       const newTask = await tasksApi.create(taskData);
+      console.log("Task created successfully:", newTask);
       
       // Redirect to Step 2 with task ID
       navigate(`/tasks/assign/${newTask.id}`);
     } catch (error) {
       console.error("Failed to create task:", error);
-      alert("Failed to create task. Please try again.");
+      if (error instanceof Error) {
+        alert(`Failed to create task: ${error.message}`);
+      } else {
+        alert("Failed to create task. Please try again.");
+      }
     } finally {
       setSaving(false);
     }
