@@ -1,4 +1,4 @@
-import { For, type JSX } from "solid-js";
+import { For } from "solid-js";
 import { Card, CardContent, CardHeader } from "~/components/ui/card";
 import { cn } from "~/lib/utils";
 import { 

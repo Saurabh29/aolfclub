@@ -22,10 +22,10 @@ const navigationItems: NavigationItem[] = [
   },
   {
     id: "user-management",
-    label: "User Management",
+    label: "Users",
     icon: "users-outline",
-    href: "/user-management",
-    description: "Manage user accounts, roles, and permissions.",
+    href: "/users",
+    description: "Manage users, members, teachers, and volunteers.",
   },
   {
     id: "location-management",
