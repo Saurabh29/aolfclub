@@ -1,11 +1,12 @@
 import { A, useLocation } from "@solidjs/router";
-import { For, Show } from "solid-js";
+import { For, Show, createSignal } from "solid-js";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
 import { cn } from "~/lib/utils";
 import { NavigationItemSchema, SummaryCardSchema, type NavigationItem, type SummaryCard } from "~/schemas/dashboard.schema";
 import AuthDropdown from "~/components/AuthDropdown";
+import { MOCK_LOCATIONS, type Location } from "~/components/LocationTaskSelector";
 
 // ============================================================================
 // SAMPLE DATA
@@ -111,7 +112,7 @@ function Icon(props: { name: string; class?: string }) {
 // HEADER COMPONENT
 // ============================================================================
 
-function Header() {
+function Header(props: { locations: Location[]; onLocationChange: (id: string) => void }) {
   return (
     <header class="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
       <div class="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-16">
@@ -119,7 +120,7 @@ function Header() {
           <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-600 text-white font-bold text-lg">A</div>
           <span class="hidden sm:inline-block text-lg font-semibold text-gray-900">AOLF Club</span>
         </div>
-        <AuthDropdown />
+        <AuthDropdown locations={props.locations} onLocationChange={props.onLocationChange} />
       </div>
     </header>
   );
@@ -206,9 +207,12 @@ function MobileBottomNav() {
 // ============================================================================
 
 export default function Dashboard() {
+  const [selectedLocationId, setSelectedLocationId] = createSignal<string>("");
+  const locations = MOCK_LOCATIONS;
+
   return (
     <div class="min-h-screen bg-gray-50">
-      <Header />
+      <Header locations={locations} onLocationChange={setSelectedLocationId} />
       <DesktopSidebar />
       <MobileBottomNav />
 
