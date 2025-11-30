@@ -98,7 +98,7 @@ export default function UsersListPage() {
   };
 
   const handleExport = () => {
-    const csv = exportUsersCSV(users() || []);
+    const csv = exportUsersCSV();
     downloadCSV(csv, `users-${new Date().toISOString().split('T')[0]}.csv`);
   };
 

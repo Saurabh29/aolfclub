@@ -379,7 +379,7 @@ export default function TaskListPage() {
 
         {/* Summary */}
         <div class="mt-4 text-sm text-gray-600">
-          Showing {filteredTasks().length} of {tasks().length} tasks
+          Showing {filteredTasks().length} of {tasks()?.length || 0} tasks
         </div>
       </main>
     </div>
