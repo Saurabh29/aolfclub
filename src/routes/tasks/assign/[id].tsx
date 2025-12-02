@@ -7,8 +7,6 @@ import { Badge } from "~/components/ui/badge";
 import { cn } from "~/lib/utils";
 import { tasksApi, usersApi, leadsApi } from "~/lib/user-api";
 import { TaskStatus } from "~/schemas/task.schema";
-import type { Task } from "~/schemas/task.schema";
-import type { User, Lead } from "~/schemas/user.schema";
 import { UserRole } from "~/schemas/user.schema";
 
 /**

@@ -2,8 +2,6 @@ import { createSignal, createEffect, Show, For, onMount, onCleanup } from "solid
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "~/components/ui/dialog";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { Badge } from "~/components/ui/badge";
-import { cn } from "~/lib/utils";
 import { locationsApi } from "~/lib/user-api";
 import type { Location } from "~/schemas/location.schema";
 

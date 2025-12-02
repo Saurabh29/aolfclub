@@ -1,7 +1,6 @@
 import { createResource, For, Show, createSignal } from "solid-js";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
-import { Badge } from "~/components/ui/badge";
 import AddLocationModal from "~/components/AddLocationModal";
 import { locationsApi } from "~/lib/user-api";
 import type { Location } from "~/schemas/location.schema";

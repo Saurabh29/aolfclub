@@ -9,7 +9,6 @@ import { cn } from "~/lib/utils";
 import { tasksApi, usersApi } from "~/lib/user-api";
 import { TaskPriority, TaskRecurrence, TaskStatus } from "~/schemas/task.schema";
 import type { Task, Attachment } from "~/schemas/task.schema";
-import type { User } from "~/schemas/user.schema";
 import { UserRole } from "~/schemas/user.schema";
 
 /**

@@ -8,8 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~
 import { cn } from "~/lib/utils";
 import { tasksApi, usersApi } from "~/lib/user-api";
 import { TaskStatus, TaskPriority } from "~/schemas/task.schema";
-import type { Task } from "~/schemas/task.schema";
-import type { User } from "~/schemas/user.schema";
 import { UserRole } from "~/schemas/user.schema";
 
 /**

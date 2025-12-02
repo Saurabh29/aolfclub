@@ -67,6 +67,8 @@ export default function AddUserLeadDialog(props: AddUserLeadDialogProps) {
           phone: phone(),
           email: email() || undefined,
           leadSource: leadSource() as typeof LeadSource[keyof typeof LeadSource],
+          rating: 0, // Default rating
+          lastContact: new Date().toISOString(), // Set to current time
           programsWant: programsWant() as ("HP" | "MY" | "UY" | "Sahaj" | "VTP" | "AMP")[],
           notes: notes(),
         };
