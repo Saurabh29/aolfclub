@@ -79,6 +79,13 @@ export const LeadSchema = z.object({
     LeadSource.UNKNOWN,
   ]),
   
+  // Rating (0-5 stars)
+  rating: z.number().min(0).max(5).default(0),
+  
+  // Contact tracking
+  lastContact: z.string(), // ISO date string
+  nextFollowUp: z.string().optional(), // Optional ISO date string
+  
   // Leads only have Programs Want To Do (no programs done)
   programsWant: z.array(z.enum(PROGRAMS)).default([]),
   
