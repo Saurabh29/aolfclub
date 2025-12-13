@@ -137,9 +137,12 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
       // Append it to our container div
       autocompleteContainerRef.appendChild(placeAutocomplete);
 
-      // Add the gmp-select listener
-      placeAutocomplete.addEventListener("gmp-placeselect", async (event: any) => {
-        const place = event.place;
+      // Add the gmp-select listener (correct event name from reference code)
+      placeAutocomplete.addEventListener("gmp-select", async (event: any) => {
+        const { placePrediction } = event;
+        
+        // Convert to Place object
+        const place = placePrediction.toPlace();
         
         // Fetch place details
         await place.fetchFields({
