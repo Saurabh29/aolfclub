@@ -10,7 +10,7 @@ import {
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
 import { cn } from "~/lib/utils";
-import type { Location } from "~/lib/schemas/location.schema";
+import type { Location } from "~/lib/schemas/ui/location.schema";
 
 type LocationNavigationProps = {
   locations: Location[];

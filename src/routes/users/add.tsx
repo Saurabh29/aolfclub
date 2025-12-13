@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { Checkbox } from "~/components/ui/checkbox";
 import { usersApi } from "~/lib/user-api";
-import { PROGRAMS, type UserRole } from "~/lib/schemas/user.schema";
+import { PROGRAMS, type UserRole } from "~/lib/schemas/ui/user.schema";
 
 /**
  * Add User Page (UM-2)

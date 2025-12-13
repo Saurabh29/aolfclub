@@ -8,7 +8,7 @@ import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
 import AddUserLeadDialog from "~/components/AddUserLeadDialog";
 import { usersApi, exportUsersCSV, downloadCSV } from "~/lib/user-api";
-import type { User } from "~/lib/schemas/user.schema";
+import type { User } from "~/lib/schemas/ui/user.schema";
 import { cn } from "~/lib/utils";
 
 /**

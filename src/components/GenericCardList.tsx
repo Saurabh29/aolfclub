@@ -5,7 +5,7 @@ import {
   GenericCardListPropsSchema, 
   type GenericCardListProps, 
   type CardAction 
-} from "~/lib/schemas/card.schema";
+} from "~/lib/schemas/ui/card.schema";
 
 export type { CardAction, GenericCardListProps };
 

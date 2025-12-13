@@ -4,9 +4,9 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { cn } from "~/lib/utils";
-import { UserRole, LeadSource } from "~/lib/schemas/user.schema";
+import { UserRole, LeadSource } from "~/lib/schemas/ui/user.schema";
 import { usersApi, leadsApi } from "~/lib/user-api";
-import type { User, Lead } from "~/lib/schemas/user.schema";
+import type { User, Lead } from "~/lib/schemas/ui/user.schema";
 
 const PROGRAMS = ["HP", "MY", "UY", "Sahaj", "VTP", "AMP"];
 

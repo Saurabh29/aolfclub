@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { cn } from "~/lib/utils";
 import { tasksApi, usersApi } from "~/lib/user-api";
-import { TaskStatus, TaskPriority } from "~/lib/schemas/task.schema";
-import type { Task } from "~/lib/schemas/task.schema";
+import { TaskStatus, TaskPriority } from "~/lib/schemas/ui/task.schema";
+import type { Task } from "~/lib/schemas/ui/task.schema";
 
 /**
  * Task Board - Kanban View

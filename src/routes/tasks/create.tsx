@@ -7,9 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~
 import { Badge } from "~/components/ui/badge";
 import { cn } from "~/lib/utils";
 import { tasksApi, usersApi } from "~/lib/user-api";
-import { TaskPriority, TaskRecurrence, TaskStatus } from "~/lib/schemas/task.schema";
-import type { Task, Attachment } from "~/lib/schemas/task.schema";
-import { UserRole } from "~/lib/schemas/user.schema";
+import { TaskPriority, TaskRecurrence, TaskStatus } from "~/lib/schemas/ui/task.schema";
+import type { Task, Attachment } from "~/lib/schemas/ui/task.schema";
+import { UserRole } from "~/lib/schemas/ui/user.schema";
 
 /**
  * Create Task Page - Step 1

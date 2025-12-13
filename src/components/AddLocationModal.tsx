@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { locationsApi } from "~/lib/user-api";
-import type { Location } from "~/lib/schemas/location.schema";
+import type { Location } from "~/lib/schemas/ui/location.schema";
 
 type AddLocationModalProps = {
   open: boolean;

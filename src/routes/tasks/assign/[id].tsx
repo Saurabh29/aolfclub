@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/com
 import { Badge } from "~/components/ui/badge";
 import { cn } from "~/lib/utils";
 import { tasksApi, usersApi, leadsApi } from "~/lib/user-api";
-import { TaskStatus } from "~/lib/schemas/task.schema";
-import { UserRole } from "~/lib/schemas/user.schema";
+import { TaskStatus } from "~/lib/schemas/ui/task.schema";
+import { UserRole } from "~/lib/schemas/ui/user.schema";
 
 /**
  * Assign Participants/Leads Page - Step 2
