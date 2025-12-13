@@ -21,6 +21,12 @@ export {
   locationRepository,
 } from "./core-entities.repository";
 
+// Relationship Repository
+export {
+  RelationshipRepository,
+  relationshipRepository,
+} from "./relationship.repository";
+
 // Re-export client utilities
 export {
   docClient,
