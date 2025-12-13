@@ -12,7 +12,7 @@ import {
   DeleteCommand,
   QueryCommand,
 } from "@aws-sdk/lib-dynamodb";
-import { v4 as uuidv4 } from "uuid";
+import { ulid } from "ulid";
 import {
   docClient,
   TABLE_CONFIG,
@@ -35,9 +35,10 @@ export class BaseRepository<TSchema extends z.ZodType> {
 
   /**
    * Generate entity ID
+   * Uses ULID for time-ordered, sortable IDs
    */
   protected generateId(): string {
-    return uuidv4();
+    return ulid();
   }
 
   /**

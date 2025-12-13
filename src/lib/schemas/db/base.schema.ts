@@ -43,7 +43,7 @@ export type AllEntityTypes = z.infer<typeof AllEntityTypeSchema>;
  */
 export const BaseEntitySchema = z
   .object({
-    id: z.string().uuid(),
+    id: z.string().length(26, "ID must be a valid ULID (26 characters)"),
     entityType: AllEntityTypeSchema,
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),

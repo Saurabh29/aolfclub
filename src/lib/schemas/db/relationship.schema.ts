@@ -80,7 +80,7 @@ export const RelationshipSchema = BaseEntitySchema.extend({
   /**
    * Source entity ID
    */
-  sourceId: z.string().uuid(),
+  sourceId: z.string().length(26, "Source ID must be a valid ULID (26 characters)"),
   
   /**
    * Source entity type
@@ -91,7 +91,7 @@ export const RelationshipSchema = BaseEntitySchema.extend({
   /**
    * Target entity ID
    */
-  targetId: z.string().uuid(),
+  targetId: z.string().length(26, "Target ID must be a valid ULID (26 characters)"),
   
   /**
    * Target entity type
