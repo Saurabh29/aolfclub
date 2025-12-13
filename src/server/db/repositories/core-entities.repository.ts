@@ -7,7 +7,7 @@
  * Entities: Teacher, Volunteer, Member, Lead, Location
  */
 
-import { BaseRepository } from "../base.repository";
+import { BaseRepository } from "./base.repository";
 import {
   TeacherSchema,
   VolunteerSchema,

@@ -23,14 +23,14 @@ export {
   MemberRepository,
   LeadRepository,
   LocationRepository,
-} from "./entities/core-entities.repository";
+} from "./core-entities.repository";
 import {
   teacherRepository,
   volunteerRepository,
   memberRepository,
   leadRepository,
   locationRepository,
-} from "./entities/core-entities.repository";
+} from "./core-entities.repository";
 
 // ========== ACCESS POLICY REPOSITORIES ==========
 export {
