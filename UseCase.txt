@@ -1,0 +1,10 @@
+Import User and create new center
+1. URL sent to Email ID who create location becomes admin for that location.
+2. When importing csv file will have email ID and role, email sent to all for verification
+3. User can also request to join a location using a request URL.
+
+Workflow, User logins with Oauth and later admin associates role for the created user. User need to login using Location specific URL.
+
+Relationship Schema Rules
+Must support many-to-many
+
