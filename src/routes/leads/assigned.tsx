@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
 import { Badge } from "~/components/ui/badge";
 import { cn } from "~/lib/utils";
-import { LeadSchema, LeadSource } from "~/schemas/user.schema";
-import type { Lead } from "~/schemas/user.schema";
+import { LeadSchema, LeadSource } from "~/lib/schemas/user.schema";
+import type { Lead } from "~/lib/schemas/user.schema";
 
 /**
  * Assigned Leads Page

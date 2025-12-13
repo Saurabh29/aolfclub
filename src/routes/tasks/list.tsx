@@ -7,8 +7,8 @@ import { Badge } from "~/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { cn } from "~/lib/utils";
 import { tasksApi, usersApi } from "~/lib/user-api";
-import { TaskStatus, TaskPriority } from "~/schemas/task.schema";
-import { UserRole } from "~/schemas/user.schema";
+import { TaskStatus, TaskPriority } from "~/lib/schemas/task.schema";
+import { UserRole } from "~/lib/schemas/user.schema";
 
 /**
  * Task List Page - Table View

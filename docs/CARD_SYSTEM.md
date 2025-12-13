@@ -45,7 +45,7 @@ A structured component using validated ComponentUnion schemas for consistent, ty
 
 ```tsx
 import StructuredCardList from "~/components/StructuredCardList";
-import type { CardItem } from "~/schemas/card.schema";
+import type { CardItem } from "~/lib/schemas/card.schema";
 
 const cards: CardItem[] = [
   {
@@ -157,7 +157,7 @@ import { z } from "zod";
 import { 
   MetricComponentSchema,
   type MetricComponent 
-} from "~/schemas/card.schema";
+} from "~/lib/schemas/card.schema";
 
 // Type is automatically inferred
 export type MetricComponent = z.infer<typeof MetricComponentSchema>;

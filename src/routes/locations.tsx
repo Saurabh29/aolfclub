@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/com
 import { Button } from "~/components/ui/button";
 import AddLocationModal from "~/components/AddLocationModal";
 import { locationsApi } from "~/lib/user-api";
-import type { Location } from "~/schemas/location.schema";
+import type { Location } from "~/lib/schemas/location.schema";
 
 /**
  * Locations Page

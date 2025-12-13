@@ -1,9 +1,9 @@
-import type { User, Lead } from "~/schemas/user.schema";
-import { UserRole, LeadSource, UserSchema, LeadSchema } from "~/schemas/user.schema";
-import type { Task, Attachment } from "~/schemas/task.schema";
-import { TaskStatus, TaskPriority, TaskRecurrence, TaskSchema } from "~/schemas/task.schema";
-import type { Location } from "~/schemas/location.schema";
-import { LocationSchema } from "~/schemas/location.schema";
+import type { User, Lead } from "~/lib/schemas/user.schema";
+import { UserRole, LeadSource, UserSchema, LeadSchema } from "~/lib/schemas/user.schema";
+import type { Task, Attachment } from "~/lib/schemas/task.schema";
+import { TaskStatus, TaskPriority, TaskRecurrence, TaskSchema } from "~/lib/schemas/task.schema";
+import type { Location } from "~/lib/schemas/location.schema";
+import { LocationSchema } from "~/lib/schemas/location.schema";
 
 // ============================================================================
 // HELPERS

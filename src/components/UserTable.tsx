@@ -1,7 +1,7 @@
 import { For, Show, createSignal } from "solid-js";
 import { A } from "@solidjs/router";
-import type { User } from "~/schemas/user.schema";
-import { UserRole } from "~/schemas/user.schema";
+import type { User } from "~/lib/schemas/user.schema";
+import { UserRole } from "~/lib/schemas/user.schema";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";

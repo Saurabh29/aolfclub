@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/com
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
 import { cn } from "~/lib/utils";
-import { NavigationItemSchema, SummaryCardSchema, type NavigationItem, type SummaryCard } from "~/schemas/dashboard.schema";
+import { NavigationItemSchema, SummaryCardSchema, type NavigationItem, type SummaryCard } from "~/lib/schemas/dashboard.schema";
 import AuthDropdown from "~/components/AuthDropdown";
 import { MOCK_LOCATIONS, TaskList, type Location } from "~/components/LocationTaskSelector";
 
