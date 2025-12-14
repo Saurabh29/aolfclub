@@ -38,12 +38,12 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
   let autocompleteContainerRef: HTMLDivElement | undefined;
 
   // ============================================================================
-  // GOOGLE PLACES API SETUP
+  // GOOGLE PLACES API SETUP  
   // ============================================================================
 
-  const loadGoogleMapsAPI = async () => {
-    const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyATU_c30CPNnUzXQ7kJtj9DKA0HpVtJDn0";
-    
+  const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyATU_c30CPNnUzXQ7kJtj9DKA0HpVtJDn0";
+
+  const loadGoogleMapsAPI = () => {
     return new Promise<void>((resolve, reject) => {
       // Check if already loaded
       if (typeof google !== "undefined" && google.maps?.places) {
@@ -63,57 +63,51 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
         return;
       }
 
-      const scriptElement = document.createElement("script");
-      scriptElement.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places&v=weekly`;
-      scriptElement.async = true;
-      scriptElement.defer = true;
-      scriptElement.onload = () => resolve();
-      scriptElement.onerror = () => reject(new Error("Failed to load Google Maps API"));
-      document.head.appendChild(scriptElement);
+      // Load the Google Maps API
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places&v=weekly`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("Failed to load Google Maps API"));
+      document.head.appendChild(script);
     });
   };
 
-  const initializePlaceAutocomplete = () => {
-    if (!window.google || !window.google.maps || !window.google.maps.places) {
-      setError("Google Maps Places library not available.");
-      console.error("Google Maps Places library not available.");
-      setIsLoading(false);
-      return;
-    }
-    
+  const initializePlaceAutocomplete = async () => {
     if (!autocompleteContainerRef) {
       setError("Autocomplete container not found.");
-      console.error("Autocomplete container not found.");
       setIsLoading(false);
       return;
     }
 
     try {
-      // Clear any existing autocomplete elements to prevent duplicates
+      // Wait for google.maps.places to be available
+      if (!google?.maps?.places) {
+        throw new Error("Google Maps Places library not loaded");
+      }
+
+      // Clear any existing autocomplete elements
       if (autocompleteContainerRef.firstChild) {
         autocompleteContainerRef.innerHTML = "";
       }
 
-      // Create the PlaceAutocompleteElement (web component)
+      // Create the PlaceAutocompleteElement
       const placeAutocomplete = new (google.maps.places as any).PlaceAutocompleteElement();
 
-      // Set custom attributes
-      placeAutocomplete.setAttribute("data-keyboard-scroll", "true");
-      if (props.placeholder) {
-        placeAutocomplete.setAttribute("placeholder", props.placeholder);
-      }
+      // Add border styling directly to the web component
+      placeAutocomplete.style.border = "1px solid #d1d5db";
+      placeAutocomplete.style.borderRadius = "0.375rem";
+      placeAutocomplete.style.width = "100%";
 
-      // Append it to our container div
+      // Append it to container
       autocompleteContainerRef.appendChild(placeAutocomplete);
 
-      // Add the gmp-select listener (correct event name from reference code)
+      // Add the gmp-select listener
       placeAutocomplete.addEventListener("gmp-select", async (event: any) => {
         const { placePrediction } = event;
-        
-        // Convert to Place object
         const place = placePrediction.toPlace();
         
-        // Fetch place details
         await place.fetchFields({
           fields: ["displayName", "formattedAddress", "location", "id"],
         });
@@ -140,8 +134,7 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
   onMount(async () => {
     try {
       await loadGoogleMapsAPI();
-      initializePlaceAutocomplete();
-      setIsLoading(false);
+      await initializePlaceAutocomplete();
     } catch (err) {
       console.error(err);
       setError((err as Error).message || "Failed to initialize map components.");
@@ -154,28 +147,27 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
   // ============================================================================
 
   return (
-    <div class={`flex flex-col space-y-2 ${props.class || ""}`}>
-      <Show when={error()}>
-        <p class="text-sm text-red-600">{error()}</p>
+    <div>
+      <Show when={!API_KEY && !isLoading()}>
+        <p class="text-sm text-destructive">
+          Configuration Error: Google Maps API key is missing.
+        </p>
       </Show>
 
-      <div>
+      <Show when={API_KEY}>
         <div
           ref={autocompleteContainerRef}
-          class="w-full"
           style={{
             "min-height": "40px",
           }}
         />
         <Show when={isLoading()}>
-          <p class="text-xs text-amber-600 mt-1 flex items-center gap-1">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            Loading Google Places Autocomplete...
-          </p>
+          <p class="text-sm text-muted-foreground mt-1">Loading...</p>
         </Show>
-      </div>
+        <Show when={error()}>
+          <p class="text-sm text-destructive mt-1">{error()}</p>
+        </Show>
+      </Show>
     </div>
   );
 }
