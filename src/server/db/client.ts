@@ -54,8 +54,14 @@ function createDynamoDBClient(): DynamoDBClient {
   };
   
   // Local development configuration
-  if (process.env.NODE_ENV === "development" && process.env.DYNAMODB_ENDPOINT) {
-    config.endpoint = process.env.DYNAMODB_ENDPOINT;
+  // Always use local DynamoDB in development
+  const isLocalDev = process.env.NODE_ENV === "development" || !process.env.AWS_ACCESS_KEY_ID;
+  
+  if (isLocalDev) {
+    const endpoint = process.env.DYNAMODB_ENDPOINT || "http://localhost:8000";
+    console.log(`[DynamoDB] Using local endpoint: ${endpoint}`);
+    
+    config.endpoint = endpoint;
     config.credentials = {
       accessKeyId: "local",
       secretAccessKey: "local",

@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "vinxi dev",
     "build": "vinxi build",
-    "start": "vinxi start"
+    "start": "vinxi start",
+    "db:test": "tsx src/server/db/test-connection.ts"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.948.0",
@@ -23,7 +24,8 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.7",
-    "tailwindcss": "^4.0.7"
+    "tailwindcss": "^4.0.7",
+    "tsx": "^4.21.0"
   },
   "engines": {
     "node": ">=22"

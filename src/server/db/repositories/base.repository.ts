@@ -10,7 +10,7 @@ import {
   PutCommand,
   GetCommand,
   DeleteCommand,
-  QueryCommand,
+  ScanCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { ulid } from "ulid";
 import {
@@ -203,9 +203,9 @@ export class BaseRepository<TSchema extends z.ZodType> {
   }> {
     try {
       const response = await docClient.send(
-        new QueryCommand({
+        new ScanCommand({
           TableName: TABLE_CONFIG.TABLE_NAME,
-          KeyConditionExpression: "begins_with(PK, :pk)",
+          FilterExpression: "begins_with(PK, :pk)",
           ExpressionAttributeValues: {
             ":pk": `${this.entityType}#`,
           },

@@ -42,18 +42,11 @@ export type Task = {
 // ============================================================================
 
 /**
- * Mock user locations - simulates data from backend.
- * In production, this would come from an API endpoint.
- */
-export const MOCK_LOCATIONS: Location[] = [
-  { id: "loc-1", name: "Downtown Store" },
-  { id: "loc-2", name: "Mall Location" },
-  { id: "loc-3", name: "Airport Branch" },
-];
-
-/**
  * Mock tasks database - organized by location ID.
  * Each location has its own set of tasks.
+ * 
+ * NOTE: Location data now comes from the database via getLocations() server function.
+ * This component should be updated to accept locations as a prop.
  */
 const MOCK_TASKS_DB: Record<string, Task[]> = {
   "loc-1": [
@@ -487,8 +480,11 @@ export function TaskList(props: TaskListProps) {
  * - Mobile-first responsive layout
  * - Consistent spacing with dashboard cards
  * - localStorage persistence across sessions
+ * 
+ * NOTE: This component uses mock location data. To use real database locations,
+ * pass locations as a prop or fetch them using getLocations() from ~/server/actions/locations
  */
-export default function LocationTaskSelector() {
+export default function LocationTaskSelector(props?: { locations?: Location[] }) {
   /**
    * Currently selected location ID.
    * Shared between LocationSelector (writes) and TaskList (reads).
@@ -496,11 +492,10 @@ export default function LocationTaskSelector() {
   const [selectedLocationId, setSelectedLocationId] = createSignal<string>("");
 
   /**
-   * Mock user locations.
-   * In production, this would be fetched from an API endpoint
-   * based on the authenticated user's access rights.
+   * Use provided locations or empty array as fallback
+   * In production, locations should be passed from parent component
    */
-  const locations = MOCK_LOCATIONS;
+  const locations = props?.locations || [];
 
   return (
     <div class="w-full">

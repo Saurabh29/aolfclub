@@ -96,18 +96,20 @@ export type Lead = z.infer<typeof LeadSchema>;
  */
 export const LocationSchema = BaseEntitySchema.extend({
   entityType: z.literal("Location"),
+  locationId: z.string().min(1), // URL-friendly identifier
   name: z.string().min(1),
   address: z.string().optional(),
+  description: z.string().optional(),
+  // Google Places API data
+  placeId: z.string().optional(),
+  formattedAddress: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  // Legacy fields (kept for backward compatibility)
   city: z.string().optional(),
   state: z.string().optional(),
   country: z.string().optional(),
   postalCode: z.string().optional(),
-  coordinates: z
-    .object({
-      lat: z.number(),
-      lng: z.number(),
-    })
-    .optional(),
   capacity: z.number().int().positive().optional(),
 }).strip();
 

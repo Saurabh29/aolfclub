@@ -3,8 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import GooglePlaceSearch, { type PlaceDetails } from "~/components/GooglePlaceSearch";
-import { locationsApi } from "~/lib/user-api";
+import { createLocation, updateLocation } from "~/server/actions/locations";
 import type { Location } from "~/lib/schemas/ui/location.schema";
+import type { AddLocationForm } from "~/lib/schemas/ui/location.schema";
 
 type AddLocationModalProps = {
   open: boolean;
@@ -125,7 +126,7 @@ export default function AddLocationModal(props: AddLocationModalProps) {
 
     setSaving(true);
     try {
-      const locationData: any = {
+      const locationData: AddLocationForm = {
         locationId: locationId(),
         name: name(),
         address: address() || undefined,
@@ -136,12 +137,17 @@ export default function AddLocationModal(props: AddLocationModalProps) {
         longitude: longitude(),
       };
 
+      let result;
       if (props.editingLocation) {
         // Update existing location
-        await locationsApi.update(props.editingLocation.id, locationData);
+        result = await updateLocation(props.editingLocation.id, locationData);
       } else {
         // Create new location
-        await locationsApi.create(locationData);
+        result = await createLocation(locationData);
+      }
+
+      if (!result.success) {
+        throw new Error(result.error || "Failed to save location");
       }
 
       resetForm();
@@ -149,7 +155,7 @@ export default function AddLocationModal(props: AddLocationModalProps) {
       props.onClose();
     } catch (error) {
       console.error("Failed to save location:", error);
-      alert("Failed to save location. Please try again.");
+      alert(error instanceof Error ? error.message : "Failed to save location. Please try again.");
     } finally {
       setSaving(false);
     }

@@ -2,7 +2,7 @@ import { createResource, For, Show, createSignal } from "solid-js";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import AddLocationModal from "~/components/AddLocationModal";
-import { locationsApi } from "~/lib/user-api";
+import { getLocations, deleteLocation } from "~/server/actions/locations";
 import type { Location } from "~/lib/schemas/ui/location.schema";
 
 /**
@@ -16,7 +16,13 @@ export default function LocationsPage() {
   // ============================================================================
 
   // Use createResource for proper async data handling
-  const [locations, { refetch, mutate }] = createResource(() => locationsApi.getAll());
+  const [locations, { refetch, mutate }] = createResource(async () => {
+    const result = await getLocations();
+    if (!result.success) {
+      throw new Error(result.error || "Failed to load locations");
+    }
+    return result.data;
+  });
   
   const [showAddModal, setShowAddModal] = createSignal(false);
   const [editingLocation, setEditingLocation] = createSignal<Location | null>(null);
@@ -41,7 +47,10 @@ export default function LocationsPage() {
     }
 
     try {
-      await locationsApi.delete(locationId);
+      const result = await deleteLocation(locationId);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
       refetch();
     } catch (error) {
       console.error("Failed to delete location:", error);

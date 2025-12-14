@@ -191,36 +191,6 @@ export const MOCK_TASKS: Task[] = [
   },
 ];
 
-/**
- * Mock Locations Database
- */
-export const MOCK_LOCATIONS: Location[] = [
-  {
-    id: "loc-1",
-    name: "Main Center",
-    address: "123 Main Street, San Francisco, CA 94102",
-    description: "Primary Art of Living center with meditation hall and classrooms",
-    createdAt: "2025-01-10T10:00:00Z",
-    updatedAt: "2025-01-10T10:00:00Z",
-  },
-  {
-    id: "loc-2",
-    name: "Downtown Branch",
-    address: "456 Market Street, San Francisco, CA 94103",
-    description: "Downtown location for corporate programs and workshops",
-    createdAt: "2025-02-15T10:00:00Z",
-    updatedAt: "2025-02-15T10:00:00Z",
-  },
-  {
-    id: "loc-3",
-    name: "Community Hall",
-    address: "789 Oak Avenue, Oakland, CA 94601",
-    description: "Community space for large gatherings and events",
-    createdAt: "2025-03-20T10:00:00Z",
-    updatedAt: "2025-03-20T10:00:00Z",
-  },
-];
-
 // ============================================================================
 // MOCK API FUNCTIONS
 // ============================================================================
@@ -633,85 +603,11 @@ export const tasksApi = {
 // ============================================================================
 
 /**
- * Locations API
+ * Locations API - DEPRECATED
+ * Use server functions from ~/server/actions/locations instead:
+ * - getLocations()
+ * - getLocationById(id)
+ * - createLocation(formData)
+ * - updateLocation(id, formData)
+ * - deleteLocation(id)
  */
-export const locationsApi = {
-  /**
-   * Get all locations
-   */
-  getAll: async (): Promise<Location[]> => {
-    await delay();
-    return [...MOCK_LOCATIONS];
-  },
-
-  /**
-   * Get location by ID
-   */
-  getById: async (id: string): Promise<Location | null> => {
-    await delay();
-    return MOCK_LOCATIONS.find((l) => l.id === id) || null;
-  },
-
-  /**
-   * Create new location
-   */
-  create: async (location: Omit<Location, "id" | "createdAt" | "updatedAt">): Promise<Location> => {
-    await delay();
-    
-    // Validate input
-    const validated = LocationSchema.omit({ id: true, createdAt: true, updatedAt: true }).parse(location);
-    
-    const newLocation: Location = {
-      ...validated,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    MOCK_LOCATIONS.push(newLocation);
-    return newLocation;
-  },
-
-  /**
-   * Update existing location
-   */
-  update: async (id: string, updates: Partial<Location>): Promise<Location | null> => {
-    await delay();
-    const index = MOCK_LOCATIONS.findIndex((l) => l.id === id);
-    if (index === -1) return null;
-
-    // Validate partial updates
-    const validated = LocationSchema.partial().omit({ id: true, createdAt: true, updatedAt: true }).parse(updates);
-
-    MOCK_LOCATIONS[index] = {
-      ...MOCK_LOCATIONS[index],
-      ...validated,
-      updatedAt: new Date().toISOString(),
-    };
-    return MOCK_LOCATIONS[index];
-  },
-
-  /**
-   * Delete location
-   */
-  delete: async (id: string): Promise<boolean> => {
-    await delay();
-    const index = MOCK_LOCATIONS.findIndex((l) => l.id === id);
-    if (index === -1) return false;
-
-    MOCK_LOCATIONS.splice(index, 1);
-    return true;
-  },
-
-  /**
-   * Search locations by name or address
-   */
-  search: async (query: string): Promise<Location[]> => {
-    await delay();
-    const lowerQuery = query.toLowerCase();
-    return MOCK_LOCATIONS.filter(
-      (l) =>
-        l.name.toLowerCase().includes(lowerQuery) ||
-        (l.address && l.address.toLowerCase().includes(lowerQuery))
-    );
-  },
-};

@@ -1,12 +1,13 @@
 import { A, useLocation } from "@solidjs/router";
-import { For, Show, createSignal } from "solid-js";
+import { For, Show, createSignal, createResource } from "solid-js";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
 import { cn } from "~/lib/utils";
 import { NavigationItemSchema, SummaryCardSchema, type NavigationItem, type SummaryCard } from "~/lib/schemas/ui/dashboard.schema";
 import AuthDropdown from "~/components/AuthDropdown";
-import { MOCK_LOCATIONS, TaskList, type Location } from "~/components/LocationTaskSelector";
+import { TaskList, type Location } from "~/components/LocationTaskSelector";
+import { getLocations } from "~/server/actions/locations";
 
 // ============================================================================
 // SAMPLE DATA
@@ -208,11 +209,20 @@ function MobileBottomNav() {
 
 export default function Dashboard() {
   const [selectedLocationId, setSelectedLocationId] = createSignal<string>("");
-  const locations = MOCK_LOCATIONS;
+  
+  // Fetch locations from database
+  const [locationsData] = createResource(async () => {
+    const result = await getLocations();
+    if (!result.success) {
+      console.error("Failed to load locations:", result.error);
+      return [];
+    }
+    return result.data || [];
+  });
 
   return (
     <div class="min-h-screen bg-gray-50">
-      <Header locations={locations} onLocationChange={setSelectedLocationId} />
+      <Header locations={locationsData() || []} onLocationChange={setSelectedLocationId} />
       <DesktopSidebar />
       <MobileBottomNav />
 
