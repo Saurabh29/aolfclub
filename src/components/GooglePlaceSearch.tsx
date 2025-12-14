@@ -42,64 +42,33 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
   // ============================================================================
 
   const loadGoogleMapsAPI = async () => {
-    // Check for existing script
-    const existingScript = document.querySelector(
-      'script[src*="maps.googleapis.com"]'
-    ) as HTMLScriptElement;
-    
-    if (existingScript) {
-      // Wait for it to load if it's still loading
-      if (typeof google !== "undefined" && google.maps?.places) {
-        initializePlaceAutocomplete();
-        return;
-      }
-      
-      // Poll for places library to be available
-      const checkPlacesLoaded = setInterval(() => {
-        if (typeof google !== "undefined" && google.maps?.places) {
-          clearInterval(checkPlacesLoaded);
-          initializePlaceAutocomplete();
-        }
-      }, 100);
-      
-      // Timeout after 10 seconds
-      setTimeout(() => {
-        clearInterval(checkPlacesLoaded);
-        if (isLoading()) {
-          setError("Google Places library failed to load");
-          setIsLoading(false);
-        }
-      }, 10000);
-      return;
-    }
-
     const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyATU_c30CPNnUzXQ7kJtj9DKA0HpVtJDn0";
     
     return new Promise<void>((resolve, reject) => {
+      // Check if already loaded
+      if (typeof google !== "undefined" && google.maps?.places) {
+        resolve();
+        return;
+      }
+
+      // Check for existing script
+      const existingScript = document.querySelector(
+        'script[src*="maps.googleapis.com"]'
+      ) as HTMLScriptElement;
+      
+      if (existingScript) {
+        // Wait for existing script to load
+        existingScript.addEventListener('load', () => resolve());
+        existingScript.addEventListener('error', () => reject(new Error("Failed to load Google Maps API")));
+        return;
+      }
+
       const scriptElement = document.createElement("script");
-      scriptElement.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places&loading=async&v=weekly`;
+      scriptElement.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places&v=weekly`;
       scriptElement.async = true;
       scriptElement.defer = true;
-      scriptElement.onload = () => {
-        // Poll for places library since loading=async means libraries load separately
-        const checkPlacesLoaded = setInterval(() => {
-          if (typeof google !== "undefined" && google.maps?.places) {
-            clearInterval(checkPlacesLoaded);
-            resolve();
-          }
-        }, 100);
-        
-        // Timeout after 10 seconds
-        setTimeout(() => {
-          clearInterval(checkPlacesLoaded);
-          if (!google?.maps?.places) {
-            reject(new Error("Google Places library failed to load"));
-          }
-        }, 10000);
-      };
-      scriptElement.onerror = () => {
-        reject(new Error("Failed to load Google Maps API"));
-      };
+      scriptElement.onload = () => resolve();
+      scriptElement.onerror = () => reject(new Error("Failed to load Google Maps API"));
       document.head.appendChild(scriptElement);
     });
   };
@@ -172,6 +141,7 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
     try {
       await loadGoogleMapsAPI();
       initializePlaceAutocomplete();
+      setIsLoading(false);
     } catch (err) {
       console.error(err);
       setError((err as Error).message || "Failed to initialize map components.");
