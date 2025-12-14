@@ -46,6 +46,8 @@ type AuthDropdownProps = {
 };
 
 export default function AuthDropdown(props: AuthDropdownProps) {
+  const auth = useAuth();
+  
   /**
    * Currently selected location ID.
    * Persisted in localStorage and restored on mount.
@@ -53,11 +55,9 @@ export default function AuthDropdown(props: AuthDropdownProps) {
   const [selectedLocationId, setSelectedLocationId] = createSignal<string>("");
 
   /**
-   * Mock authentication state.
-   * TODO: Replace with actual auth context/store
-   * Set to true by default to simulate logged-in user for testing
+   * Check authentication status from auth context
    */
-  const [isAuthenticated, setIsAuthenticated] = createSignal(true);
+  const isAuthenticated = () => auth.status() === 'authenticated';
 
   /**
    * Initialize selected location on mount.
@@ -87,35 +87,12 @@ export default function AuthDropdown(props: AuthDropdownProps) {
       props.onLocationChange(locationId);
     }
   };
-  /**
-   * Placeholder: Initiates Google OAuth login flow
-   */
-  const loginWithGoogle = () => {
-    console.log("🔐 Initiating Google OAuth login...");
-    // TODO: Implement actual Google OAuth flow
-    // Example: window.location.href = '/auth/google';
-    // Mock login for demo
-    setIsAuthenticated(true);
-  };
 
   /**
-   * Placeholder: Initiates GitHub OAuth login flow
-   */
-  const loginWithGithub = () => {
-    console.log("🔐 Initiating GitHub OAuth login...");
-    // TODO: Implement actual GitHub OAuth flow
-    // Example: window.location.href = '/auth/github';
-    // Mock login for demo
-    setIsAuthenticated(true);
-  };
-
-  /**
-   * Placeholder: Handle sign out
+   * Handle sign out
    */
   const handleSignOut = () => {
-    console.log("🚪 Signing out...");
-    // TODO: Implement actual sign out logic
-    setIsAuthenticated(false);
+    auth.signOut({ redirectTo: '/' });
   };
 
   return (
@@ -152,8 +129,8 @@ export default function AuthDropdown(props: AuthDropdownProps) {
         <Show when={isAuthenticated()}>
           {/* User Info Section */}
           <div class="px-4 py-3">
-            <p class="text-sm font-semibold text-gray-900">Alex Johnson</p>
-            <p class="text-xs text-gray-600">alex@example.com</p>
+            <p class="text-sm font-semibold text-gray-900">{auth.session()?.user?.name || 'User'}</p>
+            <p class="text-xs text-gray-600">{auth.session()?.user?.email || ''}</p>
           </div>
 
           <DropdownMenuSeparator />
@@ -268,7 +245,7 @@ export default function AuthDropdown(props: AuthDropdownProps) {
           <DropdownMenuSeparator />
 
           <DropdownMenuItem
-            onSelect={loginWithGoogle}
+            onSelect={() => auth.signIn('google', { redirectTo: '/' })}
             class={cn(
               "flex items-center gap-3",
               "px-2 py-3",
@@ -302,7 +279,7 @@ export default function AuthDropdown(props: AuthDropdownProps) {
           </DropdownMenuItem>
 
           <DropdownMenuItem
-            onSelect={loginWithGithub}
+            onSelect={() => auth.signIn('github', { redirectTo: '/' })}
             class={cn(
               "flex items-center gap-3",
               "px-2 py-3",
