@@ -169,29 +169,6 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
   };
 
   onMount(async () => {
-    // Add global styles for Google Place autocomplete input
-    const styleId = 'gmp-place-autocomplete-styles';
-    if (!document.getElementById(styleId)) {
-      const style = document.createElement('style');
-      style.id = styleId;
-      style.textContent = `
-        gmp-place-autocomplete input {
-          border: 1px solid rgb(209, 213, 219) !important;
-          border-radius: 0.375rem !important;
-          padding: 0.5rem 0.75rem !important;
-          font-size: 0.875rem !important;
-          width: 100% !important;
-          box-sizing: border-box !important;
-        }
-        gmp-place-autocomplete input:focus {
-          outline: 2px solid rgb(59, 130, 246) !important;
-          outline-offset: 2px !important;
-          border-color: rgb(59, 130, 246) !important;
-        }
-      `;
-      document.head.appendChild(style);
-    }
-
     try {
       await loadGoogleMapsAPI();
       initializePlaceAutocomplete();
