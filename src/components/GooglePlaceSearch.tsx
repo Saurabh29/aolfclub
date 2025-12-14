@@ -14,18 +14,14 @@ type GooglePlaceSearchProps = {
   placeholder?: string;
   disabled?: boolean;
   class?: string;
+  /** Optional callback to run after the input is successfully focused */
+  onFocusReady?: () => void;
 };
 
 /**
  * GooglePlaceSearch Component
  * 
  * Reusable Google Places autocomplete search component using PlaceAutocompleteElement.
- * 
- * Features:
- * - Google Places Web Component (PlaceAutocompleteElement)
- * - Native autocomplete UI provided by Google
- * - Auto-loads Google Maps API if not already loaded
- * - Handles API loading states and errors
  */
 export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
   // ============================================================================
@@ -36,11 +32,13 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
   const [error, setError] = createSignal<string | null>(null);
   
   let autocompleteContainerRef: HTMLDivElement | undefined;
+  let placeAutocompleteElement: HTMLElement & { value?: string } | undefined;
 
   // ============================================================================
   // GOOGLE PLACES API SETUP  
   // ============================================================================
 
+  // Make sure to handle the actual API key securely in production.
   const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyATU_c30CPNnUzXQ7kJtj9DKA0HpVtJDn0";
 
   const loadGoogleMapsAPI = () => {
@@ -57,7 +55,6 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
       ) as HTMLScriptElement;
       
       if (existingScript) {
-        // Wait for existing script to load
         existingScript.addEventListener('load', () => resolve());
         existingScript.addEventListener('error', () => reject(new Error("Failed to load Google Maps API")));
         return;
@@ -74,6 +71,28 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
     });
   };
 
+  /**
+   * Helper function to find and focus the input element inside the Shadow DOM.
+   */
+  const focusInput = () => {
+    if (placeAutocompleteElement) {
+      // Access the input element via the shadowRoot
+      const shadowRoot = placeAutocompleteElement.shadowRoot;
+      if (shadowRoot) {
+        const input = shadowRoot.querySelector('input');
+        if (input) {
+          input.focus();
+          // Optional: Select all text in the input
+          input.select(); 
+          // Notify parent components that focus is complete
+          props.onFocusReady?.(); 
+          return true; // Focused successfully
+        }
+      }
+    }
+    return false; // Could not find or focus
+  };
+
   const initializePlaceAutocomplete = async () => {
     if (!autocompleteContainerRef) {
       setError("Autocomplete container not found.");
@@ -82,7 +101,6 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
     }
 
     try {
-      // Wait for google.maps.places to be available
       if (!google?.maps?.places) {
         throw new Error("Google Maps Places library not loaded");
       }
@@ -94,11 +112,14 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
 
       // Create the PlaceAutocompleteElement
       const placeAutocomplete = new (google.maps.places as any).PlaceAutocompleteElement();
+      placeAutocompleteElement = placeAutocomplete; // Store reference
 
-      // Add border styling directly to the web component
+      // Apply styles (Tailwind classes can be applied via JS if needed, but direct style works)
       placeAutocomplete.style.border = "1px solid #d1d5db";
       placeAutocomplete.style.borderRadius = "0.375rem";
       placeAutocomplete.style.width = "100%";
+      // Use the placeholder prop
+      placeAutocomplete.setAttribute('placeholder', props.placeholder || 'Enter a location');
 
       // Append it to container
       autocompleteContainerRef.appendChild(placeAutocomplete);
@@ -122,6 +143,17 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
         
         props.onPlaceSelect(placeDetails);
       });
+
+      // --- CRITICAL CHANGE FOR FOCUS ---
+      // When inside a modal, you often need to defer the focus call 
+      // until the modal library has finished its own rendering/focus management.
+
+      // Method 1: Short timeout (works in most simple cases)
+      setTimeout(focusInput, 100); 
+
+      // Method 2: If using a specific modal library (like Headless UI, Shadcn/ui Dialog, etc.), 
+      // you should instead call `focusInput()` from the parent component 
+      // *after* the modal is fully visible/open using the `onFocusReady` prop callback.
 
       setIsLoading(false);
     } catch (err) {
