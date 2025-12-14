@@ -7,7 +7,7 @@ import { createLocation, updateLocation } from "~/server/actions/locations";
 import type { Location } from "~/lib/schemas/ui/location.schema";
 import type { AddLocationForm } from "~/lib/schemas/ui/location.schema";
 
-type AddLocationModalProps = {
+type AddLocationDialogProps = {
   open: boolean;
   onClose: () => void;
   onSave?: () => void; // Optional callback after successful save
@@ -15,9 +15,9 @@ type AddLocationModalProps = {
 };
 
 /**
- * AddLocationModal Component
+ * AddLocationDialog Component
  * 
- * Modal dialog for adding or editing a location.
+ * Dialog for adding or editing a location.
  * 
  * Features:
  * - Toggle between Google Places autocomplete and Manual entry
@@ -29,7 +29,7 @@ type AddLocationModalProps = {
  * - Form validation
  * - Save/Cancel actions
  */
-export default function AddLocationModal(props: AddLocationModalProps) {
+export default function AddLocationDialog(props: AddLocationDialogProps) {
   // ============================================================================
   // STATE
   // ============================================================================

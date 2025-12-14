@@ -37,7 +37,11 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
   // ============================================================================
 
   // Make sure to handle the actual API key securely in production.
-  const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyATU_c30CPNnUzXQ7kJtj9DKA0HpVtJDn0";
+  const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  
+  if (!API_KEY) {
+    console.error("Google Maps API key not found. Please set VITE_GOOGLE_MAPS_API_KEY in .env.local");
+  }
 
   const loadGoogleMapsAPI = () => {
     return new Promise<void>((resolve, reject) => {
