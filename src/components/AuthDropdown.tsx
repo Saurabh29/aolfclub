@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
+import { useAuth } from '@solid-mediakit/auth/client';
 
 /**
  * Location type definition
