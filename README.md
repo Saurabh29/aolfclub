@@ -30,11 +30,13 @@ A modern web application built with SolidJS for managing educational centers wit
 ## 🛠️ Getting Started
 
 ### 1. Install Dependencies
+
 ```bash
 pnpm install
 ```
 
 ### 2. Configure Environment Variables
+
 Create a `.env` file in the root directory:
 
 ```bash
@@ -62,6 +64,7 @@ VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ```
 
 ### 3. Run Development Server
+
 ```bash
 pnpm dev
 ```
@@ -69,6 +72,7 @@ pnpm dev
 The app will be available at `http://localhost:3000`
 
 ### 4. Build for Production
+
 ```bash
 pnpm build
 pnpm start
@@ -88,6 +92,7 @@ All documentation is located in the `docs/` folder:
 ## 🗄️ Database Architecture
 
 ### Single Table Design (No GSI)
+
 All entities are stored in one DynamoDB table using composite keys:
 
 - **Primary Keys**: `PK: "EntityType#uuid"` + `SK: "METADATA"`
@@ -96,6 +101,7 @@ All entities are stored in one DynamoDB table using composite keys:
 - **Queries**: Use `begins_with(SK, "PREFIX#")` for one-to-many
 
 ### Entity Types
+
 - **User** - All user types (teacher, volunteer, member, guest, admin)
 - **Location** - Educational centers
 - **UserGroup** - Logical grouping of users
@@ -107,6 +113,7 @@ All entities are stored in one DynamoDB table using composite keys:
 ## 🔐 Permission System
 
 ### Hierarchy
+
 ```
 User → UserGroup → Role → Permission
 ```
@@ -114,6 +121,7 @@ User → UserGroup → Role → Permission
 ### User Creation Workflows
 
 #### 1. OAuth Login (Type Unknown)
+
 ```typescript
 {
   userType: null,              // Assigned by admin later
@@ -122,6 +130,7 @@ User → UserGroup → Role → Permission
 ```
 
 #### 2. CSV Import (Type Known)
+
 ```typescript
 {
   userType: "teacher",         // Known from CSV
@@ -136,11 +145,13 @@ User → UserGroup → Role → Permission
 ## 🧪 Testing
 
 ### Database Connection Test
+
 ```bash
 pnpm db:test
 ```
 
 ### Run DynamoDB Local (for development)
+
 See [Database Repositories](docs/DATABASE_REPOSITORIES.md) for setup instructions.
 
 ## 📁 Project Structure
@@ -189,16 +200,19 @@ aolfclub/
 The project uses [solid-ui](https://www.solid-ui.com/) component library built on Kobalte.
 
 ### Installing New Components
+
 ```bash
 pnpx solidui-cli@latest add <component-name>
 ```
 
 ### Available Components
+
 Button, Card, Dialog, Input, Select, Table, Badge, Avatar, Dropdown, Tabs, and more...
 
 ## 🔧 Common Tasks
 
 ### Adding a New Entity Type
+
 1. Create DB schema in `src/lib/schemas/db/`
 2. Create UI schema in `src/lib/schemas/ui/`
 3. Add to `AllEntityTypeSchema` in `base.schema.ts`
@@ -207,24 +221,25 @@ Button, Card, Dialog, Input, Select, Table, Badge, Avatar, Dropdown, Tabs, and m
 6. Create UI page with `createResource` for data loading
 
 ### Creating Server Actions
+
 ```typescript
 "use server"; // File-level directive
 
 export async function myAction(input: UISchema) {
   "use server"; // Function-level directive
-  
+
   // 1. Validate input
   const validated = UISchema.parse(input);
-  
+
   // 2. Transform to DB entity
   const entity = { ...validated, id: ulid(), ... };
-  
+
   // 3. Validate entity
   DBSchema.parse(entity);
-  
+
   // 4. Save via repository
   await repository.create(entity);
-  
+
   return { success: true, data: entity };
 }
 ```
@@ -242,4 +257,3 @@ This is a proof-of-concept project. For major changes, please open an issue firs
 - Built with [SolidJS](https://www.solidjs.com/)
 - UI components from [solid-ui](https://www.solid-ui.com/)
 - Styled with [Tailwind CSS](https://tailwindcss.com/)
-

@@ -17,13 +17,13 @@ import { cn } from "~/lib/utils";
 
 /**
  * UserTable Component (UM-5)
- * 
+ *
  * Displays a table of users with:
  * - Checkbox selection
  * - User details (Name, Email, Phone, Role)
  * - Programs (for Members): "Done: ... | Want: ..."
  * - Edit/Delete actions
- * 
+ *
  * Props:
  * - users: Array of users to display
  * - selectedIds: Currently selected user IDs
@@ -45,14 +45,19 @@ export function UserTable(props: UserTableProps) {
    * Check if all users are selected
    */
   const isAllSelected = () => {
-    return props.users.length > 0 && props.selectedIds.length === props.users.length;
+    return (
+      props.users.length > 0 && props.selectedIds.length === props.users.length
+    );
   };
 
   /**
    * Check if some (but not all) users are selected
    */
   const isSomeSelected = () => {
-    return props.selectedIds.length > 0 && props.selectedIds.length < props.users.length;
+    return (
+      props.selectedIds.length > 0 &&
+      props.selectedIds.length < props.users.length
+    );
   };
 
   /**
@@ -62,7 +67,7 @@ export function UserTable(props: UserTableProps) {
     if (isAllSelected()) {
       props.onSelectionChange([]);
     } else {
-      props.onSelectionChange(props.users.map(u => u.id));
+      props.onSelectionChange(props.users.map((u) => u.id));
     }
   };
 
@@ -72,7 +77,7 @@ export function UserTable(props: UserTableProps) {
   const handleSelect = (userId: string) => {
     const isSelected = props.selectedIds.includes(userId);
     if (isSelected) {
-      props.onSelectionChange(props.selectedIds.filter(id => id !== userId));
+      props.onSelectionChange(props.selectedIds.filter((id) => id !== userId));
     } else {
       props.onSelectionChange([...props.selectedIds, userId]);
     }
@@ -85,15 +90,17 @@ export function UserTable(props: UserTableProps) {
    */
   const formatPrograms = (user: User) => {
     if (user.role === UserRole.MEMBER) {
-      const done = user.programsDone.length > 0 ? user.programsDone.join(", ") : "None";
-      const want = user.programsWant.length > 0 ? user.programsWant.join(", ") : "None";
+      const done =
+        user.programsDone.length > 0 ? user.programsDone.join(", ") : "None";
+      const want =
+        user.programsWant.length > 0 ? user.programsWant.join(", ") : "None";
       return `Done: ${done} | Want: ${want}`;
     }
-    
+
     if (user.programsWant.length > 0) {
       return user.programsWant.join(", ");
     }
-    
+
     return "-";
   };
 
@@ -131,7 +138,9 @@ export function UserTable(props: UserTableProps) {
           >
             <For each={props.users}>
               {(user) => (
-                <TableRow class={cn(props.selectedIds.includes(user.id) && "bg-sky-50")}>
+                <TableRow
+                  class={cn(props.selectedIds.includes(user.id) && "bg-sky-50")}
+                >
                   <TableCell>
                     <Checkbox
                       checked={props.selectedIds.includes(user.id)}
@@ -139,18 +148,24 @@ export function UserTable(props: UserTableProps) {
                       aria-label={`Select ${user.fullName}`}
                     />
                   </TableCell>
-                  <TableCell class="font-medium text-gray-900">{user.fullName}</TableCell>
+                  <TableCell class="font-medium text-gray-900">
+                    {user.fullName}
+                  </TableCell>
                   <TableCell class="text-gray-600">{user.email}</TableCell>
                   <TableCell class="text-gray-600">{user.phone}</TableCell>
                   <TableCell>
                     <Badge
-                      variant={user.role === UserRole.ADMIN ? "default" : "secondary"}
+                      variant={
+                        user.role === UserRole.ADMIN ? "default" : "secondary"
+                      }
                       class="text-xs"
                     >
                       {user.role}
                     </Badge>
                   </TableCell>
-                  <TableCell class="text-sm text-gray-600">{formatPrograms(user)}</TableCell>
+                  <TableCell class="text-sm text-gray-600">
+                    {formatPrograms(user)}
+                  </TableCell>
                   <TableCell class="text-right">
                     <div class="flex items-center justify-end gap-2">
                       <Button

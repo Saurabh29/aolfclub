@@ -4,7 +4,13 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Card, CardContent } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { cn } from "~/lib/utils";
 import { tasksApi, usersApi } from "~/lib/user-api";
 import { TaskStatus, TaskPriority } from "~/lib/schemas/ui/task.schema";
@@ -12,7 +18,7 @@ import { UserRole } from "~/lib/schemas/ui/user.schema";
 
 /**
  * Task List Page - Table View
- * 
+ *
  * Features:
  * - Table with columns: Title, Assigned To, Leads/Participants Count, Priority, Due Date, Status
  * - Search by title/description
@@ -28,9 +34,11 @@ export default function TaskListPage() {
   // ============================================================================
 
   // Use createResource for proper async data handling
-  const [tasks, { refetch: refetchTasks }] = createResource(() => tasksApi.getAll());
+  const [tasks, { refetch: refetchTasks }] = createResource(() =>
+    tasksApi.getAll(),
+  );
   const [users] = createResource(() => usersApi.getAll());
-  
+
   const [searchQuery, setSearchQuery] = createSignal("");
   const [filterStatus, setFilterStatus] = createSignal<string>("all");
   const [filterPriority, setFilterPriority] = createSignal<string>("all");
@@ -42,7 +50,9 @@ export default function TaskListPage() {
 
   const teachersAndVolunteers = createMemo(() => {
     const userList = users() || [];
-    return userList.filter((u) => u.role === UserRole.TEACHER || u.role === UserRole.VOLUNTEER);
+    return userList.filter(
+      (u) => u.role === UserRole.TEACHER || u.role === UserRole.VOLUNTEER,
+    );
   });
 
   const filteredTasks = createMemo(() => {
@@ -54,7 +64,7 @@ export default function TaskListPage() {
       filtered = filtered.filter(
         (t) =>
           t.title.toLowerCase().includes(query) ||
-          t.description.toLowerCase().includes(query)
+          t.description.toLowerCase().includes(query),
       );
     }
 
@@ -70,7 +80,9 @@ export default function TaskListPage() {
 
     // Filter by assignee
     if (filterAssignee() !== "all") {
-      filtered = filtered.filter((t) => t.assignedTo.includes(filterAssignee()));
+      filtered = filtered.filter((t) =>
+        t.assignedTo.includes(filterAssignee()),
+      );
     }
 
     return filtered;
@@ -170,8 +182,18 @@ export default function TaskListPage() {
               </A>
               <A href="/tasks/create">
                 <Button size="sm" class="flex items-center gap-2">
-                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  <svg
+                    class="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 4v16m8-8H4"
+                    />
                   </svg>
                   Create Task
                 </Button>
@@ -191,7 +213,9 @@ export default function TaskListPage() {
               type="search"
               placeholder="Search tasks..."
               value={searchQuery()}
-              onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setSearchQuery(e.currentTarget.value)}
+              onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) =>
+                setSearchQuery(e.currentTarget.value)
+              }
               class="w-full"
             />
           </div>
@@ -200,24 +224,32 @@ export default function TaskListPage() {
           <Select
             value={filterAssignee()}
             onChange={(value) => value && setFilterAssignee(value)}
-            options={["all", ...teachersAndVolunteers().map(u => u.id)]}
+            options={["all", ...teachersAndVolunteers().map((u) => u.id)]}
             placeholder="All Assignees"
             itemComponent={(itemProps) => {
-              const user = teachersAndVolunteers().find(u => u.id === itemProps.item.rawValue);
+              const user = teachersAndVolunteers().find(
+                (u) => u.id === itemProps.item.rawValue,
+              );
               return (
                 <SelectItem item={itemProps.item}>
-                  {itemProps.item.rawValue === "all" ? "All Assignees" : (user?.fullName || "Unknown")}
+                  {itemProps.item.rawValue === "all"
+                    ? "All Assignees"
+                    : user?.fullName || "Unknown"}
                 </SelectItem>
               );
             }}
           >
             <SelectTrigger class="bg-white">
-              <SelectValue<string>>{(state) => {
-                const val = state.selectedOption();
-                if (val === "all") return "All Assignees";
-                const user = teachersAndVolunteers().find(u => u.id === val);
-                return user?.fullName || "All Assignees";
-              }}</SelectValue>
+              <SelectValue<string>>
+                {(state) => {
+                  const val = state.selectedOption();
+                  if (val === "all") return "All Assignees";
+                  const user = teachersAndVolunteers().find(
+                    (u) => u.id === val,
+                  );
+                  return user?.fullName || "All Assignees";
+                }}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent class="bg-white border border-gray-200" />
           </Select>
@@ -226,16 +258,30 @@ export default function TaskListPage() {
           <Select
             value={filterStatus()}
             onChange={(value) => value && setFilterStatus(value)}
-            options={["all", TaskStatus.TO_DO, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED, TaskStatus.DRAFT]}
+            options={[
+              "all",
+              TaskStatus.TO_DO,
+              TaskStatus.IN_PROGRESS,
+              TaskStatus.COMPLETED,
+              TaskStatus.DRAFT,
+            ]}
             placeholder="All Statuses"
             itemComponent={(itemProps) => (
               <SelectItem item={itemProps.item}>
-                {itemProps.item.rawValue === "all" ? "All Statuses" : itemProps.item.rawValue}
+                {itemProps.item.rawValue === "all"
+                  ? "All Statuses"
+                  : itemProps.item.rawValue}
               </SelectItem>
             )}
           >
             <SelectTrigger class="bg-white">
-              <SelectValue<string>>{(state) => state.selectedOption() === "all" ? "All Statuses" : state.selectedOption()}</SelectValue>
+              <SelectValue<string>>
+                {(state) =>
+                  state.selectedOption() === "all"
+                    ? "All Statuses"
+                    : state.selectedOption()
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent class="bg-white border border-gray-200" />
           </Select>
@@ -244,16 +290,29 @@ export default function TaskListPage() {
           <Select
             value={filterPriority()}
             onChange={(value) => value && setFilterPriority(value)}
-            options={["all", TaskPriority.HIGH, TaskPriority.MEDIUM, TaskPriority.LOW]}
+            options={[
+              "all",
+              TaskPriority.HIGH,
+              TaskPriority.MEDIUM,
+              TaskPriority.LOW,
+            ]}
             placeholder="All Priorities"
             itemComponent={(itemProps) => (
               <SelectItem item={itemProps.item}>
-                {itemProps.item.rawValue === "all" ? "All Priorities" : itemProps.item.rawValue}
+                {itemProps.item.rawValue === "all"
+                  ? "All Priorities"
+                  : itemProps.item.rawValue}
               </SelectItem>
             )}
           >
             <SelectTrigger class="bg-white">
-              <SelectValue<string>>{(state) => state.selectedOption() === "all" ? "All Priorities" : state.selectedOption()}</SelectValue>
+              <SelectValue<string>>
+                {(state) =>
+                  state.selectedOption() === "all"
+                    ? "All Priorities"
+                    : state.selectedOption()
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent class="bg-white border border-gray-200" />
           </Select>
@@ -303,12 +362,18 @@ export default function TaskListPage() {
                         <tr class="hover:bg-gray-50">
                           <td class="px-6 py-4">
                             <div>
-                              <p class="text-sm font-medium text-gray-900">{task.title}</p>
-                              <p class="text-xs text-gray-500 line-clamp-1">{task.description}</p>
+                              <p class="text-sm font-medium text-gray-900">
+                                {task.title}
+                              </p>
+                              <p class="text-xs text-gray-500 line-clamp-1">
+                                {task.description}
+                              </p>
                             </div>
                           </td>
                           <td class="px-6 py-4">
-                            <p class="text-sm text-gray-900">{getUserNames(task.assignedTo)}</p>
+                            <p class="text-sm text-gray-900">
+                              {getUserNames(task.assignedTo)}
+                            </p>
                           </td>
                           <td class="px-6 py-4">
                             <div class="flex items-center gap-2 text-xs text-gray-600">
@@ -316,9 +381,16 @@ export default function TaskListPage() {
                                 <span>{task.assignedLeads.length} leads</span>
                               </Show>
                               <Show when={task.assignedParticipants.length > 0}>
-                                <span>{task.assignedParticipants.length} members</span>
+                                <span>
+                                  {task.assignedParticipants.length} members
+                                </span>
                               </Show>
-                              <Show when={task.assignedLeads.length === 0 && task.assignedParticipants.length === 0}>
+                              <Show
+                                when={
+                                  task.assignedLeads.length === 0 &&
+                                  task.assignedParticipants.length === 0
+                                }
+                              >
                                 <span class="text-gray-400">None</span>
                               </Show>
                             </div>
@@ -329,12 +401,14 @@ export default function TaskListPage() {
                             </Badge>
                           </td>
                           <td class="px-6 py-4">
-                            <p class={cn(
-                              "text-sm",
-                              isOverdue(task.dueDate, task.status)
-                                ? "text-red-600 font-medium"
-                                : "text-gray-900"
-                            )}>
+                            <p
+                              class={cn(
+                                "text-sm",
+                                isOverdue(task.dueDate, task.status)
+                                  ? "text-red-600 font-medium"
+                                  : "text-gray-900",
+                              )}
+                            >
                               {formatDate(task.dueDate)}
                             </p>
                           </td>
@@ -346,7 +420,9 @@ export default function TaskListPage() {
                           <td class="px-6 py-4 text-right">
                             <div class="flex items-center justify-end gap-2">
                               <button
-                                onClick={() => navigate(`/tasks/edit/${task.id}`)}
+                                onClick={() =>
+                                  navigate(`/tasks/edit/${task.id}`)
+                                }
                                 class="text-blue-600 hover:text-blue-800 text-sm"
                               >
                                 Edit

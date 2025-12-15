@@ -1,9 +1,9 @@
 /**
  * RELATIONSHIP REPOSITORY
- * 
+ *
  * Repository for managing entity relationships (edges in the graph)
  * Server-side only - NO UI concerns
- * 
+ *
  * Handles:
  * - Creating relationships between entities
  * - Finding relationships by source, target, or relation type
@@ -21,19 +21,21 @@ import {
 
 /**
  * Relationship Repository
- * 
+ *
  * Manages entity-to-entity relationships with graph traversal capabilities
  */
-export class RelationshipRepository extends BaseRepository<typeof RelationshipSchema> {
+export class RelationshipRepository extends BaseRepository<
+  typeof RelationshipSchema
+> {
   constructor() {
     super(RelationshipSchema, "Relationship");
   }
 
   /**
    * Create a relationship between two entities
-   * 
+   *
    * Validates the relationship is allowed before creating
-   * 
+   *
    * @param sourceType - Source entity type
    * @param sourceId - Source entity ID
    * @param relation - Relationship type
@@ -48,12 +50,12 @@ export class RelationshipRepository extends BaseRepository<typeof RelationshipSc
     relation: string,
     targetType: string,
     targetId: string,
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>,
   ): Promise<Relationship> {
     // Validate relationship is allowed
     if (!isRelationshipValid(relation, sourceType, targetType)) {
       throw new Error(
-        `Invalid relationship: ${sourceType} cannot have ${relation} relationship with ${targetType}`
+        `Invalid relationship: ${sourceType} cannot have ${relation} relationship with ${targetType}`,
       );
     }
 
@@ -69,7 +71,7 @@ export class RelationshipRepository extends BaseRepository<typeof RelationshipSc
 
   /**
    * Find all relationships from a source entity
-   * 
+   *
    * @param sourceType - Source entity type
    * @param sourceId - Source entity ID
    * @param relation - Optional: filter by relation type
@@ -78,12 +80,13 @@ export class RelationshipRepository extends BaseRepository<typeof RelationshipSc
   async findFromSource(
     sourceType: string,
     sourceId: string,
-    relation?: string
+    relation?: string,
   ): Promise<Relationship[]> {
     const result = await this.list();
-    
+
     return result.items.filter((rel) => {
-      const matchesSource = rel.sourceType === sourceType && rel.sourceId === sourceId;
+      const matchesSource =
+        rel.sourceType === sourceType && rel.sourceId === sourceId;
       const matchesRelation = !relation || rel.relation === relation;
       return matchesSource && matchesRelation;
     });
@@ -91,7 +94,7 @@ export class RelationshipRepository extends BaseRepository<typeof RelationshipSc
 
   /**
    * Find all relationships to a target entity
-   * 
+   *
    * @param targetType - Target entity type
    * @param targetId - Target entity ID
    * @param relation - Optional: filter by relation type
@@ -100,12 +103,13 @@ export class RelationshipRepository extends BaseRepository<typeof RelationshipSc
   async findToTarget(
     targetType: string,
     targetId: string,
-    relation?: string
+    relation?: string,
   ): Promise<Relationship[]> {
     const result = await this.list();
-    
+
     return result.items.filter((rel) => {
-      const matchesTarget = rel.targetType === targetType && rel.targetId === targetId;
+      const matchesTarget =
+        rel.targetType === targetType && rel.targetId === targetId;
       const matchesRelation = !relation || rel.relation === relation;
       return matchesTarget && matchesRelation;
     });
@@ -113,19 +117,19 @@ export class RelationshipRepository extends BaseRepository<typeof RelationshipSc
 
   /**
    * Find all relationships by relation type
-   * 
+   *
    * @param relation - Relationship type
    * @returns List of relationships
    */
   async findByRelation(relation: string): Promise<Relationship[]> {
     const result = await this.list();
-    
+
     return result.items.filter((rel) => rel.relation === relation);
   }
 
   /**
    * Find a specific relationship between two entities
-   * 
+   *
    * @param sourceType - Source entity type
    * @param sourceId - Source entity ID
    * @param relation - Relationship type
@@ -138,25 +142,25 @@ export class RelationshipRepository extends BaseRepository<typeof RelationshipSc
     sourceId: string,
     relation: string,
     targetType: string,
-    targetId: string
+    targetId: string,
   ): Promise<Relationship | null> {
     const result = await this.list();
-    
+
     const found = result.items.find(
       (rel) =>
         rel.sourceType === sourceType &&
         rel.sourceId === sourceId &&
         rel.relation === relation &&
         rel.targetType === targetType &&
-        rel.targetId === targetId
+        rel.targetId === targetId,
     );
-    
+
     return found || null;
   }
 
   /**
    * Check if a relationship exists
-   * 
+   *
    * @param sourceType - Source entity type
    * @param sourceId - Source entity ID
    * @param relation - Relationship type
@@ -169,21 +173,21 @@ export class RelationshipRepository extends BaseRepository<typeof RelationshipSc
     sourceId: string,
     relation: string,
     targetType: string,
-    targetId: string
+    targetId: string,
   ): Promise<boolean> {
     const rel = await this.findRelationship(
       sourceType,
       sourceId,
       relation,
       targetType,
-      targetId
+      targetId,
     );
     return rel !== null;
   }
 
   /**
    * Delete a specific relationship
-   * 
+   *
    * @param sourceType - Source entity type
    * @param sourceId - Source entity ID
    * @param relation - Relationship type
@@ -196,55 +200,55 @@ export class RelationshipRepository extends BaseRepository<typeof RelationshipSc
     sourceId: string,
     relation: string,
     targetType: string,
-    targetId: string
+    targetId: string,
   ): Promise<boolean> {
     const rel = await this.findRelationship(
       sourceType,
       sourceId,
       relation,
       targetType,
-      targetId
+      targetId,
     );
-    
+
     if (!rel) return false;
-    
+
     await this.delete(rel.id);
     return true;
   }
 
   /**
    * Delete all relationships for an entity (both as source and target)
-   * 
+   *
    * Useful when deleting an entity to clean up its relationships
-   * 
+   *
    * @param entityType - Entity type
    * @param entityId - Entity ID
    * @returns Number of relationships deleted
    */
   async deleteAllForEntity(
     entityType: string,
-    entityId: string
+    entityId: string,
   ): Promise<number> {
     const result = await this.list();
-    
+
     const toDelete = result.items.filter(
       (rel) =>
         (rel.sourceType === entityType && rel.sourceId === entityId) ||
-        (rel.targetType === entityType && rel.targetId === entityId)
+        (rel.targetType === entityType && rel.targetId === entityId),
     );
-    
+
     for (const rel of toDelete) {
       await this.delete(rel.id);
     }
-    
+
     return toDelete.length;
   }
 
   /**
    * Get target entities for a source entity
-   * 
+   *
    * Returns the IDs and types of all entities that the source is related to
-   * 
+   *
    * @param sourceType - Source entity type
    * @param sourceId - Source entity ID
    * @param relation - Optional: filter by relation type
@@ -253,10 +257,14 @@ export class RelationshipRepository extends BaseRepository<typeof RelationshipSc
   async getTargets(
     sourceType: string,
     sourceId: string,
-    relation?: string
+    relation?: string,
   ): Promise<Array<{ type: string; id: string; relation: string }>> {
-    const relationships = await this.findFromSource(sourceType, sourceId, relation);
-    
+    const relationships = await this.findFromSource(
+      sourceType,
+      sourceId,
+      relation,
+    );
+
     return relationships.map((rel) => ({
       type: rel.targetType,
       id: rel.targetId,
@@ -266,9 +274,9 @@ export class RelationshipRepository extends BaseRepository<typeof RelationshipSc
 
   /**
    * Get source entities for a target entity
-   * 
+   *
    * Returns the IDs and types of all entities related to the target
-   * 
+   *
    * @param targetType - Target entity type
    * @param targetId - Target entity ID
    * @param relation - Optional: filter by relation type
@@ -277,10 +285,14 @@ export class RelationshipRepository extends BaseRepository<typeof RelationshipSc
   async getSources(
     targetType: string,
     targetId: string,
-    relation?: string
+    relation?: string,
   ): Promise<Array<{ type: string; id: string; relation: string }>> {
-    const relationships = await this.findToTarget(targetType, targetId, relation);
-    
+    const relationships = await this.findToTarget(
+      targetType,
+      targetId,
+      relation,
+    );
+
     return relationships.map((rel) => ({
       type: rel.sourceType,
       id: rel.sourceId,

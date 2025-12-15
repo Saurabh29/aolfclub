@@ -10,7 +10,7 @@ export const UserRole = {
   LEAD: "Lead",
 } as const;
 
-export type UserRole = typeof UserRole[keyof typeof UserRole];
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 export const LeadSource = {
   WALK_IN: "Walk-in",
@@ -19,14 +19,14 @@ export const LeadSource = {
   UNKNOWN: "Unknown",
 } as const;
 
-export type LeadSource = typeof LeadSource[keyof typeof LeadSource];
+export type LeadSource = (typeof LeadSource)[keyof typeof LeadSource];
 
 export type User = {
   id: string;
   fullName: string;
   email: string;
   phone: string;
-  role: typeof UserRole[keyof typeof UserRole];
+  role: (typeof UserRole)[keyof typeof UserRole];
   programsDone: string[]; // For Members
   programsWant: string[]; // For Members
   enableLogin: boolean;
@@ -40,7 +40,7 @@ export type Lead = {
   fullName: string;
   phone: string;
   email?: string;
-  leadSource: typeof LeadSource[keyof typeof LeadSource];
+  leadSource: (typeof LeadSource)[keyof typeof LeadSource];
   programsWant: string[]; // Leads only have "want to do"
   notes?: string;
   createdAt: string;
@@ -143,20 +143,23 @@ export const MOCK_LEADS: Lead[] = [
 // MOCK API FUNCTIONS
 // ============================================================================
 
-const delay = (ms: number = 300) => new Promise(resolve => setTimeout(resolve, ms));
+const delay = (ms: number = 300) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
 
 export const usersApi = {
   getAll: async (): Promise<User[]> => {
     await delay();
     return [...MOCK_USERS];
   },
-  
+
   getById: async (id: string): Promise<User | null> => {
     await delay();
-    return MOCK_USERS.find(u => u.id === id) || null;
+    return MOCK_USERS.find((u) => u.id === id) || null;
   },
-  
-  create: async (user: Omit<User, "id" | "createdAt" | "updatedAt">): Promise<User> => {
+
+  create: async (
+    user: Omit<User, "id" | "createdAt" | "updatedAt">,
+  ): Promise<User> => {
     await delay();
     const newUser: User = {
       ...user,
@@ -167,12 +170,12 @@ export const usersApi = {
     MOCK_USERS.push(newUser);
     return newUser;
   },
-  
+
   update: async (id: string, updates: Partial<User>): Promise<User | null> => {
     await delay();
-    const index = MOCK_USERS.findIndex(u => u.id === id);
+    const index = MOCK_USERS.findIndex((u) => u.id === id);
     if (index === -1) return null;
-    
+
     MOCK_USERS[index] = {
       ...MOCK_USERS[index],
       ...updates,
@@ -180,21 +183,21 @@ export const usersApi = {
     };
     return MOCK_USERS[index];
   },
-  
+
   delete: async (id: string): Promise<boolean> => {
     await delay();
-    const index = MOCK_USERS.findIndex(u => u.id === id);
+    const index = MOCK_USERS.findIndex((u) => u.id === id);
     if (index === -1) return false;
-    
+
     MOCK_USERS.splice(index, 1);
     return true;
   },
-  
+
   bulkDelete: async (ids: string[]): Promise<number> => {
     await delay();
     let count = 0;
-    ids.forEach(id => {
-      const index = MOCK_USERS.findIndex(u => u.id === id);
+    ids.forEach((id) => {
+      const index = MOCK_USERS.findIndex((u) => u.id === id);
       if (index !== -1) {
         MOCK_USERS.splice(index, 1);
         count++;
@@ -209,13 +212,15 @@ export const leadsApi = {
     await delay();
     return [...MOCK_LEADS];
   },
-  
+
   getById: async (id: string): Promise<Lead | null> => {
     await delay();
-    return MOCK_LEADS.find(l => l.id === id) || null;
+    return MOCK_LEADS.find((l) => l.id === id) || null;
   },
-  
-  create: async (lead: Omit<Lead, "id" | "createdAt" | "updatedAt">): Promise<Lead> => {
+
+  create: async (
+    lead: Omit<Lead, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Lead> => {
     await delay();
     const newLead: Lead = {
       ...lead,
@@ -226,12 +231,12 @@ export const leadsApi = {
     MOCK_LEADS.push(newLead);
     return newLead;
   },
-  
+
   update: async (id: string, updates: Partial<Lead>): Promise<Lead | null> => {
     await delay();
-    const index = MOCK_LEADS.findIndex(l => l.id === id);
+    const index = MOCK_LEADS.findIndex((l) => l.id === id);
     if (index === -1) return null;
-    
+
     MOCK_LEADS[index] = {
       ...MOCK_LEADS[index],
       ...updates,
@@ -239,12 +244,12 @@ export const leadsApi = {
     };
     return MOCK_LEADS[index];
   },
-  
+
   delete: async (id: string): Promise<boolean> => {
     await delay();
-    const index = MOCK_LEADS.findIndex(l => l.id === id);
+    const index = MOCK_LEADS.findIndex((l) => l.id === id);
     if (index === -1) return false;
-    
+
     MOCK_LEADS.splice(index, 1);
     return true;
   },

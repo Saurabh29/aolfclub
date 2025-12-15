@@ -30,41 +30,52 @@ export type CardAction<T = any> = {
 export const GenericCardListPropsSchema = z.object({
   // Core items array - accepts any record type for maximum flexibility
   items: z.array(z.record(z.string(), z.any())),
-  
+
   // Required: function to extract unique ID from items
   getId: z.custom<(item: any) => string>(),
-  
+
   // Required: function to render card header
   renderHeader: z.custom<(item: any) => JSX.Element>(),
-  
+
   // Optional: function to render card content
   renderContent: z.custom<(item: any) => JSX.Element>().optional(),
-  
+
   // Optional: card click handler
   onItemClick: z.custom<(item: any) => void>().optional(),
-  
+
   // Optional: action buttons
   actions: z.array(CardActionSchema).optional(),
-  
+
   // Optional: CSS classes
   cardClass: z.string().optional(),
   listClass: z.string().optional(),
-  
+
   // Optional: grid configuration
-  gridConfig: z.object({
-    cols: z.object({
-      sm: z.number().optional(),
-      md: z.number().optional(),
-      lg: z.number().optional(),
-      xl: z.number().optional(),
-    }).optional(),
-    gap: z.string().optional(),
-  }).optional(),
+  gridConfig: z
+    .object({
+      cols: z
+        .object({
+          sm: z.number().optional(),
+          md: z.number().optional(),
+          lg: z.number().optional(),
+          xl: z.number().optional(),
+        })
+        .optional(),
+      gap: z.string().optional(),
+    })
+    .optional(),
 });
 
-export type GenericCardListProps<T extends Record<string, any> = Record<string, any>> = Omit<
+export type GenericCardListProps<
+  T extends Record<string, any> = Record<string, any>,
+> = Omit<
   z.infer<typeof GenericCardListPropsSchema>,
-  'items' | 'getId' | 'renderHeader' | 'renderContent' | 'onItemClick' | 'actions'
+  | "items"
+  | "getId"
+  | "renderHeader"
+  | "renderContent"
+  | "onItemClick"
+  | "actions"
 > & {
   items: T[];
   getId: (item: T) => string;
@@ -73,4 +84,3 @@ export type GenericCardListProps<T extends Record<string, any> = Record<string, 
   onItemClick?: (item: T) => void;
   actions?: CardAction<T>[];
 };
-

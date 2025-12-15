@@ -1,11 +1,13 @@
 # Google Places API Setup Guide
 
 ## Overview
+
 The Location Management feature includes Google Places Autocomplete API integration for easy location search and address validation.
 
 ## Features
 
 ### Two Input Modes
+
 1. **Google Places Mode** (Default)
    - Search and select locations using Google's database
    - Auto-fills: Location name, formatted address, coordinates
@@ -18,6 +20,7 @@ The Location Management feature includes Google Places Autocomplete API integrat
    - No external dependencies
 
 ### Location Data Captured
+
 - **Name**: Location/place name
 - **Address**: Street address (manual or from Google)
 - **Description**: Custom notes about the location
@@ -67,11 +70,13 @@ Replace `"YOUR_GOOGLE_MAPS_API_KEY"` with your actual API key.
 **For production**, use environment variables instead:
 
 1. Create `.env` file:
+
    ```bash
    VITE_GOOGLE_MAPS_API_KEY=your_actual_api_key_here
    ```
 
 2. Update the code:
+
    ```typescript
    const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
    ```
@@ -91,6 +96,7 @@ Replace `"YOUR_GOOGLE_MAPS_API_KEY"` with your actual API key.
 ### Fallback to Manual Mode
 
 If Google Places API fails to load:
+
 - The component automatically switches to Manual mode
 - Users can still add locations by typing manually
 - You can toggle between modes using the "Switch to Manual/Google" button
@@ -122,21 +128,25 @@ Typical usage for a small organization: **Free** (well within the free tier)
 ## Troubleshooting
 
 ### "Google Maps API failed to load"
+
 - Check your API key is correct
 - Verify Places API is enabled in Google Cloud Console
 - Check browser console for specific error messages
 
 ### "Cannot find name 'google'"
+
 - Make sure the Google Maps script is loaded before use
 - The component waits for the script to load automatically
 - Check network tab to see if the script loaded successfully
 
 ### Predictions not showing
+
 - Ensure you've typed at least 3 characters
 - Check API key restrictions (HTTP referrers)
 - Verify your billing is set up in Google Cloud (required even for free tier)
 
 ### "This API project is not authorized to use this API"
+
 - Enable Places API in your Google Cloud project
 - Wait a few minutes for the changes to propagate
 
@@ -169,6 +179,7 @@ Simply leave the API key as `"YOUR_GOOGLE_MAPS_API_KEY"` and the component will 
 ## Future Enhancements
 
 Potential improvements you could add:
+
 - Display map preview when a location is selected
 - Autocomplete based on user's current location
 - Support for multiple address types (billing, shipping, etc.)

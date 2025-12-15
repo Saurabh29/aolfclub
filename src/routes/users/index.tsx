@@ -3,7 +3,13 @@ import { useNavigate } from "@solidjs/router";
 import { UserTable } from "~/components/UserTable";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
 import AddUserLeadDialog from "~/components/AddUserLeadDialog";
@@ -13,7 +19,7 @@ import { cn } from "~/lib/utils";
 
 /**
  * All Users Page (UM-1)
- * 
+ *
  * Features:
  * - Search bar for filtering users
  * - Add User button
@@ -22,7 +28,7 @@ import { cn } from "~/lib/utils";
  * - Bulk delete functionality
  * - Edit/Delete individual users
  * - Pagination (simplified - showing all for now)
- * 
+ *
  * This is the main user management dashboard.
  */
 
@@ -35,7 +41,7 @@ export default function UsersListPage() {
 
   // Use createResource for proper async data handling
   const [users, { refetch, mutate }] = createResource(() => usersApi.getAll());
-  
+
   const [searchQuery, setSearchQuery] = createSignal("");
   const [selectedIds, setSelectedIds] = createSignal<string[]>([]);
   const [showImportDialog, setShowImportDialog] = createSignal(false);
@@ -55,7 +61,7 @@ export default function UsersListPage() {
         u.fullName.toLowerCase().includes(query) ||
         u.email.toLowerCase().includes(query) ||
         u.phone.includes(query) ||
-        u.role.toLowerCase().includes(query)
+        u.role.toLowerCase().includes(query),
     );
   });
 
@@ -74,7 +80,7 @@ export default function UsersListPage() {
       await usersApi.delete(userId);
       refetch();
       // Remove from selection if it was selected
-      setSelectedIds(selectedIds().filter(id => id !== userId));
+      setSelectedIds(selectedIds().filter((id) => id !== userId));
     } catch (error) {
       console.error("Failed to delete user:", error);
       alert("Failed to delete user");
@@ -84,7 +90,7 @@ export default function UsersListPage() {
   const handleBulkDelete = async () => {
     const count = selectedIds().length;
     if (count === 0) return;
-    
+
     if (!confirm(`Are you sure you want to delete ${count} user(s)?`)) return;
 
     try {
@@ -99,18 +105,20 @@ export default function UsersListPage() {
 
   const handleExport = () => {
     const csv = exportUsersCSV();
-    downloadCSV(csv, `users-${new Date().toISOString().split('T')[0]}.csv`);
+    downloadCSV(csv, `users-${new Date().toISOString().split("T")[0]}.csv`);
   };
 
   const handleImport = (event: Event) => {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
-    
+
     if (!file) return;
 
     // For now, just show success message
     // In production, you would parse the CSV and create users
-    alert(`File "${file.name}" uploaded successfully! (Parsing not implemented in demo)`);
+    alert(
+      `File "${file.name}" uploaded successfully! (Parsing not implemented in demo)`,
+    );
     target.value = ""; // Reset input
   };
 
@@ -155,7 +163,9 @@ export default function UsersListPage() {
               type="search"
               placeholder="Search by name, email, or phone..."
               value={searchQuery()}
-              onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setSearchQuery(e.currentTarget.value)}
+              onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) =>
+                setSearchQuery(e.currentTarget.value)
+              }
               class="w-full"
             />
           </div>
@@ -169,8 +179,18 @@ export default function UsersListPage() {
                 onClick={handleBulkDelete}
                 class="flex items-center gap-2"
               >
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <svg
+                  class="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
                 </svg>
                 Delete ({selectedIds().length})
               </Button>
@@ -182,8 +202,18 @@ export default function UsersListPage() {
               onClick={() => document.getElementById("import-file")?.click()}
               class="flex items-center gap-2"
             >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                />
               </svg>
               Import CSV
             </Button>
@@ -201,19 +231,39 @@ export default function UsersListPage() {
               onClick={handleExport}
               class="flex items-center gap-2"
             >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+                />
               </svg>
               Export CSV
             </Button>
 
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               class="flex items-center gap-2"
               onClick={() => setShowAddDialog(true)}
             >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4v16m8-8H4"
+                />
               </svg>
               Add User
             </Button>
@@ -224,14 +274,16 @@ export default function UsersListPage() {
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardContent class="pt-6">
-              <div class="text-2xl font-bold text-gray-900">{users()?.length || 0}</div>
+              <div class="text-2xl font-bold text-gray-900">
+                {users()?.length || 0}
+              </div>
               <p class="text-xs text-gray-600 mt-1">Total Users</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent class="pt-6">
               <div class="text-2xl font-bold text-gray-900">
-                {users()?.filter(u => u.role === "Member").length || 0}
+                {users()?.filter((u) => u.role === "Member").length || 0}
               </div>
               <p class="text-xs text-gray-600 mt-1">Members</p>
             </CardContent>
@@ -239,7 +291,7 @@ export default function UsersListPage() {
           <Card>
             <CardContent class="pt-6">
               <div class="text-2xl font-bold text-gray-900">
-                {users()?.filter(u => u.role === "Teacher").length || 0}
+                {users()?.filter((u) => u.role === "Teacher").length || 0}
               </div>
               <p class="text-xs text-gray-600 mt-1">Teachers</p>
             </CardContent>
@@ -247,7 +299,7 @@ export default function UsersListPage() {
           <Card>
             <CardContent class="pt-6">
               <div class="text-2xl font-bold text-gray-900">
-                {users()?.filter(u => u.role === "Volunteer").length || 0}
+                {users()?.filter((u) => u.role === "Volunteer").length || 0}
               </div>
               <p class="text-xs text-gray-600 mt-1">Volunteers</p>
             </CardContent>

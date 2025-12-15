@@ -1,7 +1,17 @@
 import type { User, Lead } from "~/lib/schemas/ui/user.schema";
-import { UserRole, LeadSource, UserSchema, LeadSchema } from "~/lib/schemas/ui/user.schema";
+import {
+  UserRole,
+  LeadSource,
+  UserSchema,
+  LeadSchema,
+} from "~/lib/schemas/ui/user.schema";
 import type { Task, Attachment } from "~/lib/schemas/ui/task.schema";
-import { TaskStatus, TaskPriority, TaskRecurrence, TaskSchema } from "~/lib/schemas/ui/task.schema";
+import {
+  TaskStatus,
+  TaskPriority,
+  TaskRecurrence,
+  TaskSchema,
+} from "~/lib/schemas/ui/task.schema";
 import type { Location } from "~/lib/schemas/ui/location.schema";
 import { LocationSchema } from "~/lib/schemas/ui/location.schema";
 
@@ -13,9 +23,9 @@ import { LocationSchema } from "~/lib/schemas/ui/location.schema";
  * Generate a UUID v4 compatible string
  */
 function generateId(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
 }
@@ -144,7 +154,8 @@ export const MOCK_TASKS: Task[] = [
   {
     id: "task-1",
     title: "Prepare HP Session Materials",
-    description: "Create and organize all materials needed for the upcoming Happiness Program session including worksheets, presentation slides, and participant handouts.",
+    description:
+      "Create and organize all materials needed for the upcoming Happiness Program session including worksheets, presentation slides, and participant handouts.",
     assignedTo: ["user-2"], // Sarah Teacher
     dueDate: "2025-12-05T10:00:00Z",
     priority: TaskPriority.HIGH,
@@ -160,7 +171,8 @@ export const MOCK_TASKS: Task[] = [
   {
     id: "task-2",
     title: "Follow up with new leads",
-    description: "Contact all leads from last week's campaign to gauge interest and schedule introductory calls.",
+    description:
+      "Contact all leads from last week's campaign to gauge interest and schedule introductory calls.",
     assignedTo: ["user-3"], // Mike Volunteer
     dueDate: "2025-12-02T17:00:00Z",
     priority: TaskPriority.MEDIUM,
@@ -176,7 +188,8 @@ export const MOCK_TASKS: Task[] = [
   {
     id: "task-3",
     title: "Monthly Member Check-ins",
-    description: "Reach out to all active members to discuss their progress, answer questions, and collect feedback on programs.",
+    description:
+      "Reach out to all active members to discuss their progress, answer questions, and collect feedback on programs.",
     assignedTo: ["user-2", "user-3"], // Sarah Teacher, Mike Volunteer
     dueDate: "2025-12-15T18:00:00Z",
     priority: TaskPriority.LOW,
@@ -198,7 +211,8 @@ export const MOCK_TASKS: Task[] = [
 /**
  * Simulates API delay
  */
-const delay = (ms: number = 400) => new Promise((resolve) => setTimeout(resolve, ms));
+const delay = (ms: number = 400) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * Users API
@@ -223,12 +237,18 @@ export const usersApi = {
   /**
    * Create new user
    */
-  create: async (user: Omit<User, "id" | "createdAt" | "updatedAt">): Promise<User> => {
+  create: async (
+    user: Omit<User, "id" | "createdAt" | "updatedAt">,
+  ): Promise<User> => {
     await delay();
-    
+
     // Validate input
-    const validated = UserSchema.omit({ id: true, createdAt: true, updatedAt: true }).parse(user);
-    
+    const validated = UserSchema.omit({
+      id: true,
+      createdAt: true,
+      updatedAt: true,
+    }).parse(user);
+
     const newUser: User = {
       ...validated,
       id: generateId(),
@@ -248,7 +268,9 @@ export const usersApi = {
     if (index === -1) return null;
 
     // Validate partial updates
-    const validated = UserSchema.partial().omit({ id: true, createdAt: true, updatedAt: true }).parse(updates);
+    const validated = UserSchema.partial()
+      .omit({ id: true, createdAt: true, updatedAt: true })
+      .parse(updates);
 
     MOCK_USERS[index] = {
       ...MOCK_USERS[index],
@@ -296,7 +318,7 @@ export const usersApi = {
       (u) =>
         u.fullName.toLowerCase().includes(lowerQuery) ||
         u.email.toLowerCase().includes(lowerQuery) ||
-        u.phone.includes(lowerQuery)
+        u.phone.includes(lowerQuery),
     );
   },
 };
@@ -324,12 +346,18 @@ export const leadsApi = {
   /**
    * Create new lead
    */
-  create: async (lead: Omit<Lead, "id" | "createdAt" | "updatedAt">): Promise<Lead> => {
+  create: async (
+    lead: Omit<Lead, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Lead> => {
     await delay();
-    
+
     // Validate input
-    const validated = LeadSchema.omit({ id: true, createdAt: true, updatedAt: true }).parse(lead);
-    
+    const validated = LeadSchema.omit({
+      id: true,
+      createdAt: true,
+      updatedAt: true,
+    }).parse(lead);
+
     const newLead: Lead = {
       ...validated,
       id: generateId(),
@@ -349,7 +377,9 @@ export const leadsApi = {
     if (index === -1) return null;
 
     // Validate partial updates
-    const validated = LeadSchema.partial().omit({ id: true, createdAt: true, updatedAt: true }).parse(updates);
+    const validated = LeadSchema.partial()
+      .omit({ id: true, createdAt: true, updatedAt: true })
+      .parse(updates);
 
     MOCK_LEADS[index] = {
       ...MOCK_LEADS[index],
@@ -376,7 +406,15 @@ export const leadsApi = {
  * Export users as CSV
  */
 export const exportUsersCSV = (): string => {
-  const headers = ["Name", "Email", "Phone", "Role", "Programs Done", "Programs Want", "Enable Login"];
+  const headers = [
+    "Name",
+    "Email",
+    "Phone",
+    "Role",
+    "Programs Done",
+    "Programs Want",
+    "Enable Login",
+  ];
   const rows = MOCK_USERS.map((u) => [
     u.fullName,
     u.email,
@@ -397,11 +435,11 @@ export const downloadCSV = (csvContent: string, filename: string) => {
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a");
   const url = URL.createObjectURL(blob);
-  
+
   link.setAttribute("href", url);
   link.setAttribute("download", filename);
   link.style.visibility = "hidden";
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -434,12 +472,18 @@ export const tasksApi = {
   /**
    * Create new task (Step 1)
    */
-  create: async (task: Omit<Task, "id" | "createdAt" | "updatedAt">): Promise<Task> => {
+  create: async (
+    task: Omit<Task, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Task> => {
     await delay();
-    
+
     // Validate input
-    const validated = TaskSchema.omit({ id: true, createdAt: true, updatedAt: true }).parse(task);
-    
+    const validated = TaskSchema.omit({
+      id: true,
+      createdAt: true,
+      updatedAt: true,
+    }).parse(task);
+
     const newTask: Task = {
       ...validated,
       id: generateId(),
@@ -460,7 +504,9 @@ export const tasksApi = {
     if (index === -1) return null;
 
     // Validate partial updates
-    const validated = TaskSchema.partial().omit({ id: true, createdAt: true, updatedAt: true }).parse(updates);
+    const validated = TaskSchema.partial()
+      .omit({ id: true, createdAt: true, updatedAt: true })
+      .parse(updates);
 
     MOCK_TASKS[index] = {
       ...MOCK_TASKS[index],
@@ -476,7 +522,7 @@ export const tasksApi = {
   assignParticipants: async (
     taskId: string,
     leads: string[],
-    participants: string[]
+    participants: string[],
   ): Promise<Task | null> => {
     await delay();
     const index = MOCK_TASKS.findIndex((t) => t.id === taskId);
@@ -485,7 +531,10 @@ export const tasksApi = {
     MOCK_TASKS[index] = {
       ...MOCK_TASKS[index],
       assignedLeads: [...MOCK_TASKS[index].assignedLeads, ...leads],
-      assignedParticipants: [...MOCK_TASKS[index].assignedParticipants, ...participants],
+      assignedParticipants: [
+        ...MOCK_TASKS[index].assignedParticipants,
+        ...participants,
+      ],
       status: TaskStatus.TO_DO, // Move from DRAFT to TO_DO after assignments
       updatedAt: new Date().toISOString(),
     };
@@ -495,7 +544,10 @@ export const tasksApi = {
   /**
    * Update task status (for Kanban board)
    */
-  updateStatus: async (taskId: string, status: TaskStatus): Promise<Task | null> => {
+  updateStatus: async (
+    taskId: string,
+    status: TaskStatus,
+  ): Promise<Task | null> => {
     await delay();
     const index = MOCK_TASKS.findIndex((t) => t.id === taskId);
     if (index === -1) return null;
@@ -537,7 +589,7 @@ export const tasksApi = {
     return MOCK_TASKS.filter(
       (t) =>
         t.title.toLowerCase().includes(lowerQuery) ||
-        t.description.toLowerCase().includes(lowerQuery)
+        t.description.toLowerCase().includes(lowerQuery),
     );
   },
 
@@ -568,7 +620,10 @@ export const tasksApi = {
   /**
    * Add attachment to task
    */
-  addAttachment: async (taskId: string, attachment: Attachment): Promise<Task | null> => {
+  addAttachment: async (
+    taskId: string,
+    attachment: Attachment,
+  ): Promise<Task | null> => {
     await delay();
     const index = MOCK_TASKS.findIndex((t) => t.id === taskId);
     if (index === -1) return null;
@@ -584,14 +639,19 @@ export const tasksApi = {
   /**
    * Remove attachment from task
    */
-  removeAttachment: async (taskId: string, attachmentId: string): Promise<Task | null> => {
+  removeAttachment: async (
+    taskId: string,
+    attachmentId: string,
+  ): Promise<Task | null> => {
     await delay();
     const index = MOCK_TASKS.findIndex((t) => t.id === taskId);
     if (index === -1) return null;
 
     MOCK_TASKS[index] = {
       ...MOCK_TASKS[index],
-      attachments: MOCK_TASKS[index].attachments.filter((a) => a.id !== attachmentId),
+      attachments: MOCK_TASKS[index].attachments.filter(
+        (a) => a.id !== attachmentId,
+      ),
       updatedAt: new Date().toISOString(),
     };
     return MOCK_TASKS[index];

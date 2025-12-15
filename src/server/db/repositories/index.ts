@@ -1,6 +1,6 @@
 /**
  * REPOSITORY INDEX
- * 
+ *
  * Exports for all repositories
  */
 
@@ -16,10 +16,7 @@ export {
 } from "./core-entities.repository";
 
 // Email Repository
-export {
-  EmailRepository,
-  emailRepository,
-} from "./email.repository";
+export { EmailRepository, emailRepository } from "./email.repository";
 
 // Relationship Repository
 export {

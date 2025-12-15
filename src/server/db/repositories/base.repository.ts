@@ -1,6 +1,6 @@
 /**
  * BASE REPOSITORY
- * 
+ *
  * Simple CRUD operations for all entities
  * Server-side only - NO UI concerns
  */
@@ -30,7 +30,7 @@ import type { AllEntityTypes } from "~/lib/schemas/db/base.schema";
 export class BaseRepository<TSchema extends z.ZodType> {
   constructor(
     protected readonly schema: TSchema,
-    protected readonly entityType: AllEntityTypes
+    protected readonly entityType: AllEntityTypes,
   ) {}
 
   /**
@@ -56,7 +56,7 @@ export class BaseRepository<TSchema extends z.ZodType> {
     if (!result.success) {
       throw new ValidationError(
         `Validation failed for ${this.entityType}`,
-        result.error.issues
+        result.error.issues,
       );
     }
     return result.data;
@@ -66,11 +66,14 @@ export class BaseRepository<TSchema extends z.ZodType> {
    * Create entity
    */
   async create(
-    data: Omit<z.infer<TSchema>, "id" | "createdAt" | "updatedAt" | "entityType">
+    data: Omit<
+      z.infer<TSchema>,
+      "id" | "createdAt" | "updatedAt" | "entityType"
+    >,
   ): Promise<z.infer<TSchema>> {
     const id = this.generateId();
     const now = this.now();
-    
+
     const entity = this.validate({
       ...data,
       id,
@@ -78,22 +81,22 @@ export class BaseRepository<TSchema extends z.ZodType> {
       createdAt: now,
       updatedAt: now,
     });
-    
+
     const item = {
       ...(entity as Record<string, unknown>),
       [TABLE_CONFIG.PK]: KeyUtils.entityPK(this.entityType, id),
       [TABLE_CONFIG.SK]: KeyUtils.entitySK(),
     };
-    
+
     try {
       await docClient.send(
         new PutCommand({
           TableName: TABLE_CONFIG.TABLE_NAME,
           Item: item,
           ConditionExpression: "attribute_not_exists(PK)",
-        })
+        }),
       );
-      
+
       return entity;
     } catch (error) {
       handleDynamoDBError(error, "create");
@@ -112,13 +115,13 @@ export class BaseRepository<TSchema extends z.ZodType> {
             [TABLE_CONFIG.PK]: KeyUtils.entityPK(this.entityType, id),
             [TABLE_CONFIG.SK]: KeyUtils.entitySK(),
           },
-        })
+        }),
       );
-      
+
       if (!response.Item) {
         return null;
       }
-      
+
       const { PK, SK, ...entity } = response.Item;
       return this.validate(entity);
     } catch (error) {
@@ -142,30 +145,32 @@ export class BaseRepository<TSchema extends z.ZodType> {
    */
   async update(
     id: string,
-    updates: Partial<Omit<z.infer<TSchema>, "id" | "createdAt" | "updatedAt" | "entityType">>
+    updates: Partial<
+      Omit<z.infer<TSchema>, "id" | "createdAt" | "updatedAt" | "entityType">
+    >,
   ): Promise<z.infer<TSchema>> {
     const current = await this.getByIdOrThrow(id);
-    
+
     const updated = this.validate({
       ...(current as Record<string, unknown>),
       ...updates,
       updatedAt: this.now(),
     });
-    
+
     const item = {
       ...(updated as Record<string, unknown>),
       [TABLE_CONFIG.PK]: KeyUtils.entityPK(this.entityType, id),
       [TABLE_CONFIG.SK]: KeyUtils.entitySK(),
     };
-    
+
     try {
       await docClient.send(
         new PutCommand({
           TableName: TABLE_CONFIG.TABLE_NAME,
           Item: item,
-        })
+        }),
       );
-      
+
       return updated;
     } catch (error) {
       handleDynamoDBError(error, "update");
@@ -184,7 +189,7 @@ export class BaseRepository<TSchema extends z.ZodType> {
             [TABLE_CONFIG.PK]: KeyUtils.entityPK(this.entityType, id),
             [TABLE_CONFIG.SK]: KeyUtils.entitySK(),
           },
-        })
+        }),
       );
     } catch (error) {
       handleDynamoDBError(error, "delete");
@@ -211,14 +216,14 @@ export class BaseRepository<TSchema extends z.ZodType> {
           },
           Limit: options?.limit,
           ExclusiveStartKey: options?.lastEvaluatedKey as Record<string, any>,
-        })
+        }),
       );
-      
-      const items = (response.Items || []).map(item => {
+
+      const items = (response.Items || []).map((item) => {
         const { PK, SK, ...entity } = item;
         return this.validate(entity);
       });
-      
+
       return {
         items,
         lastEvaluatedKey: response.LastEvaluatedKey,

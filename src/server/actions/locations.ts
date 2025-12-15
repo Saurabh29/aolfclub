@@ -48,7 +48,8 @@ export async function createLocation(formData: AddLocationForm) {
     console.error("Failed to create location:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to create location",
+      error:
+        error instanceof Error ? error.message : "Failed to create location",
     };
   }
 }
@@ -101,7 +102,8 @@ export async function updateLocation(id: string, formData: AddLocationForm) {
     console.error("Failed to update location:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to update location",
+      error:
+        error instanceof Error ? error.message : "Failed to update location",
     };
   }
 }
@@ -122,7 +124,8 @@ export async function deleteLocation(id: string) {
     console.error("Failed to delete location:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to delete location",
+      error:
+        error instanceof Error ? error.message : "Failed to delete location",
     };
   }
 }
@@ -135,7 +138,9 @@ export async function getLocations() {
 
   try {
     const allEntities = await locationRepository.list();
-    const locations = allEntities.items.filter((entity: Location) => entity.entityType === "Location");
+    const locations = allEntities.items.filter(
+      (entity: Location) => entity.entityType === "Location",
+    );
 
     return {
       success: true,
@@ -158,7 +163,7 @@ export async function getLocationById(id: string) {
 
   try {
     const entity = await locationRepository.getById(id);
-    
+
     if (!entity || entity.entityType !== "Location") {
       return {
         success: false,

@@ -1,9 +1,9 @@
 /**
  * ENTITY-SPECIFIC REPOSITORIES
- * 
+ *
  * Repositories for core entity types
  * Server-side only - NO UI concerns
- * 
+ *
  * Entities: User, Location
  */
 
@@ -17,7 +17,7 @@ import {
 
 /**
  * User Repository
- * 
+ *
  * Handles user entity operations (all user types: teacher, volunteer, member, guest, admin)
  */
 export class UserRepository extends BaseRepository<typeof UserSchema> {
@@ -27,23 +27,27 @@ export class UserRepository extends BaseRepository<typeof UserSchema> {
 
   /**
    * Find users by type
-   * 
+   *
    * @param userType - User type to filter by
    * @param options - Pagination options
    * @returns List of users
    */
   async findByUserType(
-    userType: "teacher" | "volunteer" | "member" | "guest" | "admin" | "pending",
-    options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> }
+    userType:
+      | "teacher"
+      | "volunteer"
+      | "member"
+      | "guest"
+      | "admin"
+      | "pending",
+    options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> },
   ): Promise<{
     items: User[];
     lastEvaluatedKey?: Record<string, unknown>;
   }> {
     const result = await this.list(options);
 
-    const items = result.items.filter((user) =>
-      user.userType === userType
-    );
+    const items = result.items.filter((user) => user.userType === userType);
 
     return {
       items,
@@ -53,23 +57,21 @@ export class UserRepository extends BaseRepository<typeof UserSchema> {
 
   /**
    * Find users by status
-   * 
+   *
    * @param status - Status to filter by
    * @param options - Pagination options
    * @returns List of users
    */
   async findByStatus(
     status: "active" | "pending_assignment" | "inactive" | "suspended",
-    options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> }
+    options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> },
   ): Promise<{
     items: User[];
     lastEvaluatedKey?: Record<string, unknown>;
   }> {
     const result = await this.list(options);
 
-    const items = result.items.filter((user) =>
-      user.status === status
-    );
+    const items = result.items.filter((user) => user.status === status);
 
     return {
       items,
@@ -79,13 +81,14 @@ export class UserRepository extends BaseRepository<typeof UserSchema> {
 
   /**
    * Find pending assignment users (OAuth users waiting for admin)
-   * 
+   *
    * @param options - Pagination options
    * @returns List of pending users
    */
-  async findPending(
-    options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> }
-  ): Promise<{
+  async findPending(options?: {
+    limit?: number;
+    lastEvaluatedKey?: Record<string, unknown>;
+  }): Promise<{
     items: User[];
     lastEvaluatedKey?: Record<string, unknown>;
   }> {
@@ -94,13 +97,14 @@ export class UserRepository extends BaseRepository<typeof UserSchema> {
 
   /**
    * Find active users
-   * 
+   *
    * @param options - Pagination options
    * @returns List of active users
    */
-  async findActive(
-    options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> }
-  ): Promise<{
+  async findActive(options?: {
+    limit?: number;
+    lastEvaluatedKey?: Record<string, unknown>;
+  }): Promise<{
     items: User[];
     lastEvaluatedKey?: Record<string, unknown>;
   }> {
@@ -109,14 +113,14 @@ export class UserRepository extends BaseRepository<typeof UserSchema> {
 
   /**
    * Assign user type (e.g., after OAuth login, admin assigns role)
-   * 
+   *
    * @param userId - User ID
    * @param userType - User type to assign
    * @returns Updated user
    */
   async assignUserType(
     userId: string,
-    userType: "teacher" | "volunteer" | "member" | "guest" | "admin"
+    userType: "teacher" | "volunteer" | "member" | "guest" | "admin",
   ): Promise<User> {
     return this.update(userId, {
       userType,
@@ -126,14 +130,14 @@ export class UserRepository extends BaseRepository<typeof UserSchema> {
 
   /**
    * Update user status
-   * 
+   *
    * @param userId - User ID
    * @param status - New status
    * @returns Updated user
    */
   async updateStatus(
     userId: string,
-    status: "active" | "inactive" | "suspended"
+    status: "active" | "inactive" | "suspended",
   ): Promise<User> {
     return this.update(userId, { status });
   }
@@ -141,7 +145,7 @@ export class UserRepository extends BaseRepository<typeof UserSchema> {
 
 /**
  * Location Repository
- * 
+ *
  * Handles location entity operations
  */
 export class LocationRepository extends BaseRepository<typeof LocationSchema> {
@@ -151,14 +155,14 @@ export class LocationRepository extends BaseRepository<typeof LocationSchema> {
 
   /**
    * Find locations by city
-   * 
+   *
    * @param city - City name
    * @param options - Pagination options
    * @returns List of locations
    */
   async findByCity(
     city: string,
-    options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> }
+    options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> },
   ): Promise<{
     items: Location[];
     lastEvaluatedKey?: Record<string, unknown>;
@@ -166,7 +170,7 @@ export class LocationRepository extends BaseRepository<typeof LocationSchema> {
     const result = await this.list(options);
 
     const items = result.items.filter(
-      (location) => location.city?.toLowerCase() === city.toLowerCase()
+      (location) => location.city?.toLowerCase() === city.toLowerCase(),
     );
 
     return {
@@ -177,14 +181,14 @@ export class LocationRepository extends BaseRepository<typeof LocationSchema> {
 
   /**
    * Find locations by state
-   * 
+   *
    * @param state - State name
    * @param options - Pagination options
    * @returns List of locations
    */
   async findByState(
     state: string,
-    options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> }
+    options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> },
   ): Promise<{
     items: Location[];
     lastEvaluatedKey?: Record<string, unknown>;
@@ -192,7 +196,7 @@ export class LocationRepository extends BaseRepository<typeof LocationSchema> {
     const result = await this.list(options);
 
     const items = result.items.filter(
-      (location) => location.state?.toLowerCase() === state.toLowerCase()
+      (location) => location.state?.toLowerCase() === state.toLowerCase(),
     );
 
     return {
@@ -203,7 +207,7 @@ export class LocationRepository extends BaseRepository<typeof LocationSchema> {
 
   /**
    * Find active locations
-   * 
+   *
    * @param options - Pagination options
    * @returns List of active locations
    */
@@ -227,14 +231,14 @@ export class LocationRepository extends BaseRepository<typeof LocationSchema> {
 
   /**
    * Find locations with capacity
-   * 
+   *
    * @param minCapacity - Minimum capacity
    * @param options - Pagination options
    * @returns List of locations
    */
   async findByMinCapacity(
     minCapacity: number,
-    options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> }
+    options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> },
   ): Promise<{
     items: Location[];
     lastEvaluatedKey?: Record<string, unknown>;
@@ -242,7 +246,7 @@ export class LocationRepository extends BaseRepository<typeof LocationSchema> {
     const result = await this.list(options);
 
     const items = result.items.filter(
-      (location) => (location.capacity || 0) >= minCapacity
+      (location) => (location.capacity || 0) >= minCapacity,
     );
 
     return {

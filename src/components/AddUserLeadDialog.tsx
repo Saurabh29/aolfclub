@@ -1,8 +1,20 @@
 import { createSignal, Show, For } from "solid-js";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "~/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "~/components/ui/dialog";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { cn } from "~/lib/utils";
 import { UserRole, LeadSource } from "~/lib/schemas/ui/user.schema";
 import { usersApi, leadsApi } from "~/lib/user-api";
@@ -19,7 +31,7 @@ type AddUserLeadDialogProps = {
 export default function AddUserLeadDialog(props: AddUserLeadDialogProps) {
   // Toggle between User and Lead modes
   const [mode, setMode] = createSignal<"user" | "lead">("user");
-  
+
   // User form fields
   const [fullName, setFullName] = createSignal("");
   const [email, setEmail] = createSignal("");
@@ -29,7 +41,7 @@ export default function AddUserLeadDialog(props: AddUserLeadDialogProps) {
   const [programsWant, setProgramsWant] = createSignal<string[]>([]);
   const [enableLogin, setEnableLogin] = createSignal(false);
   const [profilePhoto, setProfilePhoto] = createSignal("");
-  
+
   // Lead form fields
   const [leadSource, setLeadSource] = createSignal<string>(LeadSource.WALK_IN);
   const [notes, setNotes] = createSignal("");
@@ -55,8 +67,22 @@ export default function AddUserLeadDialog(props: AddUserLeadDialogProps) {
           email: email(),
           phone: phone(),
           role: role() as "Admin" | "Teacher" | "Volunteer" | "Member",
-          programsDone: (role() === UserRole.MEMBER ? programsDone() : []) as ("HP" | "MY" | "UY" | "Sahaj" | "VTP" | "AMP")[],
-          programsWant: (role() === UserRole.MEMBER ? programsWant() : []) as ("HP" | "MY" | "UY" | "Sahaj" | "VTP" | "AMP")[],
+          programsDone: (role() === UserRole.MEMBER ? programsDone() : []) as (
+            | "HP"
+            | "MY"
+            | "UY"
+            | "Sahaj"
+            | "VTP"
+            | "AMP"
+          )[],
+          programsWant: (role() === UserRole.MEMBER ? programsWant() : []) as (
+            | "HP"
+            | "MY"
+            | "UY"
+            | "Sahaj"
+            | "VTP"
+            | "AMP"
+          )[],
           enableLogin: enableLogin(),
           profilePhoto: profilePhoto(),
         };
@@ -66,10 +92,18 @@ export default function AddUserLeadDialog(props: AddUserLeadDialogProps) {
           fullName: fullName(),
           phone: phone(),
           email: email() || undefined,
-          leadSource: leadSource() as typeof LeadSource[keyof typeof LeadSource],
+          leadSource:
+            leadSource() as (typeof LeadSource)[keyof typeof LeadSource],
           rating: 0, // Default rating
           lastContact: new Date().toISOString(), // Set to current time
-          programsWant: programsWant() as ("HP" | "MY" | "UY" | "Sahaj" | "VTP" | "AMP")[],
+          programsWant: programsWant() as (
+            | "HP"
+            | "MY"
+            | "UY"
+            | "Sahaj"
+            | "VTP"
+            | "AMP"
+          )[],
           notes: notes(),
         };
         await leadsApi.create(leadData);
@@ -92,14 +126,14 @@ export default function AddUserLeadDialog(props: AddUserLeadDialogProps) {
     if (list === "done") {
       const current = programsDone();
       if (current.includes(program)) {
-        setProgramsDone(current.filter(p => p !== program));
+        setProgramsDone(current.filter((p) => p !== program));
       } else {
         setProgramsDone([...current, program]);
       }
     } else {
       const current = programsWant();
       if (current.includes(program)) {
-        setProgramsWant(current.filter(p => p !== program));
+        setProgramsWant(current.filter((p) => p !== program));
       } else {
         setProgramsWant([...current, program]);
       }
@@ -114,7 +148,8 @@ export default function AddUserLeadDialog(props: AddUserLeadDialogProps) {
             {mode() === "user" ? "Add User" : "Add Lead"}
           </DialogTitle>
           <DialogDescription class="text-gray-600">
-            Fill in the details below to add a new {mode() === "user" ? "user" : "lead"}.
+            Fill in the details below to add a new{" "}
+            {mode() === "user" ? "user" : "lead"}.
           </DialogDescription>
         </DialogHeader>
 
@@ -126,7 +161,7 @@ export default function AddUserLeadDialog(props: AddUserLeadDialogProps) {
               "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors",
               mode() === "user"
                 ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
+                : "text-gray-600 hover:text-gray-900",
             )}
           >
             Add User
@@ -137,7 +172,7 @@ export default function AddUserLeadDialog(props: AddUserLeadDialogProps) {
               "flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors",
               mode() === "lead"
                 ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
+                : "text-gray-600 hover:text-gray-900",
             )}
           >
             Add Lead
@@ -162,7 +197,9 @@ export default function AddUserLeadDialog(props: AddUserLeadDialogProps) {
           <div>
             <label class="block text-sm font-medium text-gray-900 mb-1">
               Email {mode() === "user" && <span class="text-red-600">*</span>}
-              {mode() === "lead" && <span class="text-gray-500">(Optional)</span>}
+              {mode() === "lead" && (
+                <span class="text-gray-500">(Optional)</span>
+              )}
             </label>
             <Input
               type="email"
@@ -196,14 +233,23 @@ export default function AddUserLeadDialog(props: AddUserLeadDialogProps) {
               <Select
                 value={role()}
                 onChange={(value) => value && setRole(value)}
-                options={[UserRole.ADMIN, UserRole.TEACHER, UserRole.VOLUNTEER, UserRole.MEMBER]}
+                options={[
+                  UserRole.ADMIN,
+                  UserRole.TEACHER,
+                  UserRole.VOLUNTEER,
+                  UserRole.MEMBER,
+                ]}
                 placeholder="Select role"
                 itemComponent={(itemProps) => (
-                  <SelectItem item={itemProps.item}>{itemProps.item.rawValue}</SelectItem>
+                  <SelectItem item={itemProps.item}>
+                    {itemProps.item.rawValue}
+                  </SelectItem>
                 )}
               >
                 <SelectTrigger class="w-full bg-white">
-                  <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
+                  <SelectValue<string>>
+                    {(state) => state.selectedOption()}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent class="bg-white border border-gray-200" />
               </Select>
@@ -219,14 +265,23 @@ export default function AddUserLeadDialog(props: AddUserLeadDialogProps) {
               <Select
                 value={leadSource()}
                 onChange={(value) => value && setLeadSource(value)}
-                options={[LeadSource.WALK_IN, LeadSource.REFERRAL, LeadSource.CAMPAIGN, LeadSource.UNKNOWN]}
+                options={[
+                  LeadSource.WALK_IN,
+                  LeadSource.REFERRAL,
+                  LeadSource.CAMPAIGN,
+                  LeadSource.UNKNOWN,
+                ]}
                 placeholder="Select lead source"
                 itemComponent={(itemProps) => (
-                  <SelectItem item={itemProps.item}>{itemProps.item.rawValue}</SelectItem>
+                  <SelectItem item={itemProps.item}>
+                    {itemProps.item.rawValue}
+                  </SelectItem>
                 )}
               >
                 <SelectTrigger class="w-full bg-white">
-                  <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
+                  <SelectValue<string>>
+                    {(state) => state.selectedOption()}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent class="bg-white border border-gray-200" />
               </Select>
@@ -234,7 +289,12 @@ export default function AddUserLeadDialog(props: AddUserLeadDialogProps) {
           </Show>
 
           {/* Programs - For Members or Leads */}
-          <Show when={(mode() === "user" && role() === UserRole.MEMBER) || mode() === "lead"}>
+          <Show
+            when={
+              (mode() === "user" && role() === UserRole.MEMBER) ||
+              mode() === "lead"
+            }
+          >
             {/* Programs Done - Members only */}
             <Show when={mode() === "user" && role() === UserRole.MEMBER}>
               <div>
@@ -251,7 +311,7 @@ export default function AddUserLeadDialog(props: AddUserLeadDialogProps) {
                           "px-3 py-1.5 rounded-md text-sm font-medium transition-colors border",
                           programsDone().includes(program)
                             ? "bg-sky-100 border-sky-300 text-sky-700"
-                            : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                            : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50",
                         )}
                       >
                         {program}
@@ -277,7 +337,7 @@ export default function AddUserLeadDialog(props: AddUserLeadDialogProps) {
                         "px-3 py-1.5 rounded-md text-sm font-medium transition-colors border",
                         programsWant().includes(program)
                           ? "bg-green-100 border-green-300 text-green-700"
-                          : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                          : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50",
                       )}
                     >
                       {program}
@@ -298,7 +358,10 @@ export default function AddUserLeadDialog(props: AddUserLeadDialogProps) {
                 onChange={(e) => setEnableLogin(e.currentTarget.checked)}
                 class="w-4 h-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
               />
-              <label for="enableLogin" class="text-sm font-medium text-gray-900">
+              <label
+                for="enableLogin"
+                class="text-sm font-medium text-gray-900"
+              >
                 Enable Login
               </label>
             </div>
@@ -342,7 +405,10 @@ export default function AddUserLeadDialog(props: AddUserLeadDialogProps) {
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave} class="bg-sky-600 hover:bg-sky-700 text-white">
+          <Button
+            onClick={handleSave}
+            class="bg-sky-600 hover:bg-sky-700 text-white"
+          >
             Save {mode() === "user" ? "User" : "Lead"}
           </Button>
         </div>

@@ -1,11 +1,15 @@
 /**
  * EMAIL REPOSITORY
- * 
+ *
  * Manages email entities for identity resolution
  * Supports OAuth and CSV import workflows
  */
 
-import { QueryCommand, PutCommand, TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  QueryCommand,
+  PutCommand,
+  TransactWriteCommand,
+} from "@aws-sdk/lib-dynamodb";
 import { BaseRepository } from "./base.repository";
 import { EmailSchema, type Email } from "~/lib/schemas/db/email.schema";
 import { docClient, TABLE_CONFIG, KeyUtils } from "../client";
@@ -13,7 +17,7 @@ import { ulid } from "ulid";
 
 /**
  * Email Repository
- * 
+ *
  * Handles email entity operations for identity management
  * Creates TWO items per email:
  * 1. PK: Email#id, SK: METADATA (entity data)
@@ -29,16 +33,16 @@ export class EmailRepository extends BaseRepository<typeof EmailSchema> {
    * Creates two items atomically:
    * 1. Entity item: PK: Email#<id>, SK: METADATA
    * 2. Lookup item: PK: EMAIL#<address>, SK: METADATA
-   * 
+   *
    * @param data - Email data
    * @returns Created email entity
    */
   async create(
-    data: Omit<Email, "id" | "createdAt" | "updatedAt" | "entityType">
+    data: Omit<Email, "id" | "createdAt" | "updatedAt" | "entityType">,
   ): Promise<Email> {
     const id = ulid();
     const now = new Date().toISOString();
-    
+
     const entity: Email = {
       ...data,
       id,
@@ -49,7 +53,7 @@ export class EmailRepository extends BaseRepository<typeof EmailSchema> {
 
     // Validate
     const validated = EmailSchema.parse(entity);
-    
+
     // Create both entity and lookup items atomically
     await docClient.send(
       new TransactWriteCommand({
@@ -79,16 +83,16 @@ export class EmailRepository extends BaseRepository<typeof EmailSchema> {
             },
           },
         ],
-      })
+      }),
     );
-    
+
     return validated;
   }
 
   /**
    * Find email by email address
    * Uses PK: EMAIL#address pattern for direct lookup
-   * 
+   *
    * @param email - Email address to look up
    * @returns Email entity if found, null otherwise
    */
@@ -103,7 +107,7 @@ export class EmailRepository extends BaseRepository<typeof EmailSchema> {
             ":sk": "METADATA",
           },
           Limit: 1,
-        })
+        }),
       );
 
       if (!result.Items || result.Items.length === 0) {
@@ -121,7 +125,7 @@ export class EmailRepository extends BaseRepository<typeof EmailSchema> {
   /**
    * Find emails by user ID
    * Queries relationships to find all emails for a user
-   * 
+   *
    * @param userId - User ID
    * @returns Array of email entities
    */
@@ -136,7 +140,7 @@ export class EmailRepository extends BaseRepository<typeof EmailSchema> {
             ":pk": `USER#${userId}`,
             ":sk": "EMAIL#",
           },
-        })
+        }),
       );
 
       if (!result.Items || result.Items.length === 0) {
@@ -171,7 +175,7 @@ export class EmailRepository extends BaseRepository<typeof EmailSchema> {
 
   /**
    * Find primary email for a user
-   * 
+   *
    * @param userId - User ID
    * @returns Primary email entity if found, null otherwise
    */
@@ -183,7 +187,7 @@ export class EmailRepository extends BaseRepository<typeof EmailSchema> {
   /**
    * Set primary email for a user
    * Ensures only one email is primary
-   * 
+   *
    * @param userId - User ID
    * @param emailId - Email ID to set as primary
    */
@@ -201,7 +205,7 @@ export class EmailRepository extends BaseRepository<typeof EmailSchema> {
 
   /**
    * Verify email
-   * 
+   *
    * @param emailId - Email ID
    * @returns Updated email
    */
@@ -214,7 +218,7 @@ export class EmailRepository extends BaseRepository<typeof EmailSchema> {
 
   /**
    * Remove email (soft delete)
-   * 
+   *
    * @param emailId - Email ID
    * @returns Updated email
    */

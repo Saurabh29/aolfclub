@@ -21,9 +21,9 @@ type LocationNavigationProps = {
 
 /**
  * LocationNavigation Component
- * 
+ *
  * A persistent UI control for viewing and switching between locations.
- * 
+ *
  * Features:
  * - Shows current active location
  * - Dropdown/panel with list of available locations
@@ -31,7 +31,7 @@ type LocationNavigationProps = {
  * - "Add Location" button to open modal
  * - Single location users see plain text but can still click
  * - Multiple location users see a selector
- * 
+ *
  * Emits:
  * - onSelect(locationId: string) - Updates global/app-level location state
  * - onAddLocation() - Opens Add Location modal
@@ -40,7 +40,7 @@ export default function LocationNavigation(props: LocationNavigationProps) {
   const [open, setOpen] = createSignal(false);
 
   // Get active location details
-  const activeLocation = () => 
+  const activeLocation = () =>
     props.locations.find((l) => l.id === props.activeLocationId);
 
   const handleSelect = (locationId: string) => {
@@ -66,7 +66,7 @@ export default function LocationNavigation(props: LocationNavigationProps) {
             variant="outline"
             class={cn(
               "flex items-center gap-2 bg-white border border-gray-300 hover:border-gray-400 hover:bg-gray-50",
-              props.locations.length === 1 && "cursor-pointer"
+              props.locations.length === 1 && "cursor-pointer",
             )}
           >
             {/* Location Icon */}
@@ -106,7 +106,7 @@ export default function LocationNavigation(props: LocationNavigationProps) {
             <svg
               class={cn(
                 "h-4 w-4 text-gray-500 transition-transform",
-                open() && "rotate-180"
+                open() && "rotate-180",
               )}
               fill="none"
               viewBox="0 0 24 24"
@@ -140,7 +140,7 @@ export default function LocationNavigation(props: LocationNavigationProps) {
                   "flex items-start gap-3 px-3 py-2.5 cursor-pointer",
                   location.id === props.activeLocationId
                     ? "bg-blue-50"
-                    : "hover:bg-gray-50"
+                    : "hover:bg-gray-50",
                 )}
               >
                 {/* Checkmark for active location */}
@@ -172,7 +172,7 @@ export default function LocationNavigation(props: LocationNavigationProps) {
                       "text-sm font-medium truncate",
                       location.id === props.activeLocationId
                         ? "text-blue-900"
-                        : "text-gray-900"
+                        : "text-gray-900",
                     )}
                   >
                     {location.name}

@@ -22,11 +22,11 @@ src/server/db/
 
 All entities are stored in a single DynamoDB table without Global Secondary Indexes:
 
-| Attribute | Purpose | Example |
-|-----------|---------|---------|
-| `PK` | Primary Key | `User#uuid` |
-| `SK` | Sort Key | `METADATA` or relationship key |
-| No GSI | All queries use PK/SK patterns | `begins_with(SK, "GROUP#")` |
+| Attribute | Purpose                        | Example                        |
+| --------- | ------------------------------ | ------------------------------ |
+| `PK`      | Primary Key                    | `User#uuid`                    |
+| `SK`      | Sort Key                       | `METADATA` or relationship key |
+| No GSI    | All queries use PK/SK patterns | `begins_with(SK, "GROUP#")`    |
 
 ### Key Construction
 
@@ -34,15 +34,16 @@ All entities are stored in a single DynamoDB table without Global Secondary Inde
 import { KeyUtils } from "~/server/db/repositories";
 
 // Entity keys
-KeyUtils.entityPK("User", id);     // "User#uuid"
-KeyUtils.entitySK();                // "METADATA"
+KeyUtils.entityPK("User", id); // "User#uuid"
+KeyUtils.entitySK(); // "METADATA"
 ```
 
 ### Email Lookup Pattern (No GSI)
+
 ```typescript
 // Direct item access instead of GSI query
-PK: "EMAIL#user@example.com"
-SK: "USER"
+PK: "EMAIL#user@example.com";
+SK: "USER";
 // Contains: userId field for identity resolution
 ```
 
@@ -73,8 +74,8 @@ import { userRepository } from "~/server/db/repositories";
 const user = await userRepository.create({
   name: "John Doe",
   email: "john@example.com",
-  userType: null,              // Assigned by admin later
-  status: "pending_assignment"
+  userType: null, // Assigned by admin later
+  status: "pending_assignment",
 });
 
 // Create user (CSV import flow)
@@ -85,8 +86,8 @@ const teacher = await userRepository.create({
   status: "active",
   teacherData: {
     subject: "Mathematics",
-    qualification: "M.Ed"
-  }
+    qualification: "M.Ed",
+  },
 });
 
 // Find by user type
@@ -105,19 +106,19 @@ await userRepository.updateStatus(userId, "inactive");
 ```
 
 ### Location Repository
+
 ```typescript
 import { locationRepository } from "~/server/db/repositories";
-
 ```
 
 // Create location
 const location = await locationRepository.create({
-  locationId: ulid(),
-  name: "Main Campus",
-  address: "123 Main St",
-  city: "Mumbai",
-  state: "Maharashtra",
-  capacity: 100,
+locationId: ulid(),
+name: "Main Campus",
+address: "123 Main St",
+city: "Mumbai",
+state: "Maharashtra",
+capacity: 100,
 });
 
 // Find by city
@@ -128,7 +129,8 @@ const maharashtraLocations = await locationRepository.findByState("Maharashtra")
 
 // Find by capacity
 const largeLocations = await locationRepository.findByMinCapacity(50);
-```
+
+````
 
 ### Email Repository
 
@@ -152,7 +154,7 @@ if (emailLookup.Item) {
   // Get user metadata
   const user = await userRepository.getById(userId);
 }
-```
+````
 
 ### Relationship Repository
 
@@ -230,6 +232,7 @@ await relationshipRepository.deleteRelationship(rel.id);
 ### Access Policy Repositories
 
 #### RoleRepository
+
 ```typescript
 import { roleRepository } from "~/server/db/repositories";
 
@@ -247,7 +250,7 @@ const adminRole = await roleRepository.getByName("admin");
 const activeRoles = await roleRepository.findActive();
 ```
 
-```
+````
 
 ### Access Policy Repositories
 
@@ -263,9 +266,10 @@ const role = await roleRepository.create({
 
 // Find active roles
 const activeRoles = await roleRepository.findActive();
-```
+````
 
 #### PermissionRepository
+
 ```typescript
 import { permissionRepository } from "~/server/db/repositories";
 
@@ -273,7 +277,7 @@ import { permissionRepository } from "~/server/db/repositories";
 const permission = await permissionRepository.create({
   name: "locations:write",
   resource: "locations",
-  action: "write"
+  action: "write",
 });
 
 // Find by resource
@@ -284,13 +288,14 @@ const writePerms = await permissionRepository.findByAction("write");
 ```
 
 #### UserGroupRepository
+
 ```typescript
 import { userGroupRepository } from "~/server/db/repositories";
 
 // Create user group
 const group = await userGroupRepository.create({
   name: "Downtown Teachers",
-  description: "Teachers at downtown location"
+  description: "Teachers at downtown location",
 });
 
 // Find active groups
@@ -375,11 +380,11 @@ describe("UserRepository", () => {
       userType: "teacher",
       status: "active",
     });
-    
+
     const retrieved = await userRepository.getById(user.id);
     expect(retrieved).toEqual(user);
   });
-  
+
   it("should find pending users", async () => {
     await userRepository.create({
       name: "Pending User",
@@ -387,7 +392,7 @@ describe("UserRepository", () => {
       userType: null,
       status: "pending_assignment",
     });
-    
+
     const pending = await userRepository.findPending();
     expect(pending.items.length).toBeGreaterThan(0);
   });
@@ -397,6 +402,7 @@ describe("UserRepository", () => {
 ## 📊 Performance Considerations
 
 ### Without GSI
+
 - ✅ **Lower Cost**: No GSI storage or write costs (~40% savings)
 - ✅ **Faster Writes**: No GSI propagation delay
 - ✅ **Simpler Schema**: One index to manage
@@ -404,6 +410,7 @@ describe("UserRepository", () => {
 - ⚠️ **Email Lookups**: Must know exact email (no fuzzy search)
 
 ### Optimization Strategies
+
 1. **Cache permission results** - Store in session/Redis for 5-10 minutes
 2. **Batch operations** - Use `batchGet()` for multiple entities (up to 100)
 3. **Pagination** - Always use `limit` and `lastEvaluatedKey` for large datasets
@@ -428,4 +435,3 @@ describe("UserRepository", () => {
 ---
 
 **Repository Layer Complete** ✅ - Type-safe, validated, single-table design without GSI!
-

@@ -48,14 +48,19 @@ export const UserSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
   email: z.string().email("Valid email is required"),
   phone: z.string().min(10, "Valid phone number is required"),
-  role: z.enum([UserRole.ADMIN, UserRole.TEACHER, UserRole.VOLUNTEER, UserRole.MEMBER]),
-  
+  role: z.enum([
+    UserRole.ADMIN,
+    UserRole.TEACHER,
+    UserRole.VOLUNTEER,
+    UserRole.MEMBER,
+  ]),
+
   // For Members: Programs they have completed
   programsDone: z.array(z.enum(PROGRAMS)).default([]),
-  
+
   // For Members/Teachers/Volunteers: Programs they want to do or are assigned to
   programsWant: z.array(z.enum(PROGRAMS)).default([]),
-  
+
   enableLogin: z.boolean().default(false),
   profilePhoto: z.string().optional(),
   createdAt: z.string(),
@@ -78,17 +83,17 @@ export const LeadSchema = z.object({
     LeadSource.CAMPAIGN,
     LeadSource.UNKNOWN,
   ]),
-  
+
   // Rating (0-5 stars)
   rating: z.number().min(0).max(5).default(0),
-  
+
   // Contact tracking
   lastContact: z.string(), // ISO date string
   nextFollowUp: z.string().optional(), // Optional ISO date string
-  
+
   // Leads only have Programs Want To Do (no programs done)
   programsWant: z.array(z.enum(PROGRAMS)).default([]),
-  
+
   notes: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -107,7 +112,12 @@ export const UserFormSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
   email: z.string().email("Valid email is required"),
   phone: z.string().min(10, "Valid phone number is required"),
-  role: z.enum([UserRole.ADMIN, UserRole.TEACHER, UserRole.VOLUNTEER, UserRole.MEMBER]),
+  role: z.enum([
+    UserRole.ADMIN,
+    UserRole.TEACHER,
+    UserRole.VOLUNTEER,
+    UserRole.MEMBER,
+  ]),
   programsDone: z.array(z.enum(PROGRAMS)).default([]),
   programsWant: z.array(z.enum(PROGRAMS)).default([]),
   enableLogin: z.boolean().default(false),

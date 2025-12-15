@@ -1,16 +1,16 @@
 import { For } from "solid-js";
 import { Card, CardContent, CardHeader } from "~/components/ui/card";
 import { cn } from "~/lib/utils";
-import { 
-  GenericCardListPropsSchema, 
-  type GenericCardListProps, 
-  type CardAction 
+import {
+  GenericCardListPropsSchema,
+  type GenericCardListProps,
+  type CardAction,
 } from "~/lib/schemas/ui/card.schema";
 
 export type { CardAction, GenericCardListProps };
 
 export default function GenericCardList<T extends Record<string, any>>(
-  props: GenericCardListProps<T>
+  props: GenericCardListProps<T>,
 ) {
   // Runtime validation with Zod
   try {
@@ -36,11 +36,7 @@ export default function GenericCardList<T extends Record<string, any>>(
     }
   };
 
-  const handleActionClick = (
-    e: MouseEvent,
-    action: CardAction<T>,
-    item: T
-  ) => {
+  const handleActionClick = (e: MouseEvent, action: CardAction<T>, item: T) => {
     e.stopPropagation();
     action.onClick(item);
   };
@@ -51,17 +47,17 @@ export default function GenericCardList<T extends Record<string, any>>(
     if (!config?.cols) {
       return "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
     }
-    
+
     const { sm = 1, md = 2, lg = 3, xl = 4 } = config.cols;
     const gap = config.gap || "gap-4";
-    
+
     return cn(
       "grid",
       `grid-cols-${sm}`,
       md && `sm:grid-cols-${md}`,
       lg && `lg:grid-cols-${lg}`,
       xl && `xl:grid-cols-${xl}`,
-      gap
+      gap,
     );
   };
 
@@ -73,7 +69,7 @@ export default function GenericCardList<T extends Record<string, any>>(
             class={cn(
               "relative flex flex-col overflow-hidden transition-all hover:shadow-lg",
               props.onItemClick && "cursor-pointer",
-              props.cardClass
+              props.cardClass,
             )}
             onClick={() => handleCardClick(item)}
           >
@@ -104,7 +100,9 @@ export default function GenericCardList<T extends Record<string, any>>(
             </CardHeader>
 
             {props.renderContent && (
-              <CardContent class="flex-1">{props.renderContent(item)}</CardContent>
+              <CardContent class="flex-1">
+                {props.renderContent(item)}
+              </CardContent>
             )}
           </Card>
         )}

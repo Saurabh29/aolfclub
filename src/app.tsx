@@ -7,7 +7,7 @@ import { SessionProvider } from "@solid-mediakit/auth/client";
 export default function App() {
   return (
     <Router
-      root={props => (
+      root={(props) => (
         <>
           <SessionProvider>
             <Suspense>{props.children}</Suspense>

@@ -1,9 +1,11 @@
 # DynamoDB Single Table Design (No GSI)
 
 ## Overview
+
 This document describes the single table design for AOLF Club without using Global Secondary Indexes (GSI). All access patterns are supported through clever PK/SK patterns and relationship items.
 
 ## Permission Model
+
 ```
 User → UserGroup → Role → Permission
 ```
@@ -26,12 +28,14 @@ User → UserGroup → Role → Permission
 ## Table Schema
 
 ### Primary Keys
+
 - **PK** (Partition Key): Primary identifier
 - **SK** (Sort Key): Secondary identifier or relationship type
 
 ### Entity Types
 
 #### 1. User Metadata
+
 ```typescript
 {
   PK: "USER#<userId>",
@@ -52,6 +56,7 @@ User → UserGroup → Role → Permission
 ---
 
 #### 2. Email Lookup (Inverted Index Pattern)
+
 ```typescript
 {
   PK: "EMAIL#<email>",
@@ -71,6 +76,7 @@ User → UserGroup → Role → Permission
 ---
 
 #### 3. User → Group Relationship (Forward)
+
 ```typescript
 {
   PK: "USER#<userId>",
@@ -88,6 +94,7 @@ User → UserGroup → Role → Permission
 ---
 
 #### 4. Group → User Relationship (Reverse)
+
 ```typescript
 {
   PK: "GROUP#<groupId>",
@@ -105,6 +112,7 @@ User → UserGroup → Role → Permission
 ---
 
 #### 5. Group Metadata
+
 ```typescript
 {
   PK: "GROUP#<groupId>",
@@ -124,6 +132,7 @@ User → UserGroup → Role → Permission
 ---
 
 #### 6. Group → Role Relationship
+
 ```typescript
 {
   PK: "GROUP#<groupId>",
@@ -141,6 +150,7 @@ User → UserGroup → Role → Permission
 ---
 
 #### 7. Role → Group Relationship (Reverse - Optional)
+
 ```typescript
 {
   PK: "ROLE#<roleId>",
@@ -158,6 +168,7 @@ User → UserGroup → Role → Permission
 ---
 
 #### 8. Role Metadata
+
 ```typescript
 {
   PK: "ROLE#<roleId>",
@@ -176,6 +187,7 @@ User → UserGroup → Role → Permission
 ---
 
 #### 9. Role → Permission Relationship
+
 ```typescript
 {
   PK: "ROLE#<roleId>",
@@ -193,6 +205,7 @@ User → UserGroup → Role → Permission
 ---
 
 #### 10. Permission Metadata
+
 ```typescript
 {
   PK: "PERMISSION#<permissionId>",
@@ -215,107 +228,124 @@ User → UserGroup → Role → Permission
 ## Example Queries
 
 ### 1. OAuth Login - Find User by Email
+
 ```typescript
 import { GetCommand } from "@aws-sdk/lib-dynamodb";
 
-const result = await docClient.send(new GetCommand({
-  TableName: TABLE_NAME,
-  Key: {
-    PK: `EMAIL#${email}`,
-    SK: "USER"
-  }
-}));
+const result = await docClient.send(
+  new GetCommand({
+    TableName: TABLE_NAME,
+    Key: {
+      PK: `EMAIL#${email}`,
+      SK: "USER",
+    },
+  }),
+);
 
 if (result.Item) {
   const userId = result.Item.userId;
   // Now get user metadata
-  const user = await docClient.send(new GetCommand({
-    TableName: TABLE_NAME,
-    Key: {
-      PK: `USER#${userId}`,
-      SK: "METADATA"
-    }
-  }));
+  const user = await docClient.send(
+    new GetCommand({
+      TableName: TABLE_NAME,
+      Key: {
+        PK: `USER#${userId}`,
+        SK: "METADATA",
+      },
+    }),
+  );
 }
 ```
 
 ### 2. Get All Groups for a User
+
 ```typescript
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 
-const result = await docClient.send(new QueryCommand({
-  TableName: TABLE_NAME,
-  KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
-  ExpressionAttributeValues: {
-    ":pk": `USER#${userId}`,
-    ":sk": "GROUP#"
-  }
-}));
-
-const groupIds = result.Items.map(item => item.groupId);
-```
-
-### 3. Get All Roles for User's Groups
-```typescript
-// Step 1: Get user's groups
-const groupMemberships = await docClient.send(new QueryCommand({
-  TableName: TABLE_NAME,
-  KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
-  ExpressionAttributeValues: {
-    ":pk": `USER#${userId}`,
-    ":sk": "GROUP#"
-  }
-}));
-
-// Step 2: Get roles for each group (parallel)
-const rolePromises = groupMemberships.Items.map(membership =>
-  docClient.send(new QueryCommand({
+const result = await docClient.send(
+  new QueryCommand({
     TableName: TABLE_NAME,
     KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
     ExpressionAttributeValues: {
-      ":pk": `GROUP#${membership.groupId}`,
-      ":sk": "ROLE#"
-    }
-  }))
+      ":pk": `USER#${userId}`,
+      ":sk": "GROUP#",
+    },
+  }),
+);
+
+const groupIds = result.Items.map((item) => item.groupId);
+```
+
+### 3. Get All Roles for User's Groups
+
+```typescript
+// Step 1: Get user's groups
+const groupMemberships = await docClient.send(
+  new QueryCommand({
+    TableName: TABLE_NAME,
+    KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
+    ExpressionAttributeValues: {
+      ":pk": `USER#${userId}`,
+      ":sk": "GROUP#",
+    },
+  }),
+);
+
+// Step 2: Get roles for each group (parallel)
+const rolePromises = groupMemberships.Items.map((membership) =>
+  docClient.send(
+    new QueryCommand({
+      TableName: TABLE_NAME,
+      KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
+      ExpressionAttributeValues: {
+        ":pk": `GROUP#${membership.groupId}`,
+        ":sk": "ROLE#",
+      },
+    }),
+  ),
 );
 
 const roleResults = await Promise.all(rolePromises);
-const roleIds = roleResults.flatMap(r => r.Items.map(item => item.roleId));
+const roleIds = roleResults.flatMap((r) => r.Items.map((item) => item.roleId));
 ```
 
 ### 4. Check if User Has Permission
+
 ```typescript
 // Step 1: Get user's groups
 const groups = await getUserGroups(userId);
 
 // Step 2: Get all roles for those groups
 const roles = await Promise.all(
-  groups.map(g => getGroupRoles(g.groupId))
-).then(results => results.flat());
+  groups.map((g) => getGroupRoles(g.groupId)),
+).then((results) => results.flat());
 
 // Step 3: Get all permissions for those roles
 const permissions = await Promise.all(
-  roles.map(r => getRolePermissions(r.roleId))
-).then(results => results.flat());
+  roles.map((r) => getRolePermissions(r.roleId)),
+).then((results) => results.flat());
 
 // Step 4: Check if permission exists
-const hasPermission = permissions.some(p => 
-  p.resource === "locations" && p.action === "write"
+const hasPermission = permissions.some(
+  (p) => p.resource === "locations" && p.action === "write",
 );
 ```
 
 ### 5. Get All Users in a Group
-```typescript
-const result = await docClient.send(new QueryCommand({
-  TableName: TABLE_NAME,
-  KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
-  ExpressionAttributeValues: {
-    ":pk": `GROUP#${groupId}`,
-    ":sk": "USER#"
-  }
-}));
 
-const userIds = result.Items.map(item => item.userId);
+```typescript
+const result = await docClient.send(
+  new QueryCommand({
+    TableName: TABLE_NAME,
+    KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
+    ExpressionAttributeValues: {
+      ":pk": `GROUP#${groupId}`,
+      ":sk": "USER#",
+    },
+  }),
+);
+
+const userIds = result.Items.map((item) => item.userId);
 
 // Batch get user metadata
 const users = await batchGetUsers(userIds);
@@ -324,84 +354,93 @@ const users = await batchGetUsers(userIds);
 ## Write Patterns
 
 ### Add User to Group (2 writes for bidirectional lookup)
+
 ```typescript
 import { TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
 
-await docClient.send(new TransactWriteCommand({
-  TransactItems: [
-    {
-      Put: {
-        TableName: TABLE_NAME,
-        Item: {
-          PK: `USER#${userId}`,
-          SK: `GROUP#${groupId}`,
-          entityType: "UserGroupMembership",
-          userId,
-          groupId,
-          joinedAt: new Date().toISOString()
-        }
-      }
-    },
-    {
-      Put: {
-        TableName: TABLE_NAME,
-        Item: {
-          PK: `GROUP#${groupId}`,
-          SK: `USER#${userId}`,
-          entityType: "GroupUserMembership",
-          groupId,
-          userId,
-          joinedAt: new Date().toISOString()
-        }
-      }
-    }
-  ]
-}));
+await docClient.send(
+  new TransactWriteCommand({
+    TransactItems: [
+      {
+        Put: {
+          TableName: TABLE_NAME,
+          Item: {
+            PK: `USER#${userId}`,
+            SK: `GROUP#${groupId}`,
+            entityType: "UserGroupMembership",
+            userId,
+            groupId,
+            joinedAt: new Date().toISOString(),
+          },
+        },
+      },
+      {
+        Put: {
+          TableName: TABLE_NAME,
+          Item: {
+            PK: `GROUP#${groupId}`,
+            SK: `USER#${userId}`,
+            entityType: "GroupUserMembership",
+            groupId,
+            userId,
+            joinedAt: new Date().toISOString(),
+          },
+        },
+      },
+    ],
+  }),
+);
 ```
 
 ### Assign Role to Group (2 writes)
+
 ```typescript
-await docClient.send(new TransactWriteCommand({
-  TransactItems: [
-    {
-      Put: {
-        TableName: TABLE_NAME,
-        Item: {
-          PK: `GROUP#${groupId}`,
-          SK: `ROLE#${roleId}`,
-          entityType: "GroupRoleAssignment",
-          groupId,
-          roleId,
-          assignedAt: new Date().toISOString()
-        }
-      }
-    },
-    {
-      Put: {
-        TableName: TABLE_NAME,
-        Item: {
-          PK: `ROLE#${roleId}`,
-          SK: `GROUP#${groupId}`,
-          entityType: "RoleGroupAssignment",
-          roleId,
-          groupId,
-          assignedAt: new Date().toISOString()
-        }
-      }
-    }
-  ]
-}));
+await docClient.send(
+  new TransactWriteCommand({
+    TransactItems: [
+      {
+        Put: {
+          TableName: TABLE_NAME,
+          Item: {
+            PK: `GROUP#${groupId}`,
+            SK: `ROLE#${roleId}`,
+            entityType: "GroupRoleAssignment",
+            groupId,
+            roleId,
+            assignedAt: new Date().toISOString(),
+          },
+        },
+      },
+      {
+        Put: {
+          TableName: TABLE_NAME,
+          Item: {
+            PK: `ROLE#${roleId}`,
+            SK: `GROUP#${groupId}`,
+            entityType: "RoleGroupAssignment",
+            roleId,
+            groupId,
+            assignedAt: new Date().toISOString(),
+          },
+        },
+      },
+    ],
+  }),
+);
 ```
 
 ## Performance Considerations
 
 ### Without GSI Trade-offs:
+
 ✅ **Pros:**
+
 - Lower cost (no GSI writes/storage)
 - Simpler table structure
 - Better write performance (no GSI propagation delay)
 
 ⚠️ **Cons:**
+
 - Email lookup requires knowing exact email (no partial matching)
 - Permission checks require multiple queries (3-4 round trips)
 - No scan-free way to list all users by type
@@ -409,13 +448,15 @@ await docClient.send(new TransactWriteCommand({
 ### Optimization Strategies:
 
 1. **Cache Permission Checks:**
+
    ```typescript
    // Cache user permissions in session/Redis for 5-10 minutes
    const permissions = await getUserPermissions(userId); // Expensive
-   await redis.set(`perms:${userId}`, JSON.stringify(permissions), 'EX', 600);
+   await redis.set(`perms:${userId}`, JSON.stringify(permissions), "EX", 600);
    ```
 
 2. **Denormalize Common Queries:**
+
    ```typescript
    // Store computed permissions on user metadata
    {
@@ -447,12 +488,14 @@ If you currently have GSI1/GSI2/GSI3, you can migrate by:
 ## Summary
 
 This design achieves all access patterns without GSI by:
+
 - Using **Email → User lookup items** (PK=EMAIL#..., SK=USER)
 - Using **bidirectional relationship items** (User→Group + Group→User)
 - Leveraging **SK prefixes** for efficient queries (begins_with)
 - Using **transactions** to maintain consistency
 
 **Total Items per User with 1 Group, 1 Role:**
+
 - 1 User metadata
 - 1 Email lookup
 - 2 User-Group relationships (forward + reverse)

@@ -3,15 +3,27 @@ import { useNavigate } from "@solidjs/router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { Checkbox } from "~/components/ui/checkbox";
 import { usersApi } from "~/lib/user-api";
 import { PROGRAMS, type UserRole } from "~/lib/schemas/ui/user.schema";
 
 /**
  * Add User Page (UM-2)
- * 
+ *
  * Form for creating new users with conditional fields:
  * - Basic fields: fullName, email, phone, role
  * - Conditional: If role = "Member", show programsDone[] + programsWant[]
@@ -41,7 +53,8 @@ export default function AddUserPage() {
   // ============================================================================
 
   const showProgramsDone = () => role() === "Member";
-  const showProgramsWant = () => ["Member", "Teacher", "Volunteer"].includes(role());
+  const showProgramsWant = () =>
+    ["Member", "Teacher", "Volunteer"].includes(role());
 
   // ============================================================================
   // MULTI-SELECT HANDLERS
@@ -50,7 +63,7 @@ export default function AddUserPage() {
   const toggleProgramDone = (program: string) => {
     const current = programsDone();
     if (current.includes(program)) {
-      setProgramsDone(current.filter(p => p !== program));
+      setProgramsDone(current.filter((p) => p !== program));
     } else {
       setProgramsDone([...current, program]);
     }
@@ -59,7 +72,7 @@ export default function AddUserPage() {
   const toggleProgramWant = (program: string) => {
     const current = programsWant();
     if (current.includes(program)) {
-      setProgramsWant(current.filter(p => p !== program));
+      setProgramsWant(current.filter((p) => p !== program));
     } else {
       setProgramsWant([...current, program]);
     }
@@ -87,14 +100,18 @@ export default function AddUserPage() {
         email: email(),
         phone: phone(),
         role: role() as Exclude<UserRole, "Lead">,
-        programsDone: (role() === "Member" ? programsDone() : []) as typeof PROGRAMS[number][],
-        programsWant: (showProgramsWant() ? programsWant() : []) as typeof PROGRAMS[number][],
+        programsDone: (role() === "Member"
+          ? programsDone()
+          : []) as (typeof PROGRAMS)[number][],
+        programsWant: (showProgramsWant()
+          ? programsWant()
+          : []) as (typeof PROGRAMS)[number][],
         enableLogin: enableLogin(),
         profilePhoto: undefined,
       };
 
       await usersApi.create(newUser);
-      
+
       // Success - navigate back
       navigate("/users");
     } catch (error) {
@@ -144,7 +161,9 @@ export default function AddUserPage() {
                   type="text"
                   placeholder="John Doe"
                   value={fullName()}
-                  onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setFullName(e.currentTarget.value)}
+                  onInput={(
+                    e: InputEvent & { currentTarget: HTMLInputElement },
+                  ) => setFullName(e.currentTarget.value)}
                   required
                 />
               </div>
@@ -157,7 +176,9 @@ export default function AddUserPage() {
                   type="email"
                   placeholder="john@example.com"
                   value={email()}
-                  onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setEmail(e.currentTarget.value)}
+                  onInput={(
+                    e: InputEvent & { currentTarget: HTMLInputElement },
+                  ) => setEmail(e.currentTarget.value)}
                   required
                 />
               </div>
@@ -170,7 +191,9 @@ export default function AddUserPage() {
                   type="tel"
                   placeholder="+1 (555) 123-4567"
                   value={phone()}
-                  onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setPhone(e.currentTarget.value)}
+                  onInput={(
+                    e: InputEvent & { currentTarget: HTMLInputElement },
+                  ) => setPhone(e.currentTarget.value)}
                   required
                 />
               </div>
@@ -184,11 +207,15 @@ export default function AddUserPage() {
                   options={["Admin", "Teacher", "Volunteer", "Member"]}
                   placeholder="Select a role"
                   itemComponent={(props) => (
-                    <SelectItem item={props.item}>{props.item.rawValue}</SelectItem>
+                    <SelectItem item={props.item}>
+                      {props.item.rawValue}
+                    </SelectItem>
                   )}
                 >
                   <SelectTrigger>
-                    <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
+                    <SelectValue<string>>
+                      {(state) => state.selectedOption()}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent />
                 </Select>
@@ -277,8 +304,18 @@ export default function AddUserPage() {
                 <Label for="photo">Profile Photo</Label>
                 <div class="flex items-center gap-4">
                   <div class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
-                    <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    <svg
+                      class="h-8 w-8 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
                     </svg>
                   </div>
                   <Button type="button" variant="outline" size="sm">

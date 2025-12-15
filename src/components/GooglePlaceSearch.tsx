@@ -18,7 +18,7 @@ type GooglePlaceSearchProps = {
 
 /**
  * GooglePlaceSearch Component
- * 
+ *
  * Reusable Google Places autocomplete search component using PlaceAutocompleteElement.
  */
 export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
@@ -28,19 +28,21 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
 
   const [isLoading, setIsLoading] = createSignal(true);
   const [error, setError] = createSignal<string | null>(null);
-  
+
   let autocompleteContainerRef: HTMLDivElement | undefined;
-  let placeAutocompleteElement: HTMLElement & { value?: string } | undefined;
+  let placeAutocompleteElement: (HTMLElement & { value?: string }) | undefined;
 
   // ============================================================================
-  // GOOGLE PLACES API SETUP  
+  // GOOGLE PLACES API SETUP
   // ============================================================================
 
   // Make sure to handle the actual API key securely in production.
   const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-  
+
   if (!API_KEY) {
-    console.error("Google Maps API key not found. Please set VITE_GOOGLE_MAPS_API_KEY in .env.local");
+    console.error(
+      "Google Maps API key not found. Please set VITE_GOOGLE_MAPS_API_KEY in .env.local",
+    );
   }
 
   const loadGoogleMapsAPI = () => {
@@ -53,12 +55,14 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
 
       // Check for existing script
       const existingScript = document.querySelector(
-        'script[src*="maps.googleapis.com"]'
+        'script[src*="maps.googleapis.com"]',
       ) as HTMLScriptElement;
-      
+
       if (existingScript) {
-        existingScript.addEventListener('load', () => resolve());
-        existingScript.addEventListener('error', () => reject(new Error("Failed to load Google Maps API")));
+        existingScript.addEventListener("load", () => resolve());
+        existingScript.addEventListener("error", () =>
+          reject(new Error("Failed to load Google Maps API")),
+        );
         return;
       }
 
@@ -68,7 +72,8 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
       script.async = true;
       script.defer = true;
       script.onload = () => resolve();
-      script.onerror = () => reject(new Error("Failed to load Google Maps API"));
+      script.onerror = () =>
+        reject(new Error("Failed to load Google Maps API"));
       document.head.appendChild(script);
     });
   };
@@ -77,7 +82,10 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
    * Focus the web component (which internally focuses its input).
    */
   const focusInput = () => {
-    if (placeAutocompleteElement && typeof (placeAutocompleteElement as any).focus === 'function') {
+    if (
+      placeAutocompleteElement &&
+      typeof (placeAutocompleteElement as any).focus === "function"
+    ) {
       (placeAutocompleteElement as any).focus();
     }
   };
@@ -100,14 +108,19 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
       }
 
       // Create the PlaceAutocompleteElement
-      const placeAutocomplete = new (google.maps.places as any).PlaceAutocompleteElement();
+      const placeAutocomplete = new (
+        google.maps.places as any
+      ).PlaceAutocompleteElement();
       placeAutocompleteElement = placeAutocomplete;
 
       // Apply styles
       placeAutocomplete.style.border = "1px solid #d1d5db";
       placeAutocomplete.style.borderRadius = "0.375rem";
       placeAutocomplete.style.width = "100%";
-      placeAutocomplete.setAttribute('placeholder', props.placeholder || 'Enter a location');
+      placeAutocomplete.setAttribute(
+        "placeholder",
+        props.placeholder || "Enter a location",
+      );
 
       // Append it to container
       autocompleteContainerRef.appendChild(placeAutocomplete);
@@ -119,7 +132,7 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
       placeAutocomplete.addEventListener("gmp-select", async (event: any) => {
         const { placePrediction } = event;
         const place = placePrediction.toPlace();
-        
+
         await place.fetchFields({
           fields: ["displayName", "formattedAddress", "location", "id"],
         });
@@ -131,7 +144,7 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
           latitude: place.location?.lat(),
           longitude: place.location?.lng(),
         };
-        
+
         props.onPlaceSelect(placeDetails);
       });
 
@@ -149,7 +162,9 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
       await initializePlaceAutocomplete();
     } catch (err) {
       console.error(err);
-      setError((err as Error).message || "Failed to initialize map components.");
+      setError(
+        (err as Error).message || "Failed to initialize map components.",
+      );
       setIsLoading(false);
     }
   });

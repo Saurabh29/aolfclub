@@ -1,18 +1,22 @@
 # OAuth Login Flow Implementation
 
 ## Overview
+
 Implemented complete OAuth login flow that creates User and Email entities when a user logs in for the first time via GitHub or Google.
 
 ## Implementation Details
 
 ### 1. Email Repository (`src/server/db/repositories/email.repository.ts`)
+
 Created `EmailRepository` that manages email entities with:
 
 **Dual-Item Pattern:**
+
 - Entity item: `PK: Email#<id>, SK: METADATA` (standard entity storage)
 - Lookup item: `PK: EMAIL#<address>, SK: METADATA` (fast email address lookup)
 
 **Key Methods:**
+
 - `create(data)` - Creates both entity and lookup items atomically using `TransactWriteCommand`
 - `findByEmail(email)` - Looks up email by address using `EMAIL#<address>` pattern
 - `findByUserId(userId)` - Finds all emails for a user via relationships
@@ -22,6 +26,7 @@ Created `EmailRepository` that manages email entities with:
 - `remove(emailId)` - Soft deletes email by setting status to "removed"
 
 ### 2. Updated Relationship Schema (`src/lib/schemas/db/relationship.schema.ts`)
+
 Added bidirectional USER-EMAIL relationships:
 
 ```typescript
@@ -34,6 +39,7 @@ HAS_EMAIL: {
 ### 3. Auth Callback Implementation (`src/server/auth/index.ts`)
 
 #### signIn Callback
+
 When a user signs in via OAuth:
 
 1. **Check if email exists** using `emailRepository.findByEmail()`
@@ -46,13 +52,17 @@ When a user signs in via OAuth:
      - `EMAIL → USER` (IDENTIFIES)
 
 #### jwt Callback
+
 Enriches JWT token with user ID:
+
 - Looks up email by address
 - Finds associated user via `IDENTIFIES` relationship
 - Adds `userId` to token for session
 
 #### session Callback
+
 Enriches session with user data:
+
 - Fetches full user entity by ID from token
 - Adds `id`, `userType`, and `status` to session
 - Available in client via `useAuth()` hook
@@ -93,6 +103,7 @@ Enriches session with user data:
 ## DynamoDB Schema
 
 ### User Entity
+
 ```
 PK: USER#<userId>
 SK: METADATA
@@ -112,6 +123,7 @@ SK: METADATA
 ### Email Entity (Dual Items)
 
 **Entity Item:**
+
 ```
 PK: Email#<emailId>
 SK: METADATA
@@ -129,6 +141,7 @@ SK: METADATA
 ```
 
 **Lookup Item (for fast email lookup):**
+
 ```
 PK: EMAIL#john@example.com
 SK: METADATA
@@ -140,6 +153,7 @@ SK: METADATA
 ### Relationships (Bidirectional)
 
 **USER → EMAIL:**
+
 ```
 PK: USER#<userId>
 SK: EMAIL#<emailId>
@@ -157,6 +171,7 @@ SK: EMAIL#<emailId>
 ```
 
 **EMAIL → USER:**
+
 ```
 PK: EMAIL#<emailId>
 SK: USER#<userId>
@@ -176,6 +191,7 @@ SK: USER#<userId>
 ## Access Patterns
 
 ### 1. Login by Email
+
 ```typescript
 // Fast lookup using EMAIL# pattern
 const email = await emailRepository.findByEmail("john@example.com");
@@ -184,19 +200,21 @@ const email = await emailRepository.findByEmail("john@example.com");
 const relationships = await relationshipRepository.findFromSource(
   "Email",
   email.id,
-  "IDENTIFIES"
+  "IDENTIFIES",
 );
 const userId = relationships[0].targetId;
 const user = await userRepository.getById(userId);
 ```
 
 ### 2. Get User's Emails
+
 ```typescript
 // Query: PK: USER#<id>, SK begins_with EMAIL#
 const emails = await emailRepository.findByUserId(userId);
 ```
 
 ### 3. Get User's Primary Email
+
 ```typescript
 const primaryEmail = await emailRepository.findPrimaryByUserId(userId);
 ```
@@ -204,6 +222,7 @@ const primaryEmail = await emailRepository.findPrimaryByUserId(userId);
 ## User Status Lifecycle
 
 ### OAuth User
+
 1. **Login:** User created with `status: "pending_assignment"`, `userType: null`
 2. **Admin Review:** Admin views pending users list
 3. **Assignment:** Admin assigns `userType: "teacher"` and adds to UserGroup
@@ -211,6 +230,7 @@ const primaryEmail = await emailRepository.findPrimaryByUserId(userId);
 5. **Access:** User can now access features based on permissions
 
 ### CSV Import User
+
 1. **Import:** User created with `userType: "teacher"`, `status: "active"`
 2. **Group Assignment:** Admin adds to UserGroup(s) for permissions
 3. **Access:** Immediate access based on assigned groups/roles
@@ -218,17 +238,20 @@ const primaryEmail = await emailRepository.findPrimaryByUserId(userId);
 ## Next Steps
 
 ### Admin UI Needed
+
 - [ ] Create "Pending Users" page listing OAuth users awaiting assignment
 - [ ] Add user type assignment form (teacher/volunteer/member/guest/admin)
 - [ ] Add user group assignment interface
 - [ ] Show user status and last login
 
 ### Permission System
+
 - [ ] Implement `hasPermission(userId, resource, action)` helper
 - [ ] Add middleware to check permissions on protected routes
 - [ ] Cache permission checks in session/Redis for performance
 
 ### Email Management UI
+
 - [ ] Allow users to add/remove email addresses
 - [ ] Email verification flow for non-OAuth emails
 - [ ] Set primary email selector
@@ -236,6 +259,7 @@ const primaryEmail = await emailRepository.findPrimaryByUserId(userId);
 ## Testing
 
 ### Manual Testing
+
 1. Start dev server: `pnpm run dev`
 2. Navigate to: `http://localhost:3000/api/auth/signin`
 3. Click "Sign in with GitHub" or "Sign in with Google"
@@ -245,6 +269,7 @@ const primaryEmail = await emailRepository.findPrimaryByUserId(userId);
    - Relationships created (bidirectional)
 
 ### Database Queries
+
 ```bash
 # View user
 aws dynamodb query \
@@ -264,9 +289,11 @@ aws dynamodb query \
 ## Files Modified/Created
 
 ### Created
+
 - `src/server/db/repositories/email.repository.ts` - Email entity repository
 
 ### Modified
+
 - `src/server/auth/index.ts` - OAuth callbacks with user/email creation
 - `src/server/db/repositories/index.ts` - Export EmailRepository
 - `src/lib/schemas/db/relationship.schema.ts` - Add HAS_EMAIL relationship

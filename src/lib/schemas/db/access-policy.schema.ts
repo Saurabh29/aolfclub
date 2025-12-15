@@ -1,6 +1,6 @@
 /**
  * ACCESS POLICY ENTITY SCHEMAS
- * 
+ *
  * Server-side schemas for access control entities
  * NO UI concerns, NO embedded relationships
  */
@@ -10,7 +10,7 @@ import { BaseEntitySchema } from "./base.schema";
 
 /**
  * ROLE ENTITY
- * 
+ *
  * Defines system roles
  * Closed enum: admin, teacher, volunteer, member, guest
  */
@@ -35,7 +35,7 @@ export type Role = z.infer<typeof RoleSchema>;
 
 /**
  * PERMISSION ENTITY
- * 
+ *
  * Defines granular permissions
  */
 export const PermissionSchema = BaseEntitySchema.extend({
@@ -50,7 +50,7 @@ export type Permission = z.infer<typeof PermissionSchema>;
 
 /**
  * USER GROUP ENTITY
- * 
+ *
  * Logical grouping of users
  */
 export const UserGroupSchema = BaseEntitySchema.extend({

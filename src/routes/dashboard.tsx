@@ -1,10 +1,21 @@
 import { A, useLocation } from "@solidjs/router";
 import { For, Show, createSignal, createResource } from "solid-js";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Separator } from "~/components/ui/separator";
 import { cn } from "~/lib/utils";
-import { NavigationItemSchema, SummaryCardSchema, type NavigationItem, type SummaryCard } from "~/lib/schemas/ui/dashboard.schema";
+import {
+  NavigationItemSchema,
+  SummaryCardSchema,
+  type NavigationItem,
+  type SummaryCard,
+} from "~/lib/schemas/ui/dashboard.schema";
 import AuthDropdown from "~/components/AuthDropdown";
 import { TaskList, type Location } from "~/components/LocationTaskSelector";
 import { getLocations } from "~/server/actions/locations";
@@ -91,9 +102,12 @@ const summaryCards: SummaryCard[] = [
 
 function Icon(props: { name: string; class?: string }) {
   const iconPaths: Record<string, string> = {
-    "home-outline": "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
-    "users-outline": "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z",
-    "location-outline": "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z",
+    "home-outline":
+      "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
+    "users-outline":
+      "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z",
+    "location-outline":
+      "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z",
   };
 
   return (
@@ -104,7 +118,11 @@ function Icon(props: { name: string; class?: string }) {
       stroke="currentColor"
       stroke-width="2"
     >
-      <path stroke-linecap="round" stroke-linejoin="round" d={iconPaths[props.name] || iconPaths["home-outline"]} />
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d={iconPaths[props.name] || iconPaths["home-outline"]}
+      />
     </svg>
   );
 }
@@ -113,15 +131,25 @@ function Icon(props: { name: string; class?: string }) {
 // HEADER COMPONENT
 // ============================================================================
 
-function Header(props: { locations: Location[]; onLocationChange: (id: string) => void }) {
+function Header(props: {
+  locations: Location[];
+  onLocationChange: (id: string) => void;
+}) {
   return (
     <header class="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
       <div class="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-16">
         <div class="flex items-center gap-2">
-          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-600 text-white font-bold text-lg">A</div>
-          <span class="hidden sm:inline-block text-lg font-semibold text-gray-900">AOLF Club</span>
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-600 text-white font-bold text-lg">
+            A
+          </div>
+          <span class="hidden sm:inline-block text-lg font-semibold text-gray-900">
+            AOLF Club
+          </span>
         </div>
-        <AuthDropdown locations={props.locations} onLocationChange={props.onLocationChange} />
+        <AuthDropdown
+          locations={props.locations}
+          onLocationChange={props.onLocationChange}
+        />
       </div>
     </header>
   );
@@ -140,21 +168,31 @@ function DesktopSidebar() {
         <For each={navigationItems}>
           {(item) => {
             const isActive = () => location.pathname === item.href;
-            
+
             return (
               <A
                 href={item.href}
                 class={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2",
-                  isActive() ? "bg-sky-50 text-sky-700 font-medium" : "text-gray-700 hover:bg-gray-50"
+                  isActive()
+                    ? "bg-sky-50 text-sky-700 font-medium"
+                    : "text-gray-700 hover:bg-gray-50",
                 )}
               >
-                <Icon name={item.icon} class={cn("h-5 w-5 flex-shrink-0", isActive() ? "text-sky-600" : "text-gray-400")} />
+                <Icon
+                  name={item.icon}
+                  class={cn(
+                    "h-5 w-5 flex-shrink-0",
+                    isActive() ? "text-sky-600" : "text-gray-400",
+                  )}
+                />
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-medium truncate">{item.label}</p>
                   <Show when={item.description}>
-                    <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">{item.description}</p>
+                    <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                      {item.description}
+                    </p>
                   </Show>
                 </div>
               </A>
@@ -186,11 +224,24 @@ function MobileBottomNav() {
                 class={cn(
                   "flex flex-col items-center justify-center gap-1 py-2 px-3 min-w-[4rem] transition-all duration-200 rounded-lg",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-inset",
-                  isActive() ? "text-sky-600" : "text-gray-600"
+                  isActive() ? "text-sky-600" : "text-gray-600",
                 )}
               >
-                <Icon name={item.icon} class={cn("h-6 w-6 transition-transform", isActive() ? "scale-110" : "")} />
-                <span class={cn("text-xs font-medium", isActive() ? "text-sky-600" : "text-gray-600")}>{item.label}</span>
+                <Icon
+                  name={item.icon}
+                  class={cn(
+                    "h-6 w-6 transition-transform",
+                    isActive() ? "scale-110" : "",
+                  )}
+                />
+                <span
+                  class={cn(
+                    "text-xs font-medium",
+                    isActive() ? "text-sky-600" : "text-gray-600",
+                  )}
+                >
+                  {item.label}
+                </span>
                 <Show when={isActive()}>
                   <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1 w-1 h-1 rounded-full bg-sky-600" />
                 </Show>
@@ -209,7 +260,7 @@ function MobileBottomNav() {
 
 export default function Dashboard() {
   const [selectedLocationId, setSelectedLocationId] = createSignal<string>("");
-  
+
   // Fetch locations from database
   const [locationsData] = createResource(async () => {
     const result = await getLocations();
@@ -222,7 +273,10 @@ export default function Dashboard() {
 
   return (
     <div class="min-h-screen bg-gray-50">
-      <Header locations={locationsData() || []} onLocationChange={setSelectedLocationId} />
+      <Header
+        locations={locationsData() || []}
+        onLocationChange={setSelectedLocationId}
+      />
       <DesktopSidebar />
       <MobileBottomNav />
 
@@ -230,8 +284,12 @@ export default function Dashboard() {
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Hero Section */}
           <section class="mb-8">
-            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">Welcome back, Alex!</h1>
-            <p class="text-lg text-gray-600">Here's your quick overview for today.</p>
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
+              Welcome back, Alex!
+            </h1>
+            <p class="text-lg text-gray-600">
+              Here's your quick overview for today.
+            </p>
           </section>
 
           <Separator class="my-6" />
@@ -262,13 +320,25 @@ export default function Dashboard() {
                           <Badge variant="secondary">{card.badge}</Badge>
                         </Show>
                       </div>
-                      <CardTitle class="group-hover:text-sky-700 transition-colors">{card.title}</CardTitle>
+                      <CardTitle class="group-hover:text-sky-700 transition-colors">
+                        {card.title}
+                      </CardTitle>
                       <CardDescription>{card.description}</CardDescription>
                     </CardHeader>
                     <CardContent class="relative">
                       <div class="absolute bottom-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg class="h-5 w-5 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        <svg
+                          class="h-5 w-5 text-sky-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 5l7 7-7 7"
+                          />
                         </svg>
                       </div>
                     </CardContent>

@@ -3,19 +3,19 @@ import type { ZodSchema, ZodError } from "zod";
 
 /**
  * Custom hook for form state management with Zod validation
- * 
+ *
  * @param schema - Zod schema for validation
  * @param initialValues - Initial form values
  * @returns Form state and helpers
- * 
+ *
  * @example
  * ```tsx
  * const form = useForm(UserSchema, {
  *   name: "",
  *   email: "",
  * });
- * 
- * <Input 
+ *
+ * <Input
  *   value={form.values().name}
  *   onInput={(e) => form.setValue("name", e.currentTarget.value)}
  * />
@@ -23,10 +23,12 @@ import type { ZodSchema, ZodError } from "zod";
  */
 export function useForm<T extends Record<string, any>>(
   schema: ZodSchema<T>,
-  initialValues: T
+  initialValues: T,
 ) {
   const [values, setValues] = createSignal<T>(initialValues);
-  const [errors, setErrors] = createSignal<Partial<Record<keyof T, string>>>({});
+  const [errors, setErrors] = createSignal<Partial<Record<keyof T, string>>>(
+    {},
+  );
   const [touched, setTouched] = createSignal<Set<keyof T>>(new Set());
   const [isSubmitting, setIsSubmitting] = createSignal(false);
 
@@ -47,16 +49,16 @@ export function useForm<T extends Record<string, any>>(
   };
 
   const setValue = <K extends keyof T>(field: K, value: T[K]) => {
-    setValues(prev => ({ ...prev, [field]: value }));
-    setTouched(prev => new Set(prev).add(field));
+    setValues((prev) => ({ ...prev, [field]: value }));
+    setTouched((prev) => new Set(prev).add(field));
   };
 
   const setFieldError = (field: keyof T, error: string) => {
-    setErrors(prev => ({ ...prev, [field]: error }));
+    setErrors((prev) => ({ ...prev, [field]: error }));
   };
 
   const clearFieldError = (field: keyof T) => {
-    setErrors(prev => {
+    setErrors((prev) => {
       const newErrors = { ...prev };
       delete newErrors[field];
       return newErrors;
@@ -78,10 +80,12 @@ export function useForm<T extends Record<string, any>>(
     setIsSubmitting(false);
   };
 
-  const handleSubmit = async (onSubmit: (values: T) => Promise<void> | void) => {
+  const handleSubmit = async (
+    onSubmit: (values: T) => Promise<void> | void,
+  ) => {
     // Mark all fields as touched
     setTouched(new Set(Object.keys(values()) as (keyof T)[]));
-    
+
     if (!validate()) {
       return;
     }

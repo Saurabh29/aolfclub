@@ -37,7 +37,8 @@ export const TaskRecurrence = {
   MONTHLY: "Monthly",
 } as const;
 
-export type TaskRecurrence = (typeof TaskRecurrence)[keyof typeof TaskRecurrence];
+export type TaskRecurrence =
+  (typeof TaskRecurrence)[keyof typeof TaskRecurrence];
 
 /**
  * Attachment type
@@ -61,33 +62,41 @@ export type Attachment = z.infer<typeof AttachmentSchema>;
  */
 export const TaskSchema = z.object({
   id: z.string(),
-  
+
   // Step 1 Fields
   title: z.string().min(3, "Task title is required (minimum 3 characters)"),
-  description: z.string().min(10, "Task description is required (minimum 10 characters)"),
-  assignedTo: z.array(z.string()).min(1, "At least one Teacher or Volunteer must be assigned"), // User IDs
+  description: z
+    .string()
+    .min(10, "Task description is required (minimum 10 characters)"),
+  assignedTo: z
+    .array(z.string())
+    .min(1, "At least one Teacher or Volunteer must be assigned"), // User IDs
   dueDate: z.string(), // ISO date string
   priority: z.enum([TaskPriority.LOW, TaskPriority.MEDIUM, TaskPriority.HIGH]),
   attachments: z.array(AttachmentSchema).default([]),
-  recurrence: z.enum([
-    TaskRecurrence.NONE,
-    TaskRecurrence.DAILY,
-    TaskRecurrence.WEEKLY,
-    TaskRecurrence.MONTHLY,
-  ]).default(TaskRecurrence.NONE),
-  
+  recurrence: z
+    .enum([
+      TaskRecurrence.NONE,
+      TaskRecurrence.DAILY,
+      TaskRecurrence.WEEKLY,
+      TaskRecurrence.MONTHLY,
+    ])
+    .default(TaskRecurrence.NONE),
+
   // Step 2 Fields (populated after assignment)
   assignedLeads: z.array(z.string()).default([]), // Lead IDs
   assignedParticipants: z.array(z.string()).default([]), // User IDs (Members only)
-  
+
   // Metadata
-  status: z.enum([
-    TaskStatus.DRAFT,
-    TaskStatus.TO_DO,
-    TaskStatus.IN_PROGRESS,
-    TaskStatus.COMPLETED,
-  ]).default(TaskStatus.DRAFT),
-  
+  status: z
+    .enum([
+      TaskStatus.DRAFT,
+      TaskStatus.TO_DO,
+      TaskStatus.IN_PROGRESS,
+      TaskStatus.COMPLETED,
+    ])
+    .default(TaskStatus.DRAFT),
+
   createdBy: z.string(), // User ID of creator
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -105,16 +114,22 @@ export type Task = z.infer<typeof TaskSchema>;
  */
 export const CreateTaskFormSchema = z.object({
   title: z.string().min(3, "Task title is required (minimum 3 characters)"),
-  description: z.string().min(10, "Task description is required (minimum 10 characters)"),
-  assignedTo: z.array(z.string()).min(1, "Please assign at least one Teacher or Volunteer"),
+  description: z
+    .string()
+    .min(10, "Task description is required (minimum 10 characters)"),
+  assignedTo: z
+    .array(z.string())
+    .min(1, "Please assign at least one Teacher or Volunteer"),
   dueDate: z.string().min(1, "Due date is required"),
   priority: z.enum([TaskPriority.LOW, TaskPriority.MEDIUM, TaskPriority.HIGH]),
-  recurrence: z.enum([
-    TaskRecurrence.NONE,
-    TaskRecurrence.DAILY,
-    TaskRecurrence.WEEKLY,
-    TaskRecurrence.MONTHLY,
-  ]).default(TaskRecurrence.NONE),
+  recurrence: z
+    .enum([
+      TaskRecurrence.NONE,
+      TaskRecurrence.DAILY,
+      TaskRecurrence.WEEKLY,
+      TaskRecurrence.MONTHLY,
+    ])
+    .default(TaskRecurrence.NONE),
   // Attachments handled separately via file upload
 });
 
@@ -129,7 +144,9 @@ export const AssignParticipantsFormSchema = z.object({
   assignedParticipants: z.array(z.string()).default([]),
 });
 
-export type AssignParticipantsForm = z.infer<typeof AssignParticipantsFormSchema>;
+export type AssignParticipantsForm = z.infer<
+  typeof AssignParticipantsFormSchema
+>;
 
 /**
  * Update Task Status Schema

@@ -4,15 +4,15 @@
 
 ```
 1. User logs in with email: "john@example.com"
-   
+
 2. Lookup user by email:
    Query: PK = "EMAIL#john@example.com", SK = "USER"
    Result: { userId: "01ABC123...", email: "john@example.com", provider: "google" }
-   
+
 3. Get user metadata:
    Query: PK = "USER#01ABC123...", SK = "METADATA"
    Result: { id: "01ABC123...", name: "John Doe", userType: "teacher", ... }
-   
+
 4. Session created with userId
 ```
 
@@ -125,17 +125,17 @@ Result: [
 // Create roles
 const adminRole = await roleRepository.create({
   name: "admin",
-  description: "Full system access"
+  description: "Full system access",
 });
 
 const teacherRole = await roleRepository.create({
   name: "teacher",
-  description: "Can manage students and content"
+  description: "Can manage students and content",
 });
 
 const volunteerRole = await roleRepository.create({
   name: "volunteer",
-  description: "Limited access to help with tasks"
+  description: "Limited access to help with tasks",
 });
 
 // Create permissions
@@ -150,37 +150,37 @@ const permissions = [
 ];
 
 const createdPermissions = await Promise.all(
-  permissions.map(p => permissionRepository.create(p))
+  permissions.map((p) => permissionRepository.create(p)),
 );
 
 // Assign permissions to admin role (all permissions)
 await Promise.all(
-  createdPermissions.map(p => 
+  createdPermissions.map((p) =>
     relationshipRepository.saveRelationship({
       PK: `ROLE#${adminRole.id}`,
       SK: `PERMISSION#${p.id}`,
       entityType: "RolePermission",
       roleId: adminRole.id,
-      permissionId: p.id
-    })
-  )
+      permissionId: p.id,
+    }),
+  ),
 );
 
 // Assign limited permissions to teacher role
-const teacherPermissions = createdPermissions.filter(p => 
-  p.resource !== "users" || p.action === "read"
+const teacherPermissions = createdPermissions.filter(
+  (p) => p.resource !== "users" || p.action === "read",
 );
 
 await Promise.all(
-  teacherPermissions.map(p => 
+  teacherPermissions.map((p) =>
     relationshipRepository.saveRelationship({
       PK: `ROLE#${teacherRole.id}`,
       SK: `PERMISSION#${p.id}`,
       entityType: "RolePermission",
       roleId: teacherRole.id,
-      permissionId: p.id
-    })
-  )
+      permissionId: p.id,
+    }),
+  ),
 );
 ```
 
@@ -190,7 +190,9 @@ await Promise.all(
 // middleware/auth.ts
 import { cache } from "~/server/cache"; // Redis or in-memory
 
-export async function getUserPermissions(userId: string): Promise<Permission[]> {
+export async function getUserPermissions(
+  userId: string,
+): Promise<Permission[]> {
   // Check cache first
   const cached = await cache.get(`permissions:${userId}`);
   if (cached) {
@@ -199,23 +201,42 @@ export async function getUserPermissions(userId: string): Promise<Permission[]> 
 
   // Query from DynamoDB (3-4 queries)
   const groups = await getUserGroups(userId);
-  const roles = await Promise.all(groups.map(g => getGroupRoles(g.groupId))).then(r => r.flat());
-  const permissions = await Promise.all(roles.map(r => getRolePermissions(r.roleId))).then(p => p.flat());
+  const roles = await Promise.all(
+    groups.map((g) => getGroupRoles(g.groupId)),
+  ).then((r) => r.flat());
+  const permissions = await Promise.all(
+    roles.map((r) => getRolePermissions(r.roleId)),
+  ).then((p) => p.flat());
 
   // Cache for 5 minutes
-  await cache.set(`permissions:${userId}`, JSON.stringify(permissions), 'EX', 300);
+  await cache.set(
+    `permissions:${userId}`,
+    JSON.stringify(permissions),
+    "EX",
+    300,
+  );
 
   return permissions;
 }
 
-export function hasPermission(permissions: Permission[], resource: string, action: string): boolean {
-  return permissions.some(p => p.resource === resource && p.action === action);
+export function hasPermission(
+  permissions: Permission[],
+  resource: string,
+  action: string,
+): boolean {
+  return permissions.some(
+    (p) => p.resource === resource && p.action === action,
+  );
 }
 
 // Usage in route guard
-export async function requirePermission(userId: string, resource: string, action: string) {
+export async function requirePermission(
+  userId: string,
+  resource: string,
+  action: string,
+) {
   const permissions = await getUserPermissions(userId);
-  
+
   if (!hasPermission(permissions, resource, action)) {
     throw new Error("Forbidden: Insufficient permissions");
   }
@@ -225,6 +246,7 @@ export async function requirePermission(userId: string, resource: string, action
 ## Table Item Count Example
 
 For a system with:
+
 - 100 users
 - 10 groups
 - 5 roles
@@ -234,6 +256,7 @@ For a system with:
 - Average role has 10 permissions
 
 **Total Items:**
+
 - Users: 100 (metadata)
 - Emails: 100 (lookup items)
 - User-Group: 200 × 2 = 400 (bidirectional)

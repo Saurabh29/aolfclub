@@ -83,20 +83,20 @@ declare namespace google {
           request: AutocompletionRequest,
           callback: (
             predictions: PlacePrediction[] | null,
-            status: PlacesServiceStatus
-          ) => void
+            status: PlacesServiceStatus,
+          ) => void,
         ): void;
       }
 
       class PlacesService {
         constructor(attrContainer: HTMLDivElement | HTMLElement);
-        
+
         getDetails(
           request: PlaceDetailsRequest,
           callback: (
             place: PlaceResult | null,
-            status: PlacesServiceStatus
-          ) => void
+            status: PlacesServiceStatus,
+          ) => void,
         ): void;
       }
 
@@ -104,13 +104,13 @@ declare namespace google {
 
       // Status enum
       enum PlacesServiceStatus {
-        OK = 'OK',
-        ZERO_RESULTS = 'ZERO_RESULTS',
-        INVALID_REQUEST = 'INVALID_REQUEST',
-        OVER_QUERY_LIMIT = 'OVER_QUERY_LIMIT',
-        REQUEST_DENIED = 'REQUEST_DENIED',
-        UNKNOWN_ERROR = 'UNKNOWN_ERROR',
-        NOT_FOUND = 'NOT_FOUND',
+        OK = "OK",
+        ZERO_RESULTS = "ZERO_RESULTS",
+        INVALID_REQUEST = "INVALID_REQUEST",
+        OVER_QUERY_LIMIT = "OVER_QUERY_LIMIT",
+        REQUEST_DENIED = "REQUEST_DENIED",
+        UNKNOWN_ERROR = "UNKNOWN_ERROR",
+        NOT_FOUND = "NOT_FOUND",
       }
     }
   }

@@ -1,6 +1,12 @@
 import { createSignal, createEffect, onMount, For, Show } from "solid-js";
 import { cn } from "~/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Skeleton } from "~/components/ui/skeleton";
 import {
@@ -44,7 +50,7 @@ export type Task = {
 /**
  * Mock tasks database - organized by location ID.
  * Each location has its own set of tasks.
- * 
+ *
  * NOTE: Location data now comes from the database via getLocations() server function.
  * This component should be updated to accept locations as a prop.
  */
@@ -107,14 +113,16 @@ const MOCK_TASKS_DB: Record<string, Task[]> = {
 /**
  * Simulates an async API call to fetch tasks for a specific location.
  * Includes artificial delay to demonstrate loading states.
- * 
+ *
  * @param locationId - The ID of the location to fetch tasks for
  * @returns Promise resolving to an array of tasks
  */
 export async function getTasksForLocation(locationId: string): Promise<Task[]> {
   // Simulate network delay (300-800ms)
-  await new Promise((resolve) => setTimeout(resolve, 300 + Math.random() * 500));
-  
+  await new Promise((resolve) =>
+    setTimeout(resolve, 300 + Math.random() * 500),
+  );
+
   // Return tasks for the specified location, or empty array if none exist
   return MOCK_TASKS_DB[locationId] || [];
 }
@@ -125,17 +133,17 @@ export async function getTasksForLocation(locationId: string): Promise<Task[]> {
 
 /**
  * LocationSelector Component
- * 
+ *
  * Displays location selection UI that adapts based on the number of available locations:
  * - Single location: Shows a read-only Badge (no interaction needed)
  * - Multiple locations: Shows a Select dropdown with all options
- * 
+ *
  * Features:
  * - Mobile-first responsive design
  * - localStorage persistence for selected location
  * - Automatic selection on mount (from localStorage or first location)
  * - Clean visual integration with dashboard styling
- * 
+ *
  * @param props.locations - Array of available locations
  * @param props.onSelect - Callback fired when location changes
  */
@@ -162,11 +170,12 @@ function LocationSelector(props: LocationSelectorProps) {
 
     // Try to restore from localStorage
     const storedId = localStorage.getItem("selectedLocationId");
-    const isStoredIdValid = storedId && props.locations.some((loc) => loc.id === storedId);
+    const isStoredIdValid =
+      storedId && props.locations.some((loc) => loc.id === storedId);
 
     // Use stored value if valid, otherwise use first location
     const initialId = isStoredIdValid ? storedId : props.locations[0].id;
-    
+
     setSelectedLocationId(initialId);
     props.onSelect(initialId);
   });
@@ -183,7 +192,7 @@ function LocationSelector(props: LocationSelectorProps) {
 
   /**
    * CASE 1: Single Location
-   * 
+   *
    * When user has only one location, display it as a read-only Badge.
    * Reasoning:
    * - No selection needed (only one option)
@@ -217,7 +226,10 @@ function LocationSelector(props: LocationSelectorProps) {
         */}
         <div class="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
           <div class="flex flex-col gap-3">
-            <label for="location-select" class="text-sm font-semibold text-gray-900">
+            <label
+              for="location-select"
+              class="text-sm font-semibold text-gray-900"
+            >
               Select Your Location
             </label>
             <Select
@@ -225,11 +237,13 @@ function LocationSelector(props: LocationSelectorProps) {
               onChange={(value) => {
                 if (value) handleLocationChange(value);
               }}
-              options={props.locations.map(loc => loc.id)}
+              options={props.locations.map((loc) => loc.id)}
               placeholder="Choose a location..."
               itemComponent={(itemProps) => (
                 <SelectItem item={itemProps.item}>
-                  {props.locations.find(loc => loc.id === itemProps.item.rawValue)?.name || itemProps.item.rawValue}
+                  {props.locations.find(
+                    (loc) => loc.id === itemProps.item.rawValue,
+                  )?.name || itemProps.item.rawValue}
                 </SelectItem>
               )}
             >
@@ -241,7 +255,9 @@ function LocationSelector(props: LocationSelectorProps) {
                 <SelectValue<string>>
                   {(state) => {
                     const selectedId = state.selectedOption();
-                    const location = props.locations.find(loc => loc.id === selectedId);
+                    const location = props.locations.find(
+                      (loc) => loc.id === selectedId,
+                    );
                     return location?.name || "Select location";
                   }}
                 </SelectValue>
@@ -261,21 +277,21 @@ function LocationSelector(props: LocationSelectorProps) {
 
 /**
  * TaskList Component
- * 
+ *
  * Displays tasks for a selected location with loading and empty states.
- * 
+ *
  * Features:
  * - Skeleton loading animation during data fetch
  * - Card-based task display with status badges and priority indicators
  * - Empty state with helpful messaging
  * - Mobile-responsive grid layout
  * - Visual consistency with dashboard summary cards
- * 
+ *
  * State Management:
  * - Reactively fetches tasks when selectedLocationId changes
  * - Manages loading state during async operations
  * - Clears stale data before loading new tasks
- * 
+ *
  * @param props.selectedLocationId - The ID of the currently selected location
  */
 type TaskListProps = {
@@ -297,14 +313,14 @@ export function TaskList(props: TaskListProps) {
 
   /**
    * Fetch tasks whenever the selected location changes.
-   * 
+   *
    * Flow:
    * 1. Clear existing tasks (prevent showing stale data)
    * 2. Set loading state
    * 3. Fetch new tasks from API
    * 4. Update tasks state
    * 5. Clear loading state
-   * 
+   *
    * This ensures clean transitions between locations.
    */
   createEffect(() => {
@@ -334,7 +350,10 @@ export function TaskList(props: TaskListProps) {
    * Uses solid-ui Badge component with predefined variants.
    */
   const getStatusBadgeVariant = (status: Task["status"]) => {
-    const variants: Record<Task["status"], "default" | "secondary" | "outline"> = {
+    const variants: Record<
+      Task["status"],
+      "default" | "secondary" | "outline"
+    > = {
       pending: "outline",
       "in-progress": "default",
       completed: "secondary",
@@ -415,17 +434,27 @@ export function TaskList(props: TaskListProps) {
                 <CardHeader>
                   <div class="flex items-start justify-between gap-2 mb-2">
                     <CardTitle class="text-base">{task.title}</CardTitle>
-                    <Badge variant={getStatusBadgeVariant(task.status)} class="flex-shrink-0 text-xs">
+                    <Badge
+                      variant={getStatusBadgeVariant(task.status)}
+                      class="flex-shrink-0 text-xs"
+                    >
                       {task.status}
                     </Badge>
                   </div>
-                  <CardDescription class="text-sm">{task.description}</CardDescription>
+                  <CardDescription class="text-sm">
+                    {task.description}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div class="flex items-center justify-between text-sm">
                     <div class="flex items-center gap-1">
                       <span class="text-gray-600">Priority:</span>
-                      <span class={cn("font-medium", getPriorityColor(task.priority))}>
+                      <span
+                        class={cn(
+                          "font-medium",
+                          getPriorityColor(task.priority),
+                        )}
+                      >
                         {task.priority}
                       </span>
                     </div>
@@ -451,20 +480,20 @@ export function TaskList(props: TaskListProps) {
 
 /**
  * LocationTaskSelector - Main Wrapper Component
- * 
+ *
  * Combines LocationSelector and TaskList into a single, cohesive feature.
  * This is the primary export and page-ready component.
- * 
+ *
  * Architecture:
  * - Manages selectedLocationId as central state
  * - Passes locations and handlers to LocationSelector
  * - Passes selectedLocationId to TaskList for data fetching
  * - Integrates seamlessly with dashboard layout
- * 
+ *
  * Usage:
  * ```tsx
  * import LocationTaskSelector from "~/components/LocationTaskSelector";
- * 
+ *
  * export default function SomePage() {
  *   return (
  *     <main>
@@ -473,18 +502,20 @@ export function TaskList(props: TaskListProps) {
  *   );
  * }
  * ```
- * 
+ *
  * Features:
  * - Self-contained (no props needed)
  * - Uses mock data (easy to replace with real API)
  * - Mobile-first responsive layout
  * - Consistent spacing with dashboard cards
  * - localStorage persistence across sessions
- * 
+ *
  * NOTE: This component uses mock location data. To use real database locations,
  * pass locations as a prop or fetch them using getLocations() from ~/server/actions/locations
  */
-export default function LocationTaskSelector(props?: { locations?: Location[] }) {
+export default function LocationTaskSelector(props?: {
+  locations?: Location[];
+}) {
   /**
    * Currently selected location ID.
    * Shared between LocationSelector (writes) and TaskList (reads).
@@ -505,7 +536,10 @@ export default function LocationTaskSelector(props?: { locations?: Location[] })
         - Updates selectedLocationId via setSelectedLocationId callback
         - Persists selection to localStorage
       */}
-      <LocationSelector locations={locations} onSelect={setSelectedLocationId} />
+      <LocationSelector
+        locations={locations}
+        onSelect={setSelectedLocationId}
+      />
 
       {/* 
         TaskList below with spacing

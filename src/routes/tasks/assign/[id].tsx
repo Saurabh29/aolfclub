@@ -1,8 +1,22 @@
-import { createSignal, createEffect, createResource, createMemo, For, Show, onMount } from "solid-js";
+import {
+  createSignal,
+  createEffect,
+  createResource,
+  createMemo,
+  For,
+  Show,
+  onMount,
+} from "solid-js";
 import { useParams, useNavigate } from "@solidjs/router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { cn } from "~/lib/utils";
 import { tasksApi, usersApi, leadsApi } from "~/lib/user-api";
@@ -11,7 +25,7 @@ import { UserRole } from "~/lib/schemas/ui/user.schema";
 
 /**
  * Assign Participants/Leads Page - Step 2
- * 
+ *
  * Features:
  * - Top Section: Task Summary (title, assigned teachers/volunteers, due date, status)
  * - Two Tabs: Leads & Participants (Members)
@@ -102,7 +116,7 @@ export default function AssignParticipantsPage() {
       (l) =>
         l.fullName.toLowerCase().includes(query) ||
         l.phone.includes(query) ||
-        (l.email && l.email.toLowerCase().includes(query))
+        (l.email && l.email.toLowerCase().includes(query)),
     );
   });
 
@@ -115,7 +129,7 @@ export default function AssignParticipantsPage() {
       (m) =>
         m.fullName.toLowerCase().includes(query) ||
         m.email.toLowerCase().includes(query) ||
-        m.phone.includes(query)
+        m.phone.includes(query),
     );
   });
 
@@ -142,7 +156,8 @@ export default function AssignParticipantsPage() {
   };
 
   const isLeadSelected = (leadId: string) => selectedLeadIds().includes(leadId);
-  const isMemberSelected = (memberId: string) => selectedMemberIds().includes(memberId);
+  const isMemberSelected = (memberId: string) =>
+    selectedMemberIds().includes(memberId);
 
   const selectAllLeads = () => {
     setSelectedLeadIds(filteredLeads().map((l) => l.id));
@@ -172,10 +187,10 @@ export default function AssignParticipantsPage() {
     try {
       // Get the newly selected IDs (not already assigned)
       const newLeads = selectedLeadIds().filter(
-        (id) => !currentTask.assignedLeads.includes(id)
+        (id) => !currentTask.assignedLeads.includes(id),
       );
       const newMembers = selectedMemberIds().filter(
-        (id) => !currentTask.assignedParticipants.includes(id)
+        (id) => !currentTask.assignedParticipants.includes(id),
       );
 
       if (newLeads.length === 0 && newMembers.length === 0) {
@@ -185,7 +200,7 @@ export default function AssignParticipantsPage() {
 
       await tasksApi.assignParticipants(currentTask.id, newLeads, newMembers);
       setShowSuccess(true);
-      
+
       // Reload task data
       refetchTask();
     } catch (error) {
@@ -227,10 +242,10 @@ export default function AssignParticipantsPage() {
     if (!currentTask) return 0;
 
     const newLeads = selectedLeadIds().filter(
-      (id) => !currentTask.assignedLeads.includes(id)
+      (id) => !currentTask.assignedLeads.includes(id),
     ).length;
     const newMembers = selectedMemberIds().filter(
-      (id) => !currentTask.assignedParticipants.includes(id)
+      (id) => !currentTask.assignedParticipants.includes(id),
     ).length;
 
     return newLeads + newMembers;
@@ -247,7 +262,9 @@ export default function AssignParticipantsPage() {
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div class="flex items-center justify-between">
             <div>
-              <h1 class="text-2xl font-bold text-gray-900">Assign Participants</h1>
+              <h1 class="text-2xl font-bold text-gray-900">
+                Assign Participants
+              </h1>
               <p class="text-sm text-gray-600 mt-1">
                 Step 2 of 2: Select leads and members to assign to this task
               </p>
@@ -265,11 +282,14 @@ export default function AssignParticipantsPage() {
 
       {/* Main Content */}
       <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Show when={!task.loading} fallback={
-          <div class="text-center py-12">
-            <p class="text-gray-500">Loading task...</p>
-          </div>
-        }>
+        <Show
+          when={!task.loading}
+          fallback={
+            <div class="text-center py-12">
+              <p class="text-gray-500">Loading task...</p>
+            </div>
+          }
+        >
           <Show when={task()}>
             {(currentTask) => (
               <div class="space-y-6">
@@ -280,13 +300,28 @@ export default function AssignParticipantsPage() {
                       <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
                           <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
-                            <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            <svg
+                              class="w-6 h-6 text-white"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M5 13l4 4L19 7"
+                              />
                             </svg>
                           </div>
                           <div>
-                            <h3 class="font-semibold text-green-900">Participants Assigned Successfully!</h3>
-                            <p class="text-sm text-green-700">The selected participants have been added to the task.</p>
+                            <h3 class="font-semibold text-green-900">
+                              Participants Assigned Successfully!
+                            </h3>
+                            <p class="text-sm text-green-700">
+                              The selected participants have been added to the
+                              task.
+                            </p>
                           </div>
                         </div>
                         <div class="flex items-center gap-2">
@@ -301,10 +336,7 @@ export default function AssignParticipantsPage() {
                           >
                             Assign More
                           </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => navigate("/tasks")}
-                          >
+                          <Button size="sm" onClick={() => navigate("/tasks")}>
                             Go to Task List
                           </Button>
                         </div>
@@ -323,7 +355,9 @@ export default function AssignParticipantsPage() {
                       {/* Task Title */}
                       <div>
                         <p class="text-xs text-gray-600 mb-1">Task Title</p>
-                        <p class="font-semibold text-gray-900">{currentTask().title}</p>
+                        <p class="font-semibold text-gray-900">
+                          {currentTask().title}
+                        </p>
                       </div>
 
                       {/* Assigned To */}
@@ -344,7 +378,9 @@ export default function AssignParticipantsPage() {
                       <div class="flex gap-6">
                         <div>
                           <p class="text-xs text-gray-600 mb-1">Due Date</p>
-                          <p class="text-sm text-gray-900">{formatDate(currentTask().dueDate)}</p>
+                          <p class="text-sm text-gray-900">
+                            {formatDate(currentTask().dueDate)}
+                          </p>
                         </div>
                         <div>
                           <p class="text-xs text-gray-600 mb-1">Status</p>
@@ -352,7 +388,7 @@ export default function AssignParticipantsPage() {
                             class={cn(
                               currentTask().status === TaskStatus.DRAFT
                                 ? "bg-gray-100 text-gray-800"
-                                : "bg-blue-100 text-blue-800"
+                                : "bg-blue-100 text-blue-800",
                             )}
                           >
                             {currentTask().status}
@@ -363,19 +399,45 @@ export default function AssignParticipantsPage() {
 
                     {/* Current Assignments */}
                     <div class="mt-4 pt-4 border-t border-gray-200">
-                      <p class="text-xs text-gray-600 mb-2">Current Assignments</p>
+                      <p class="text-xs text-gray-600 mb-2">
+                        Current Assignments
+                      </p>
                       <div class="flex items-center gap-4 text-sm text-gray-700">
                         <span class="flex items-center gap-1">
-                          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          <svg
+                            class="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                            />
                           </svg>
-                          <strong>{currentTask().assignedLeads.length}</strong> Leads
+                          <strong>{currentTask().assignedLeads.length}</strong>{" "}
+                          Leads
                         </span>
                         <span class="flex items-center gap-1">
-                          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                          <svg
+                            class="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                            />
                           </svg>
-                          <strong>{currentTask().assignedParticipants.length}</strong> Members
+                          <strong>
+                            {currentTask().assignedParticipants.length}
+                          </strong>{" "}
+                          Members
                         </span>
                       </div>
                     </div>
@@ -390,7 +452,7 @@ export default function AssignParticipantsPage() {
                       "px-4 py-2 font-medium text-sm border-b-2 transition-colors",
                       activeTab() === "leads"
                         ? "border-blue-500 text-blue-600"
-                        : "border-transparent text-gray-600 hover:text-gray-900"
+                        : "border-transparent text-gray-600 hover:text-gray-900",
                     )}
                   >
                     Leads
@@ -406,7 +468,7 @@ export default function AssignParticipantsPage() {
                       "px-4 py-2 font-medium text-sm border-b-2 transition-colors",
                       activeTab() === "members"
                         ? "border-blue-500 text-blue-600"
-                        : "border-transparent text-gray-600 hover:text-gray-900"
+                        : "border-transparent text-gray-600 hover:text-gray-900",
                     )}
                   >
                     Participants (Members)
@@ -425,15 +487,24 @@ export default function AssignParticipantsPage() {
                       <div class="flex items-center justify-between">
                         <div>
                           <CardTitle>Select Leads</CardTitle>
-                          <CardDescription>Choose leads to assign to this task</CardDescription>
+                          <CardDescription>
+                            Choose leads to assign to this task
+                          </CardDescription>
                         </div>
                         <div class="flex items-center gap-2">
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={selectedLeadIds().length === filteredLeads().length ? deselectAllLeads : selectAllLeads}
+                            onClick={
+                              selectedLeadIds().length ===
+                              filteredLeads().length
+                                ? deselectAllLeads
+                                : selectAllLeads
+                            }
                           >
-                            {selectedLeadIds().length === filteredLeads().length ? "Deselect All" : "Select All"}
+                            {selectedLeadIds().length === filteredLeads().length
+                              ? "Deselect All"
+                              : "Select All"}
                           </Button>
                         </div>
                       </div>
@@ -445,7 +516,9 @@ export default function AssignParticipantsPage() {
                           type="search"
                           placeholder="Search leads by name, phone, or email..."
                           value={leadSearchQuery()}
-                          onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setLeadSearchQuery(e.currentTarget.value)}
+                          onInput={(
+                            e: InputEvent & { currentTarget: HTMLInputElement },
+                          ) => setLeadSearchQuery(e.currentTarget.value)}
                           class="w-full"
                         />
                       </div>
@@ -460,35 +533,56 @@ export default function AssignParticipantsPage() {
                                 "w-full flex items-center justify-between px-4 py-3 rounded-md border-2 transition-colors",
                                 isLeadSelected(lead.id)
                                   ? "border-blue-500 bg-blue-50"
-                                  : "border-gray-200 bg-white hover:border-gray-300"
+                                  : "border-gray-200 bg-white hover:border-gray-300",
                               )}
                             >
                               <div class="flex items-center gap-3">
-                                <div class={cn(
-                                  "w-5 h-5 rounded border-2 flex items-center justify-center",
-                                  isLeadSelected(lead.id)
-                                    ? "border-blue-500 bg-blue-500"
-                                    : "border-gray-300 bg-white"
-                                )}>
+                                <div
+                                  class={cn(
+                                    "w-5 h-5 rounded border-2 flex items-center justify-center",
+                                    isLeadSelected(lead.id)
+                                      ? "border-blue-500 bg-blue-500"
+                                      : "border-gray-300 bg-white",
+                                  )}
+                                >
                                   <Show when={isLeadSelected(lead.id)}>
-                                    <svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    <svg
+                                      class="w-3 h-3 text-white"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="3"
+                                        d="M5 13l4 4L19 7"
+                                      />
                                     </svg>
                                   </Show>
                                 </div>
                                 <div class="text-left">
-                                  <p class="font-medium text-gray-900">{lead.fullName}</p>
-                                  <p class="text-xs text-gray-600">{lead.phone} {lead.email && `• ${lead.email}`}</p>
+                                  <p class="font-medium text-gray-900">
+                                    {lead.fullName}
+                                  </p>
+                                  <p class="text-xs text-gray-600">
+                                    {lead.phone}{" "}
+                                    {lead.email && `• ${lead.email}`}
+                                  </p>
                                 </div>
                               </div>
-                              <Badge class={getLeadSourceColor(lead.leadSource)}>
+                              <Badge
+                                class={getLeadSourceColor(lead.leadSource)}
+                              >
                                 {lead.leadSource}
                               </Badge>
                             </button>
                           )}
                         </For>
                         <Show when={filteredLeads().length === 0}>
-                          <p class="text-sm text-gray-500 text-center py-8">No leads found</p>
+                          <p class="text-sm text-gray-500 text-center py-8">
+                            No leads found
+                          </p>
                         </Show>
                       </div>
                     </CardContent>
@@ -502,15 +596,25 @@ export default function AssignParticipantsPage() {
                       <div class="flex items-center justify-between">
                         <div>
                           <CardTitle>Select Participants (Members)</CardTitle>
-                          <CardDescription>Choose members to assign to this task</CardDescription>
+                          <CardDescription>
+                            Choose members to assign to this task
+                          </CardDescription>
                         </div>
                         <div class="flex items-center gap-2">
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={selectedMemberIds().length === filteredMembers().length ? deselectAllMembers : selectAllMembers}
+                            onClick={
+                              selectedMemberIds().length ===
+                              filteredMembers().length
+                                ? deselectAllMembers
+                                : selectAllMembers
+                            }
                           >
-                            {selectedMemberIds().length === filteredMembers().length ? "Deselect All" : "Select All"}
+                            {selectedMemberIds().length ===
+                            filteredMembers().length
+                              ? "Deselect All"
+                              : "Select All"}
                           </Button>
                         </div>
                       </div>
@@ -522,7 +626,9 @@ export default function AssignParticipantsPage() {
                           type="search"
                           placeholder="Search members by name, email, or phone..."
                           value={memberSearchQuery()}
-                          onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setMemberSearchQuery(e.currentTarget.value)}
+                          onInput={(
+                            e: InputEvent & { currentTarget: HTMLInputElement },
+                          ) => setMemberSearchQuery(e.currentTarget.value)}
                           class="w-full"
                         />
                       </div>
@@ -537,25 +643,41 @@ export default function AssignParticipantsPage() {
                                 "w-full flex items-center justify-between px-4 py-3 rounded-md border-2 transition-colors",
                                 isMemberSelected(member.id)
                                   ? "border-blue-500 bg-blue-50"
-                                  : "border-gray-200 bg-white hover:border-gray-300"
+                                  : "border-gray-200 bg-white hover:border-gray-300",
                               )}
                             >
                               <div class="flex items-center gap-3">
-                                <div class={cn(
-                                  "w-5 h-5 rounded border-2 flex items-center justify-center",
-                                  isMemberSelected(member.id)
-                                    ? "border-blue-500 bg-blue-500"
-                                    : "border-gray-300 bg-white"
-                                )}>
+                                <div
+                                  class={cn(
+                                    "w-5 h-5 rounded border-2 flex items-center justify-center",
+                                    isMemberSelected(member.id)
+                                      ? "border-blue-500 bg-blue-500"
+                                      : "border-gray-300 bg-white",
+                                  )}
+                                >
                                   <Show when={isMemberSelected(member.id)}>
-                                    <svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    <svg
+                                      class="w-3 h-3 text-white"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="3"
+                                        d="M5 13l4 4L19 7"
+                                      />
                                     </svg>
                                   </Show>
                                 </div>
                                 <div class="text-left">
-                                  <p class="font-medium text-gray-900">{member.fullName}</p>
-                                  <p class="text-xs text-gray-600">{member.email} • {member.phone}</p>
+                                  <p class="font-medium text-gray-900">
+                                    {member.fullName}
+                                  </p>
+                                  <p class="text-xs text-gray-600">
+                                    {member.email} • {member.phone}
+                                  </p>
                                 </div>
                               </div>
                               <div class="flex items-center gap-2">
@@ -569,7 +691,9 @@ export default function AssignParticipantsPage() {
                           )}
                         </For>
                         <Show when={filteredMembers().length === 0}>
-                          <p class="text-sm text-gray-500 text-center py-8">No members found</p>
+                          <p class="text-sm text-gray-500 text-center py-8">
+                            No members found
+                          </p>
                         </Show>
                       </div>
                     </CardContent>
@@ -580,7 +704,8 @@ export default function AssignParticipantsPage() {
                 <div class="flex items-center justify-between pt-4">
                   <div class="text-sm text-gray-600">
                     <Show when={totalNewAssignments() > 0}>
-                      {totalNewAssignments()} new assignment{totalNewAssignments() !== 1 ? "s" : ""} ready
+                      {totalNewAssignments()} new assignment
+                      {totalNewAssignments() !== 1 ? "s" : ""} ready
                     </Show>
                   </div>
                   <div class="flex items-center gap-3">
@@ -595,14 +720,27 @@ export default function AssignParticipantsPage() {
                       disabled={totalNewAssignments() === 0 || saving()}
                       class="flex items-center gap-2"
                     >
-                      <Show when={saving()} fallback={
-                        <>
-                          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                          </svg>
-                          Assign Selected ({totalNewAssignments()})
-                        </>
-                      }>
+                      <Show
+                        when={saving()}
+                        fallback={
+                          <>
+                            <svg
+                              class="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 4v16m8-8H4"
+                              />
+                            </svg>
+                            Assign Selected ({totalNewAssignments()})
+                          </>
+                        }
+                      >
                         <span>Assigning...</span>
                       </Show>
                     </Button>

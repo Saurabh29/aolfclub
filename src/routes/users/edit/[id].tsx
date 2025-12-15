@@ -3,15 +3,31 @@ import { useNavigate, useParams } from "@solidjs/router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { Checkbox } from "~/components/ui/checkbox";
 import { usersApi } from "~/lib/user-api";
-import { PROGRAMS, type User, type UserRole } from "~/lib/schemas/ui/user.schema";
+import {
+  PROGRAMS,
+  type User,
+  type UserRole,
+} from "~/lib/schemas/ui/user.schema";
 
 /**
  * Edit User Page (UM-4)
- * 
+ *
  * Form for editing existing users with prefilled data:
  * - Loads user data by ID from route params
  * - Same conditional fields as Add User page
@@ -77,7 +93,8 @@ export default function EditUserPage() {
   // ============================================================================
 
   const showProgramsDone = () => role() === "Member";
-  const showProgramsWant = () => ["Member", "Teacher", "Volunteer"].includes(role());
+  const showProgramsWant = () =>
+    ["Member", "Teacher", "Volunteer"].includes(role());
 
   // ============================================================================
   // MULTI-SELECT HANDLERS
@@ -86,7 +103,7 @@ export default function EditUserPage() {
   const toggleProgramDone = (program: string) => {
     const current = programsDone();
     if (current.includes(program)) {
-      setProgramsDone(current.filter(p => p !== program));
+      setProgramsDone(current.filter((p) => p !== program));
     } else {
       setProgramsDone([...current, program]);
     }
@@ -95,7 +112,7 @@ export default function EditUserPage() {
   const toggleProgramWant = (program: string) => {
     const current = programsWant();
     if (current.includes(program)) {
-      setProgramsWant(current.filter(p => p !== program));
+      setProgramsWant(current.filter((p) => p !== program));
     } else {
       setProgramsWant([...current, program]);
     }
@@ -123,14 +140,18 @@ export default function EditUserPage() {
         email: email(),
         phone: phone(),
         role: role() as Exclude<UserRole, "Lead">,
-        programsDone: (role() === "Member" ? programsDone() : []) as typeof PROGRAMS[number][],
-        programsWant: (showProgramsWant() ? programsWant() : []) as typeof PROGRAMS[number][],
+        programsDone: (role() === "Member"
+          ? programsDone()
+          : []) as (typeof PROGRAMS)[number][],
+        programsWant: (showProgramsWant()
+          ? programsWant()
+          : []) as (typeof PROGRAMS)[number][],
         enableLogin: enableLogin(),
         profilePhoto: user()?.profilePhoto,
       };
 
       await usersApi.update(params.id, updatedUser);
-      
+
       // Success - navigate back
       navigate("/users");
     } catch (error) {
@@ -190,11 +211,12 @@ export default function EditUserPage() {
                     type="text"
                     placeholder="John Doe"
                     value={fullName()}
-                    onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setFullName(e.currentTarget.value)}
+                    onInput={(
+                      e: InputEvent & { currentTarget: HTMLInputElement },
+                    ) => setFullName(e.currentTarget.value)}
                     required
                   />
                 </div>
-
                 {/* Email */}
                 <div class="space-y-2">
                   <Label for="email">Email *</Label>
@@ -203,11 +225,12 @@ export default function EditUserPage() {
                     type="email"
                     placeholder="john@example.com"
                     value={email()}
-                    onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setEmail(e.currentTarget.value)}
+                    onInput={(
+                      e: InputEvent & { currentTarget: HTMLInputElement },
+                    ) => setEmail(e.currentTarget.value)}
                     required
                   />
                 </div>
-
                 {/* Phone */}
                 <div class="space-y-2">
                   <Label for="phone">Phone *</Label>
@@ -216,29 +239,35 @@ export default function EditUserPage() {
                     type="tel"
                     placeholder="+1 (555) 123-4567"
                     value={phone()}
-                    onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) => setPhone(e.currentTarget.value)}
+                    onInput={(
+                      e: InputEvent & { currentTarget: HTMLInputElement },
+                    ) => setPhone(e.currentTarget.value)}
                     required
                   />
                 </div>
-
                 {/* Role */}
-                  <div class="space-y-2">
-                    <Label for="role">Role *</Label>
-                    <Select
-                      value={role()}
-                      onChange={(value) => value && setRole(value as UserRole)}
-                      options={["Admin", "Teacher", "Volunteer", "Member"]}
-                      placeholder="Select a role"
-                      itemComponent={(props) => (
-                        <SelectItem item={props.item}>{props.item.rawValue}</SelectItem>
-                      )}
-                    >
-                      <SelectTrigger>
-                        <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent />
-                    </Select>
-                  </div>                {/* Programs Done (Members only) */}
+                <div class="space-y-2">
+                  <Label for="role">Role *</Label>
+                  <Select
+                    value={role()}
+                    onChange={(value) => value && setRole(value as UserRole)}
+                    options={["Admin", "Teacher", "Volunteer", "Member"]}
+                    placeholder="Select a role"
+                    itemComponent={(props) => (
+                      <SelectItem item={props.item}>
+                        {props.item.rawValue}
+                      </SelectItem>
+                    )}
+                  >
+                    <SelectTrigger>
+                      <SelectValue<string>>
+                        {(state) => state.selectedOption()}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent />
+                  </Select>
+                </div>{" "}
+                {/* Programs Done (Members only) */}
                 <Show when={showProgramsDone()}>
                   <div class="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
                     <Label class="text-sm font-semibold text-blue-900">
@@ -266,7 +295,6 @@ export default function EditUserPage() {
                     </div>
                   </div>
                 </Show>
-
                 {/* Programs Want To Do (Members, Teachers, Volunteers) */}
                 <Show when={showProgramsWant()}>
                   <div class="space-y-3 p-4 bg-green-50 rounded-lg border border-green-200">
@@ -295,7 +323,6 @@ export default function EditUserPage() {
                     </div>
                   </div>
                 </Show>
-
                 {/* Enable Login */}
                 <div class="flex items-center space-x-2 p-4 bg-gray-50 rounded-lg">
                   <Checkbox
@@ -315,7 +342,6 @@ export default function EditUserPage() {
                     </p>
                   </div>
                 </div>
-
                 {/* Profile Photo (Placeholder) */}
                 <div class="space-y-2">
                   <Label for="photo">Profile Photo</Label>
@@ -324,12 +350,26 @@ export default function EditUserPage() {
                       <Show
                         when={user()?.profilePhoto}
                         fallback={
-                          <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          <svg
+                            class="h-8 w-8 text-gray-400"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                            />
                           </svg>
                         }
                       >
-                        <img src={user()!.profilePhoto} alt={fullName()} class="w-full h-full rounded-full object-cover" />
+                        <img
+                          src={user()!.profilePhoto}
+                          alt={fullName()}
+                          class="w-full h-full rounded-full object-cover"
+                        />
                       </Show>
                     </div>
                     <Button type="button" variant="outline" size="sm">
@@ -340,7 +380,6 @@ export default function EditUserPage() {
                     Photo upload feature coming soon
                   </p>
                 </div>
-
                 {/* Actions */}
                 <div class="flex gap-3 pt-4 border-t border-gray-200">
                   <Button

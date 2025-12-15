@@ -1,6 +1,6 @@
 /**
  * BASE DATABASE SCHEMAS
- * 
+ *
  * Server-side only - NO UI concerns
  * All entities extend these base schemas
  */
@@ -9,12 +9,12 @@ import { z } from "zod";
 
 /**
  * ALL ENTITY TYPES (Authoritative List)
- * 
+ *
  * Core Entities: User, Location
  * Access Policy: Role, Permission, UserGroup
  * Identity & Auth: Email
  * Relationship: Relationship (generic edge)
- * 
+ *
  * Note: User is the single entity type for all users (teacher, volunteer, member, guest, admin)
  *       userType field distinguishes user types
  */

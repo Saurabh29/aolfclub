@@ -1,8 +1,8 @@
 /**
  * DATABASE SCHEMA EXPORTS
- * 
+ *
  * Phase 1: Schema Definitions Only
- * 
+ *
  * Central export point for all database schemas
  * Server-side only - NO UI concerns
  */
@@ -56,10 +56,7 @@ export {
 
 import { z } from "zod";
 import type { AllEntityTypes } from "./base.schema";
-import {
-  UserSchema,
-  LocationSchema,
-} from "./core-entities.schema";
+import { UserSchema, LocationSchema } from "./core-entities.schema";
 import {
   RoleSchema,
   PermissionSchema,
@@ -90,9 +87,7 @@ export const DBEntitySchemaMap = {
 /**
  * Get schema for a given entity type
  */
-export function getSchemaForEntityType(
-  entityType: AllEntityTypes
-): z.ZodType {
+export function getSchemaForEntityType(entityType: AllEntityTypes): z.ZodType {
   return DBEntitySchemaMap[entityType];
 }
 
@@ -101,7 +96,7 @@ export function getSchemaForEntityType(
  */
 export function validateEntity(
   entityType: AllEntityTypes,
-  data: unknown
+  data: unknown,
 ): unknown {
   const schema = DBEntitySchemaMap[entityType];
   return schema.parse(data);
@@ -110,10 +105,7 @@ export function validateEntity(
 /**
  * Safe validation that returns result object
  */
-export function validateEntitySafe(
-  entityType: AllEntityTypes,
-  data: unknown
-) {
+export function validateEntitySafe(entityType: AllEntityTypes, data: unknown) {
   const schema = DBEntitySchemaMap[entityType];
   return schema.safeParse(data);
 }
