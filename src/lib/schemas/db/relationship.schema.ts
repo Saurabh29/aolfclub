@@ -22,10 +22,10 @@ import { BaseEntitySchema, AllEntityTypeSchema } from "./base.schema";
 const ALLOWED_RELATIONSHIPS = {
   IDENTIFIES: {
     allowedSources: ["Email"] as const,
-    allowedTargets: ["Teacher", "Volunteer", "Member", "Lead"] as const,
+    allowedTargets: ["User"] as const,
   },
   MEMBER_OF: {
-    allowedSources: ["Teacher", "Volunteer", "Member", "Lead"] as const,
+    allowedSources: ["User"] as const,
     allowedTargets: ["UserGroup"] as const,
   },
   ASSIGNED_ROLE: {
@@ -37,24 +37,16 @@ const ALLOWED_RELATIONSHIPS = {
     allowedTargets: ["Permission"] as const,
   },
   ASSIGNED_TO: {
-    allowedSources: ["Teacher", "Lead"] as const,
-    allowedTargets: ["Location", "Teacher", "Volunteer", "Member", "Lead"] as const,
+    allowedSources: ["User"] as const,
+    allowedTargets: ["Location", "User"] as const,
   },
-  TEACHES_AT: {
-    allowedSources: ["Teacher"] as const,
-    allowedTargets: ["Location"] as const,
-  },
-  VOLUNTEERS_AT: {
-    allowedSources: ["Volunteer"] as const,
-    allowedTargets: ["Location"] as const,
-  },
-  BELONGS_TO: {
-    allowedSources: ["Member"] as const,
+  WORKS_AT: {
+    allowedSources: ["User"] as const,
     allowedTargets: ["Location"] as const,
   },
   MANAGED_BY: {
     allowedSources: ["Location"] as const,
-    allowedTargets: ["Teacher"] as const,
+    allowedTargets: ["User"] as const,
   },
 } as const;
 
@@ -65,14 +57,12 @@ const ALLOWED_RELATIONSHIPS = {
  * 
  * ALLOWED RELATIONSHIPS:
  * - Email → User (IDENTIFIES)
- * - User/Teacher/Volunteer/Member/Lead → UserGroup (MEMBER_OF)
+ * - User → UserGroup (MEMBER_OF)
  * - UserGroup → Role (ASSIGNED_ROLE)
  * - Role → Permission (HAS_PERMISSION)
- * - User/Lead → Location/User/Teacher (ASSIGNED_TO)
- * - Teacher → Location (TEACHES_AT)
- * - Volunteer → Location (VOLUNTEERS_AT)
- * - Member → Location (BELONGS_TO)
- * - Location → User/Teacher (MANAGED_BY)
+ * - User → Location/User (ASSIGNED_TO)
+ * - User → Location (WORKS_AT)
+ * - Location → User (MANAGED_BY)
  */
 export const RelationshipSchema = BaseEntitySchema.extend({
   entityType: z.literal("Relationship"),

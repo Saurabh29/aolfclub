@@ -1,17 +1,165 @@
 # AI Coding Agent Instructions
 
 ## Project Overview
-This is a **SolidStart** application using SolidJS with file-based routing, Tailwind CSS v4, and pnpm package management. SolidStart is Solid's meta-framework (similar to Next.js for React) with SSR/SSG capabilities powered by Vinxi.
+**AOLF Club** is a multi-tenant location management system for educational centers. Users authenticate via OAuth (GitHub/Google), admins manage locations, and roles are assigned per-location. The app supports CSV imports, user invitations, and location-specific URLs for access control.
 
 ## Architecture & Key Patterns
 
 ### Framework Stack
 - **SolidJS** (reactive UI library with fine-grained reactivity using signals)
-- **SolidStart** (`@solidjs/start`) for SSR/routing/meta-framework features
+- **SolidStart** (`@solidjs/start`) for SSR/routing/meta-framework features - SolidJS's meta-framework like Next.js for React
 - **Vinxi** as the build tool and dev server
 - **Tailwind CSS v4** via `@tailwindcss/vite` plugin
 - **TypeScript** with `jsxImportSource: "solid-js"`
-- **solid-ui** (v2.6.1) - Official component library from https://www.solid-ui.com/
+- **AWS DynamoDB** for database (single table design with GSI indexes)
+- **@solid-mediakit/auth** with Auth.js for OAuth authentication
+- **Zod** for schema validation (both DB and UI layers)
+
+### Database Layer - AWS DynamoDB Single Table Design
+
+**CRITICAL ARCHITECTURE**: All entities stored in ONE table with composite keys. **NO GSI (Global Secondary Indexes)** - all access patterns use PK/SK patterns.
+
+#### Table Structure (See `src/server/db/client.ts` and `docs/DYNAMODB_SCHEMA_NO_GSI.md`)
+- **Primary Keys**: `PK: "EntityType#uuid"` + `SK: "METADATA"` for entity metadata
+- **Email Lookup**: `PK: "EMAIL#user@example.com"` + `SK: "USER"` (no GSI needed)
+- **Relationships**: Bidirectional items (e.g., `PK: "USER#uuid" + SK: "GROUP#uuid"` AND `PK: "GROUP#uuid" + SK: "USER#uuid"`)
+- **Queries**: Use `begins_with(SK, "PREFIX#")` for one-to-many relationships
+
+#### Repository Pattern (See `src/server/db/repositories/`)
+All repositories extend `BaseRepository<TSchema>` providing:
+- `create(data)` - Auto-generates ULID, timestamps, validates with Zod
+- `getById(id)`, `getByIdOrThrow(id)`
+- `update(id, updates)`, `softDelete(id)`, `hardDelete(id)`
+- `list(options)` with pagination
+- `batchGet(ids)`, `exists(id)`
+
+**Entity-Specific Repositories**:
+- `userRepository` - All user types (teacher, volunteer, member, guest, admin)
+- `locationRepository`
+- `roleRepository`, `permissionRepository`, `userGroupRepository`
+- `emailRepository` (for identity resolution)
+- `relationshipRepository` (generic graph edges for many-to-many)
+
+**Example Usage**:
+```typescript
+import { userRepository, locationRepository } from "~/server/db/repositories";
+
+// Create user (OAuth flow)
+const user = await userRepository.create({
+  name: "John Doe",
+  email: "john@example.com",
+  userType: null,  // Will be assigned by admin
+  status: "pending_assignment"
+});
+
+// Create user (CSV import flow)
+const teacher = await userRepository.create({
+  name: "Jane Smith",
+  email: "jane@example.com",
+  userType: "teacher",
+  status: "active",
+  teacherData: {
+    subject: "Mathematics",
+    qualification: "M.Ed"
+  }
+});
+
+// Get pending users
+const pending = await userRepository.findPending();
+
+// Assign user type
+await userRepository.assignUserType(userId, "teacher");
+```
+
+**Permission System (No GSI)**:
+- User → UserGroup → Role → Permission hierarchy
+- Email lookup: `PK: "EMAIL#email"` + `SK: "USER"` returns `userId`
+- User's groups: Query `PK: "USER#id"` with `SK begins_with GROUP#`
+- Group's roles: Query `PK: "GROUP#id"` with `SK begins_with ROLE#`
+- Role's permissions: Query `PK: "ROLE#id"` with `SK begins_with PERMISSION#`
+- Bidirectional relationships maintained with transaction writes (see `docs/DYNAMODB_SCHEMA_NO_GSI.md`)
+
+### Schema Layer - Two-Tier Validation
+
+**DB Schemas** (`src/lib/schemas/db/`):
+- Server-side only, extend `BaseEntitySchema` (id, entityType, createdAt, updatedAt)
+- Strict validation for persistence
+- Example: `TeacherSchema`, `LocationSchema`, `RelationshipSchema`
+
+**UI Schemas** (`src/lib/schemas/ui/`):
+- Form validation, user input
+- Subset of DB schema fields (no timestamps, computed fields)
+- Example: `AddLocationFormSchema` (no id/timestamps, optional Google Places data)
+
+**Why Two Schemas?**
+- DB schemas enforce storage contracts
+- UI schemas match form requirements
+- Prevents leaking DB internals to client
+
+### Server Actions Pattern
+
+All mutations use SolidStart server actions with `"use server"` directive (see `src/server/actions/locations.ts`):
+
+```typescript
+"use server"; // File-level directive
+
+export async function createLocation(formData: AddLocationForm) {
+  "use server"; // Function-level directive
+  
+  // 1. Validate with UI schema
+  const validatedData = AddLocationFormSchema.parse(formData);
+  
+  // 2. Transform to DB entity
+  const location: Location = {
+    id: ulid(),
+    entityType: "Location",
+    ...validatedData,
+    createdAt: now,
+    updatedAt: now,
+  };
+  
+  // 3. Validate with DB schema
+  LocationSchema.parse(location);
+  
+  // 4. Persist via repository
+  await locationRepository.create(location);
+  
+  return { success: true, data: location };
+}
+```
+
+**Rules**:
+- Always use `"use server"` at both file and function level for server actions
+- Validate input with UI schema, entity with DB schema
+- Return `{ success: boolean, data?: T, error?: string }` shape
+- Handle errors with try/catch, return error messages to client
+
+### Authentication & Authorization
+
+#### OAuth Setup (See `src/server/auth/index.ts`)
+- **Providers**: GitHub, Google (via `@solid-mediakit/auth`)
+- **Config**: `authOptions: SolidAuthConfig` with callbacks
+- **Route**: `/api/auth/*` handled by `[...solidauth].ts`
+- **Client**: `useAuth()` hook from `@solid-mediakit/auth/client`
+
+**App-level Session**:
+```tsx
+// src/app.tsx wraps all routes
+<SessionProvider>
+  <Suspense>{props.children}</Suspense>
+</SessionProvider>
+```
+
+**Protected Routes**:
+Use `(protected)` route group for auth-required pages (see `src/routes/(protected)/locations.tsx`).
+
+**User Creation Workflows** (See `docs/USER_CREATION_WORKFLOWS.md`):
+1. **OAuth Login**: User created with `status: "pending_assignment"`, `userType: null`
+   - Limited access until admin assigns userType and group
+2. **CSV Import**: User created with `status: "active"`, userType known from CSV
+   - Type-specific data stored in nested objects (`teacherData`, `volunteerData`, etc.)
+3. **Permission Assignment**: Admin assigns user to UserGroup(s), which have Roles with Permissions
+4. **Email Lookup**: Always create `PK: EMAIL#...` item for both flows (no GSI needed)
 
 ### UI Component Library - solid-ui
 **IMPORTANT: Always use solid-ui components when available before writing custom code.**
@@ -55,9 +203,32 @@ import { Badge } from "~/components/ui/badge";
 File-based routing in `src/routes/`:
 - `index.tsx` → `/` (home page)
 - `about.tsx` → `/about`
+- `(protected)/locations.tsx` → `/locations` (auth-protected via route group)
 - `[...404].tsx` → catch-all 404 handler (bracket syntax for dynamic/catch-all routes)
 
 Navigation uses `<A>` component from `@solidjs/router`, NOT standard `<a>` for SPA routing.
+
+### Data Fetching Pattern
+
+Use `createResource` for async data loading (see `src/routes/(protected)/locations.tsx`):
+
+```tsx
+const [locations, { refetch, mutate }] = createResource(async () => {
+  const result = await getLocations(); // Server action
+  if (!result.success) throw new Error(result.error);
+  return result.data;
+});
+
+// Refetch after mutation
+await createLocation(formData);
+refetch();
+```
+
+**Rules**:
+- Use `createResource` for initial page data, NOT `createEffect`
+- Server actions return `{ success, data?, error? }` shape
+- Always check `result.success` before accessing `result.data`
+- Use `refetch()` to reload data after mutations
 
 ### Entry Points
 - **Client**: `src/entry-client.tsx` mounts `<StartClient />` to DOM
@@ -138,10 +309,94 @@ const active = (path: string) => path == location.pathname ? "border-sky-600" : 
 3. **Reactivity**: Signals are functions - call `count()` to read, `setCount(value)` to write
 4. **SSR-Safe**: Components may render on server - avoid direct DOM access in component body
 5. **File Routing**: Route files must export default component, organize by file structure not config
+6. **Server Actions**: Always use `"use server"` directive at file AND function level
+7. **Data Flow**: UI Schema → Server Action → DB Schema → Repository → DynamoDB
+8. **IDs**: Use `ulid()` for all entity IDs (time-ordered, sortable, 26 chars)
 
 ## Testing & Debugging
-No test setup currently configured. Dev server runs on default Vinxi port with HMR enabled.
+
+### Database Testing
+```bash
+pnpm db:test  # Test DynamoDB connection (src/server/db/test-connection.ts)
+```
+
+### Local DynamoDB Setup
+See `src/server/db/repositories/README.md` for DynamoDB Local setup instructions.
+
+### Dev Server
+No test framework configured. Dev server runs on default Vinxi port with HMR enabled.
 
 ## External Dependencies
-- `class-variance-authority` + `tailwindcss-animate` suggest UI component library setup
-- No backend/API routes configured yet (SolidStart supports server functions via "server" directive)
+
+### AWS Services
+- **DynamoDB** - Primary datastore (single table design, **NO GSI**)
+  - Table: `aolfclub-entities` (configurable via `DYNAMODB_TABLE_NAME`)
+  - All queries use PK/SK patterns with `begins_with` for relationships
+  - Email lookups via dedicated items: `PK: "EMAIL#email"`, `SK: "USER"`
+
+### OAuth Providers
+- **GitHub** - Requires `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`
+- **Google** - Requires `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+- Auth.js handles sessions via `AUTH_SECRET`
+
+### Google Places API (Optional)
+- **API Key**: `VITE_GOOGLE_MAPS_API_KEY` (see `GOOGLE_PLACES_SETUP.md`)
+- Fallback to manual mode if unavailable
+- Used in `AddLocationDialog` for address autocomplete
+
+## Common Tasks
+
+### Adding a New Entity Type
+1. Create DB schema in `src/lib/schemas/db/` extending `BaseEntitySchema`
+2. Create UI schema in `src/lib/schemas/ui/` for forms
+3. Add entity type to `AllEntityTypeSchema` in `base.schema.ts`
+4. Create repository in `src/server/db/repositories/entities/`
+5. Export singleton in `src/server/db/repositories/index.ts`
+6. Create server actions in `src/server/actions/`
+7. Create UI page/component with `createResource` for data loading
+
+### Adding a New Server Action
+1. Create file in `src/server/actions/` with `"use server"` directive
+2. Accept UI schema type as input parameter
+3. Validate with `UISchema.parse(input)`
+4. Transform to DB entity with timestamps, ULID
+5. Validate with `DBSchema.parse(entity)`
+6. Use repository to persist
+7. Return `{ success: boolean, data?: T, error?: string }`
+
+### Adding a New Route
+1. Create `.tsx` in `src/routes/`
+2. Use `(protected)` folder for auth-required routes
+3. Export default component function
+4. Use `createResource` for data loading
+5. Use `<A>` for navigation, not `<a>`
+
+## Gotchas & Constraints
+
+### SolidJS Reactivity
+- Props are NOT reactive by default - destructure carefully
+- Signals must be called as functions: `count()` not `count`
+- Effects run immediately - use `createMemo` for derived state
+
+### DynamoDB Single Table
+- All entities share one table - careful with key construction
+- **NO GSI** - use bidirectional relationship items instead
+- Email lookups use dedicated `PK: EMAIL#...` items, not GSI
+- Batch operations limited to 100 items
+- No joins - denormalize data or use relationship entities
+- Permission checks require 3-4 queries (cache results in session/Redis)
+
+### Light Mode Only
+- **NO DARK MODE** support - never use `dark:` classes
+- Explicitly use light colors: `bg-white`, `text-gray-900`
+- Dark mode CSS variables in `app.css` are disabled
+
+### Server Actions
+- Must use `"use server"` at BOTH file AND function level
+- Cannot return functions or class instances to client
+- All data serialized to JSON - no Date objects, use ISO strings
+
+### solid-ui Components
+- Always check https://www.solid-ui.com/docs first before custom components
+- Use `pnpx solidui-cli@latest add <component>` to install
+- Components are pre-styled but customizable via Tailwind classes

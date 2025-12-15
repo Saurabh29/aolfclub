@@ -16,18 +16,10 @@ export {
 } from "./base.schema";
 
 // ========== CORE ENTITY SCHEMAS ==========
-// UserSchema not exported - internal base schema for Teacher/Volunteer/Member/Lead
 export {
-  TeacherSchema,
-  VolunteerSchema,
-  MemberSchema,
-  LeadSchema,
+  UserSchema,
   LocationSchema,
-  type User, // Type still exported for use
-  type Teacher,
-  type Volunteer,
-  type Member,
-  type Lead,
+  type User,
   type Location,
 } from "./core-entities.schema";
 
@@ -65,10 +57,7 @@ export {
 import { z } from "zod";
 import type { AllEntityTypes } from "./base.schema";
 import {
-  TeacherSchema,
-  VolunteerSchema,
-  MemberSchema,
-  LeadSchema,
+  UserSchema,
   LocationSchema,
 } from "./core-entities.schema";
 import {
@@ -83,15 +72,10 @@ import { RelationshipSchema } from "./relationship.schema";
  * DB Entity Schema Map
  * Maps entity type to its Zod schema
  * Used for dynamic schema validation
- * 
- * Note: User is not included as it's a base schema for Teacher/Volunteer/Member/Lead
  */
 export const DBEntitySchemaMap = {
-  // Core Entities (User not exported - it's a base schema)
-  Teacher: TeacherSchema,
-  Volunteer: VolunteerSchema,
-  Member: MemberSchema,
-  Lead: LeadSchema,
+  // Core Entities
+  User: UserSchema,
   Location: LocationSchema,
   // Access Policy
   Role: RoleSchema,

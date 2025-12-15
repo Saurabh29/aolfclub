@@ -10,20 +10,17 @@ import { z } from "zod";
 /**
  * ALL ENTITY TYPES (Authoritative List)
  * 
- * Core Entities: Teacher, Volunteer, Member, Lead, Location
+ * Core Entities: User, Location
  * Access Policy: Role, Permission, UserGroup
  * Identity & Auth: Email
  * Relationship: Relationship (generic edge)
  * 
- * Note: User is NOT included - it's an internal base schema
- *       that Teacher, Volunteer, Member, and Lead extend from
+ * Note: User is the single entity type for all users (teacher, volunteer, member, guest, admin)
+ *       userType field distinguishes user types
  */
 export const AllEntityTypeSchema = z.enum([
-  // Core Entities (User-like entities that extend UserSchema)
-  "Teacher",
-  "Volunteer",
-  "Member",
-  "Lead",
+  // Core Entities
+  "User",
   "Location",
   // Access Policy Entities
   "Role",

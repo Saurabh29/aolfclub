@@ -4,51 +4,45 @@
  * Repositories for core entity types
  * Server-side only - NO UI concerns
  * 
- * Entities: Teacher, Volunteer, Member, Lead, Location
+ * Entities: User, Location
  */
 
 import { BaseRepository } from "./base.repository";
 import {
-  TeacherSchema,
-  VolunteerSchema,
-  MemberSchema,
-  LeadSchema,
+  UserSchema,
   LocationSchema,
-  type Teacher,
-  type Volunteer,
-  type Member,
-  type Lead,
+  type User,
   type Location,
 } from "~/lib/schemas/db/core-entities.schema";
 
 /**
- * Teacher Repository
+ * User Repository
  * 
- * Handles teacher entity operations
+ * Handles user entity operations (all user types: teacher, volunteer, member, guest, admin)
  */
-export class TeacherRepository extends BaseRepository<typeof TeacherSchema> {
+export class UserRepository extends BaseRepository<typeof UserSchema> {
   constructor() {
-    super(TeacherSchema, "Teacher");
+    super(UserSchema, "User");
   }
 
   /**
-   * Find teachers by subject
+   * Find users by type
    * 
-   * @param subject - Subject to filter by
+   * @param userType - User type to filter by
    * @param options - Pagination options
-   * @returns List of teachers
+   * @returns List of users
    */
-  async findBySubject(
-    subject: string,
+  async findByUserType(
+    userType: "teacher" | "volunteer" | "member" | "guest" | "admin" | "pending",
     options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> }
   ): Promise<{
-    items: Teacher[];
+    items: User[];
     lastEvaluatedKey?: Record<string, unknown>;
   }> {
     const result = await this.list(options);
 
-    const items = result.items.filter((teacher) =>
-      teacher.subject?.toLowerCase().includes(subject.toLowerCase())
+    const items = result.items.filter((user) =>
+      user.userType === userType
     );
 
     return {
@@ -58,23 +52,23 @@ export class TeacherRepository extends BaseRepository<typeof TeacherSchema> {
   }
 
   /**
-   * Find teachers by qualification
+   * Find users by status
    * 
-   * @param qualification - Qualification to filter by
+   * @param status - Status to filter by
    * @param options - Pagination options
-   * @returns List of teachers
+   * @returns List of users
    */
-  async findByQualification(
-    qualification: string,
+  async findByStatus(
+    status: "active" | "pending_assignment" | "inactive" | "suspended",
     options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> }
   ): Promise<{
-    items: Teacher[];
+    items: User[];
     lastEvaluatedKey?: Record<string, unknown>;
   }> {
     const result = await this.list(options);
 
-    const items = result.items.filter((teacher) =>
-      teacher.qualification?.toLowerCase().includes(qualification.toLowerCase())
+    const items = result.items.filter((user) =>
+      user.status === status
     );
 
     return {
@@ -84,270 +78,64 @@ export class TeacherRepository extends BaseRepository<typeof TeacherSchema> {
   }
 
   /**
-   * Find active teachers
+   * Find pending assignment users (OAuth users waiting for admin)
    * 
    * @param options - Pagination options
-   * @returns List of active teachers
+   * @returns List of pending users
    */
-  async findActive(options?: {
-    limit?: number;
-    lastEvaluatedKey?: Record<string, unknown>;
-  }): Promise<{
-    items: Teacher[];
-    lastEvaluatedKey?: Record<string, unknown>;
-  }> {
-    const result = await this.list(options);
-
-    const items = result.items.filter((teacher) => teacher.status === "active");
-
-    return {
-      items,
-      lastEvaluatedKey: result.lastEvaluatedKey,
-    };
-  }
-}
-
-/**
- * Volunteer Repository
- * 
- * Handles volunteer entity operations
- */
-export class VolunteerRepository extends BaseRepository<typeof VolunteerSchema> {
-  constructor() {
-    super(VolunteerSchema, "Volunteer");
-  }
-
-  /**
-   * Find volunteers by skills
-   * 
-   * @param skill - Skill to filter by
-   * @param options - Pagination options
-   * @returns List of volunteers
-   */
-  async findBySkill(
-    skill: string,
+  async findPending(
     options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> }
   ): Promise<{
-    items: Volunteer[];
+    items: User[];
     lastEvaluatedKey?: Record<string, unknown>;
   }> {
-    const result = await this.list(options);
-
-    const items = result.items.filter((volunteer) =>
-      volunteer.skills?.some((s) =>
-        s.toLowerCase().includes(skill.toLowerCase())
-      )
-    );
-
-    return {
-      items,
-      lastEvaluatedKey: result.lastEvaluatedKey,
-    };
+    return this.findByStatus("pending_assignment", options);
   }
 
   /**
-   * Find active volunteers
+   * Find active users
    * 
    * @param options - Pagination options
-   * @returns List of active volunteers
+   * @returns List of active users
    */
-  async findActive(options?: {
-    limit?: number;
-    lastEvaluatedKey?: Record<string, unknown>;
-  }): Promise<{
-    items: Volunteer[];
-    lastEvaluatedKey?: Record<string, unknown>;
-  }> {
-    const result = await this.list(options);
-
-    const items = result.items.filter((volunteer) => volunteer.status === "active");
-
-    return {
-      items,
-      lastEvaluatedKey: result.lastEvaluatedKey,
-    };
-  }
-
-  /**
-   * Update volunteer hours
-   * 
-   * @param volunteerId - Volunteer ID
-   * @param additionalHours - Hours to add
-   * @returns Updated volunteer
-   */
-  async addHours(volunteerId: string, additionalHours: number): Promise<Volunteer> {
-    const volunteer = await this.getByIdOrThrow(volunteerId);
-    const currentHours = volunteer.hoursContributed || 0;
-
-    return await this.update(volunteerId, {
-      hoursContributed: currentHours + additionalHours,
-    });
-  }
-}
-
-/**
- * Member Repository
- * 
- * Handles member entity operations
- */
-export class MemberRepository extends BaseRepository<typeof MemberSchema> {
-  constructor() {
-    super(MemberSchema, "Member");
-  }
-
-  /**
-   * Find members by membership type
-   * 
-   * @param membershipType - Membership type
-   * @param options - Pagination options
-   * @returns List of members
-   */
-  async findByMembershipType(
-    membershipType: string,
+  async findActive(
     options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> }
   ): Promise<{
-    items: Member[];
+    items: User[];
     lastEvaluatedKey?: Record<string, unknown>;
   }> {
-    const result = await this.list(options);
-
-    const items = result.items.filter(
-      (member) =>
-        member.membershipType?.toLowerCase() === membershipType.toLowerCase()
-    );
-
-    return {
-      items,
-      lastEvaluatedKey: result.lastEvaluatedKey,
-    };
+    return this.findByStatus("active", options);
   }
 
   /**
-   * Find active members
+   * Assign user type (e.g., after OAuth login, admin assigns role)
    * 
-   * @param options - Pagination options
-   * @returns List of active members
+   * @param userId - User ID
+   * @param userType - User type to assign
+   * @returns Updated user
    */
-  async findActive(options?: {
-    limit?: number;
-    lastEvaluatedKey?: Record<string, unknown>;
-  }): Promise<{
-    items: Member[];
-    lastEvaluatedKey?: Record<string, unknown>;
-  }> {
-    const result = await this.list(options);
-
-    const items = result.items.filter(
-      (member) =>
-        member.status === "active" && member.membershipStatus === "active"
-    );
-
-    return {
-      items,
-      lastEvaluatedKey: result.lastEvaluatedKey,
-    };
-  }
-
-  /**
-   * Update membership status
-   * 
-   * @param memberId - Member ID
-   * @param status - New membership status
-   * @returns Updated member
-   */
-  async updateMembershipStatus(
-    memberId: string,
-    status: "active" | "expired" | "suspended"
-  ): Promise<Member> {
-    return await this.update(memberId, {
-      membershipStatus: status,
-    });
-  }
-}
-
-/**
- * Lead Repository
- * 
- * Handles lead entity operations
- */
-export class LeadRepository extends BaseRepository<typeof LeadSchema> {
-  constructor() {
-    super(LeadSchema, "Lead");
-  }
-
-  /**
-   * Find leads by source
-   * 
-   * @param source - Lead source
-   * @param options - Pagination options
-   * @returns List of leads
-   */
-  async findBySource(
-    source: string,
-    options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> }
-  ): Promise<{
-    items: Lead[];
-    lastEvaluatedKey?: Record<string, unknown>;
-  }> {
-    const result = await this.list(options);
-
-    const items = result.items.filter(
-      (lead) => lead.source?.toLowerCase() === source.toLowerCase()
-    );
-
-    return {
-      items,
-      lastEvaluatedKey: result.lastEvaluatedKey,
-    };
-  }
-
-  /**
-   * Find leads by status
-   * 
-   * @param status - Lead status
-   * @param options - Pagination options
-   * @returns List of leads
-   */
-  async findByLeadStatus(
-    status: "new" | "contacted" | "qualified" | "converted",
-    options?: { limit?: number; lastEvaluatedKey?: Record<string, unknown> }
-  ): Promise<{
-    items: Lead[];
-    lastEvaluatedKey?: Record<string, unknown>;
-  }> {
-    const result = await this.list(options);
-
-    const items = result.items.filter((lead) => lead.status === status);
-
-    return {
-      items,
-      lastEvaluatedKey: result.lastEvaluatedKey,
-    };
-  }
-
-  /**
-   * Mark lead as contacted
-   * 
-   * @param leadId - Lead ID
-   * @returns Updated lead
-   */
-  async markAsContacted(leadId: string): Promise<Lead> {
-    return await this.update(leadId, {
-      status: "contacted",
-      contactedAt: this.now(),
+  async assignUserType(
+    userId: string,
+    userType: "teacher" | "volunteer" | "member" | "guest" | "admin"
+  ): Promise<User> {
+    return this.update(userId, {
+      userType,
+      status: "active" as const,
     });
   }
 
   /**
-   * Convert lead (mark as converted)
+   * Update user status
    * 
-   * @param leadId - Lead ID
-   * @returns Updated lead
+   * @param userId - User ID
+   * @param status - New status
+   * @returns Updated user
    */
-  async convertLead(leadId: string): Promise<Lead> {
-    return await this.update(leadId, {
-      status: "converted",
-    });
+  async updateStatus(
+    userId: string,
+    status: "active" | "inactive" | "suspended"
+  ): Promise<User> {
+    return this.update(userId, { status });
   }
 }
 
@@ -465,8 +253,5 @@ export class LocationRepository extends BaseRepository<typeof LocationSchema> {
 }
 
 // Singleton instances
-export const teacherRepository = new TeacherRepository();
-export const volunteerRepository = new VolunteerRepository();
-export const memberRepository = new MemberRepository();
-export const leadRepository = new LeadRepository();
+export const userRepository = new UserRepository();
 export const locationRepository = new LocationRepository();

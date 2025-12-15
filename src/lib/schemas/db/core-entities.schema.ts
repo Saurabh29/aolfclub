@@ -10,84 +10,76 @@ import { z } from "zod";
 import { BaseEntitySchema } from "./base.schema";
 
 /**
- * USER ENTITY (Base for user-like entities)
+ * USER ENTITY
  * 
  * Represents a user in the system
  * Supports OAuth-created AND CSV-imported users
  * Access control is per User, NOT per Email
  * 
- * NOT EXPORTED - used as base for Teacher, Volunteer, Member, Lead
+ * WORKFLOW:
+ * 1. OAuth Login: Create User with userType="pending" or null
+ * 2. Admin assigns userType later (teacher|volunteer|member|guest|admin)
+ * 3. CSV Import: Create User with userType already specified
+ * 
+ * This is the PRIMARY user entity - Teacher/Volunteer/Member/Lead schemas
+ * are OPTIONAL extended versions for CSV imports or strict typing
  */
-const UserSchema = BaseEntitySchema.extend({
+export const UserSchema = BaseEntitySchema.extend({
   entityType: z.literal("User"),
   name: z.string().min(1),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   phone: z.string().optional(),
   imageUrl: z.string().url().optional(),
-  status: z.enum(["active", "inactive", "suspended"]).default("active"),
+  
+  /**
+   * User Type - assigned by admin or from CSV
+   * - OAuth users: starts as "pending" or null, assigned later
+   * - CSV users: specified immediately
+   */
+  userType: z.enum(["teacher", "volunteer", "member", "guest", "admin", "pending"]).nullable().default(null),
+  
+  /**
+   * Status lifecycle:
+   * - active: Normal user with access
+   * - pending_assignment: OAuth user waiting for admin to assign userType
+   * - inactive: Deactivated but can be reactivated
+   * - suspended: Temporarily blocked
+   */
+  status: z.enum(["active", "pending_assignment", "inactive", "suspended"]).default("pending_assignment"),
+  
+  /**
+   * Type-specific attributes (optional, populated based on userType)
+   * These allow storing specialized data without separate entity types
+   */
+  teacherData: z.object({
+    subject: z.string().optional(),
+    qualification: z.string().optional(),
+    experience: z.number().int().nonnegative().optional(),
+    bio: z.string().optional(),
+  }).optional(),
+  
+  volunteerData: z.object({
+    skills: z.array(z.string()).optional(),
+    availability: z.string().optional(),
+    hoursContributed: z.number().nonnegative().default(0),
+  }).optional(),
+  
+  memberData: z.object({
+    membershipType: z.string().optional(),
+    joinedAt: z.string().datetime().optional(),
+    membershipStatus: z.enum(["active", "expired", "suspended"]).default("active"),
+  }).optional(),
+  
+  leadData: z.object({
+    source: z.string().optional(),
+    leadStatus: z.enum(["new", "contacted", "qualified", "converted", "lost"]).default("new"),
+    notes: z.string().optional(),
+    contactedAt: z.string().datetime().optional(),
+  }).optional(),
 }).strip();
 
 export type User = z.infer<typeof UserSchema>;
-
-/**
- * TEACHER ENTITY
- * 
- * Extends User with teacher-specific attributes
- * NO role/group/permission data
- */
-export const TeacherSchema = UserSchema.extend({
-  entityType: z.literal("Teacher"),
-  subject: z.string().optional(),
-  qualification: z.string().optional(),
-  experience: z.number().int().nonnegative().optional(),
-  bio: z.string().optional(),
-}).strip();
-
-export type Teacher = z.infer<typeof TeacherSchema>;
-
-/**
- * VOLUNTEER ENTITY
- * 
- * Extends User with volunteer-specific attributes
- */
-export const VolunteerSchema = UserSchema.extend({
-  entityType: z.literal("Volunteer"),
-  skills: z.array(z.string()).optional(),
-  availability: z.string().optional(),
-  hoursContributed: z.number().nonnegative().default(0),
-}).strip();
-
-export type Volunteer = z.infer<typeof VolunteerSchema>;
-
-/**
- * MEMBER ENTITY
- * 
- * Extends User with member-specific attributes
- */
-export const MemberSchema = UserSchema.extend({
-  entityType: z.literal("Member"),
-  membershipType: z.string().optional(),
-  joinedAt: z.string().datetime().optional(),
-  membershipStatus: z.enum(["active", "expired", "suspended"]).default("active"),
-}).strip();
-
-export type Member = z.infer<typeof MemberSchema>;
-
-/**
- * LEAD ENTITY
- * 
- * Extends User with lead-specific attributes
- */
-export const LeadSchema = UserSchema.extend({
-  entityType: z.literal("Lead"),
-  source: z.string().optional(),
-  status: z.enum(["new", "contacted", "qualified", "converted", "lost"]).default("new"),
-  notes: z.string().optional(),
-  contactedAt: z.string().datetime().optional(),
-}).strip();
-
-export type Lead = z.infer<typeof LeadSchema>;
 
 /**
  * LOCATION ENTITY

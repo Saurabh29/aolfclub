@@ -9,15 +9,9 @@ export { BaseRepository } from "./base.repository";
 
 // Core Entity Repositories
 export {
-  TeacherRepository,
-  VolunteerRepository,
-  MemberRepository,
-  LeadRepository,
+  UserRepository,
   LocationRepository,
-  teacherRepository,
-  volunteerRepository,
-  memberRepository,
-  leadRepository,
+  userRepository,
   locationRepository,
 } from "./core-entities.repository";
 
