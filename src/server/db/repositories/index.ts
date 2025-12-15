@@ -15,6 +15,12 @@ export {
   locationRepository,
 } from "./core-entities.repository";
 
+// Email Repository
+export {
+  EmailRepository,
+  emailRepository,
+} from "./email.repository";
+
 // Relationship Repository
 export {
   RelationshipRepository,

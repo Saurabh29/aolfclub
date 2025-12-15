@@ -24,6 +24,10 @@ const ALLOWED_RELATIONSHIPS = {
     allowedSources: ["Email"] as const,
     allowedTargets: ["User"] as const,
   },
+  HAS_EMAIL: {
+    allowedSources: ["User"] as const,
+    allowedTargets: ["Email"] as const,
+  },
   MEMBER_OF: {
     allowedSources: ["User"] as const,
     allowedTargets: ["UserGroup"] as const,
@@ -57,6 +61,7 @@ const ALLOWED_RELATIONSHIPS = {
  * 
  * ALLOWED RELATIONSHIPS:
  * - Email → User (IDENTIFIES)
+ * - User → Email (HAS_EMAIL)
  * - User → UserGroup (MEMBER_OF)
  * - UserGroup → Role (ASSIGNED_ROLE)
  * - Role → Permission (HAS_PERMISSION)
@@ -95,6 +100,7 @@ export const RelationshipSchema = BaseEntitySchema.extend({
    */
   relation: z.enum([
     "IDENTIFIES",
+    "HAS_EMAIL",
     "MEMBER_OF",
     "ASSIGNED_ROLE",
     "HAS_PERMISSION",
@@ -103,6 +109,7 @@ export const RelationshipSchema = BaseEntitySchema.extend({
     "VOLUNTEERS_AT",
     "BELONGS_TO",
     "MANAGED_BY",
+    "WORKS_AT",
   ]),
   
   /**
