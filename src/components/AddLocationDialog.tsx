@@ -42,8 +42,8 @@ export default function AddLocationDialog(props: AddLocationDialogProps) {
   // STATE
   // ============================================================================
 
-  const [locationId, setLocationId] = createSignal("");
   const [name, setName] = createSignal("");
+  const [locationCode, setLocationCode] = createSignal("");
   const [address, setAddress] = createSignal("");
   const [description, setDescription] = createSignal("");
   const [placeId, setPlaceId] = createSignal("");
@@ -62,7 +62,7 @@ export default function AddLocationDialog(props: AddLocationDialogProps) {
   createEffect(() => {
     if (props.open && props.editingLocation) {
       const loc = props.editingLocation;
-      setLocationId(loc.locationId || "");
+      setLocationCode(loc.locationCode || "");
       setName(loc.name || "");
       setAddress(loc.address || "");
       setDescription(loc.description || "");
@@ -95,9 +95,9 @@ export default function AddLocationDialog(props: AddLocationDialogProps) {
   };
 
   const isValid = () => {
-    const hasValidLocationId = isValidUrlSlug(locationId());
+    const hasValidLocationCode = isValidUrlSlug(locationCode());
     const hasValidName = name().trim().length >= 2;
-    return hasValidLocationId && hasValidName;
+    return hasValidLocationCode && hasValidName;
   };
 
   // ============================================================================
@@ -105,7 +105,7 @@ export default function AddLocationDialog(props: AddLocationDialogProps) {
   // ============================================================================
 
   const resetForm = () => {
-    setLocationId("");
+    setLocationCode("");
     setName("");
     setAddress("");
     setDescription("");
@@ -137,7 +137,7 @@ export default function AddLocationDialog(props: AddLocationDialogProps) {
     setSaving(true);
     try {
       const locationData: AddLocationForm = {
-        locationId: locationId(),
+        locationCode: locationCode(),
         name: name(),
         address: address() || undefined,
         description: description() || undefined,
@@ -266,10 +266,10 @@ export default function AddLocationDialog(props: AddLocationDialogProps) {
             </Show>
           </div>
 
-          {/* Location ID (Auto-generated, read-only when editing) */}
+          {/* Location Code (User-provided, read-only when editing) */}
           <div>
             <label class="block text-sm font-medium text-gray-900 mb-1">
-              Location ID <span class="text-red-600">*</span>
+              Location Code <span class="text-red-600">*</span>
               <Show when={isEditing()}>
                 <span class="text-xs text-gray-500 ml-2">
                   (Cannot be changed)
@@ -279,10 +279,10 @@ export default function AddLocationDialog(props: AddLocationDialogProps) {
             <Input
               type="text"
               placeholder="e.g., sbc-82, ndls-15"
-              value={locationId()}
+              value={locationCode()}
               onInput={(e: InputEvent & { currentTarget: HTMLInputElement }) =>
                 !isEditing() &&
-                setLocationId(e.currentTarget.value.toLowerCase())
+                setLocationCode(e.currentTarget.value.toLowerCase())
               }
               class="w-full font-mono text-sm"
               classList={{
@@ -297,18 +297,18 @@ export default function AddLocationDialog(props: AddLocationDialogProps) {
                 numbers, and hyphens only)
               </Show>
               <Show when={isEditing()}>
-                Location ID cannot be changed after creation
+                Location Code cannot be changed after creation
               </Show>
             </p>
             <Show
-              when={locationId().length > 0 && !isValidUrlSlug(locationId())}
+              when={locationCode().length > 0 && !isValidUrlSlug(locationCode())}
             >
               <p class="text-xs text-red-600 mt-1">
                 Must be 6-50 characters with only lowercase letters, numbers,
                 and hyphens
               </p>
             </Show>
-            <Show when={isValidUrlSlug(locationId())}>
+            <Show when={isValidUrlSlug(locationCode())}>
               <p class="text-xs text-green-600 mt-1 flex items-center gap-1">
                 <svg
                   class="w-3 h-3"

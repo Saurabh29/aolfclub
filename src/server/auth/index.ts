@@ -32,6 +32,22 @@ export const authOptions: SolidAuthConfig = {
   secret: process.env.AUTH_SECRET!,
   trustHost: true,
   basePath: import.meta.env.VITE_AUTH_PATH || "/api/auth",
+  // HTTP-specific settings for local development
+  useSecureCookies: process.env.NODE_ENV === "production",
+  cookies: {
+    sessionToken: {
+      name:
+        process.env.NODE_ENV === "production"
+          ? `__Secure-authjs.session-token`
+          : `authjs.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+  },
   callbacks: {
     signIn: async ({ user, account }) => {
       try {

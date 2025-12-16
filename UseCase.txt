@@ -17,6 +17,9 @@ java -Djava.library.path=./ -jar DynamoDBLocal.jar -sharedDb
 # Generate with: openssl rand -base64 32
 AUTH_SECRET=WUHd7ZlyJwIClqMFAB2n8hlK6vDvLkdK
 
+# Auth URL (use http://localhost:3000 for development)
+AUTH_URL=http://localhost:3000
+
 # GitHub OAuth
 GITHUB_CLIENT_ID=Ov23lieRn6eTX8sqWkaq
 GITHUB_CLIENT_SECRET=86a4ba60e10db4c6ed35d4c607254b55b4174cdb
@@ -53,5 +56,6 @@ NODE_TLS_REJECT_UNAUTHORIZED=0
 # ====================================
 # GOOGLE MAPS API
 # ====================================
-# Google Maps API Key (if needed for location features)
-GOOGLE_MAPS_API_KEY=AIzaSyATU_c30CPNnUzXQ7kJtj9DKA0HpVtJDn0
+# Google Maps API Key (for location features)
+# MUST use VITE_ prefix to be accessible in client-side code
+VITE_GOOGLE_MAPS_API_KEY=AIzaSyATU_c30CPNnUzXQ7kJtj9DKA0HpVtJDn0

@@ -3,6 +3,7 @@
 import {
   createLocation as createLocationRepo,
   getLocationById as getLocationByIdRepo,
+  listAllLocations,
   type CreateLocationInput,
 } from "~/server/db/repositories";
 import type { AddLocationForm } from "~/lib/schemas/ui/location.schema";
@@ -29,12 +30,16 @@ export async function createLocation(formData: AddLocationForm) {
   try {
     // Validate input
     const validatedData = AddLocationFormSchema.parse(formData);
-
     // Transform to repository input - TypeScript will error if types don't match
     const dbInput: CreateLocationInput = {
+      locationCode: validatedData.locationCode,
       name: validatedData.name,
       address: validatedData.formattedAddress || validatedData.address,
-      status: "active",
+      city: validatedData.city,
+      state: validatedData.state,
+      zipCode: validatedData.zipCode,
+      phone: validatedData.phone,
+      status: validatedData.status || "active",
     };
 
     // Create location using repository
@@ -45,7 +50,7 @@ export async function createLocation(formData: AddLocationForm) {
       data: location,
     };
   } catch (error) {
-    console.error("Failed to create location:", error);
+    console.error("[createLocation] Error:", error);
     return {
       success: false,
       error:
@@ -83,20 +88,31 @@ export async function getLocationById(locationId: string) {
   }
 }
 
-// TODO: Implement updateLocation, deleteLocation, getLocations
+// TODO: Implement updateLocation, deleteLocation
 // These require additional repository methods not yet implemented in the ReBAC design
 
 /**
- * Get all locations (stub)
+ * Get all locations
  */
-export async function getLocations() {
+export async function getLocations(): Promise<ActionResult<Location[]>> {
   "use server";
 
-  // TODO: Implement list locations functionality
-  return {
-    success: true,
-    data: [],
-  };
+  try {
+    const locations = await listAllLocations();
+    return {
+      success: true,
+      data: locations,
+    };
+  } catch (error) {
+    console.error("[getLocations] Failed to fetch locations:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch locations. Please try again.",
+    };
+  }
 }
 
 /**

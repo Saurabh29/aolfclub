@@ -62,12 +62,13 @@ function createDynamoDBClient(): DynamoDBClient {
 
   if (isLocalDev) {
     const endpoint = process.env.DYNAMODB_ENDPOINT || "http://localhost:8000";
-    console.log(`[DynamoDB] Using local endpoint: ${endpoint}`);
     config.endpoint = endpoint;
     config.credentials = {
       accessKeyId: "local",
       secretAccessKey: "local",
     };
+  } else {
+    // Production AWS credentials are automatically loaded from environment
   }
 
   return new DynamoDBClient(config);

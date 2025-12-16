@@ -4,7 +4,7 @@
  * Manages shop locations
  */
 
-import { PutCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
+import { PutCommand, GetCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { ulid } from "ulid";
 import { docClient, TABLE_NAME, Keys, now } from "../rebac-client";
 import {
@@ -18,6 +18,10 @@ import type { CreateInput } from "~/lib/schemas/db/schema-helpers";
  * Ensures compile-time safety: if schema changes, this type changes
  * EXPORTED for use in server actions - UI cannot import DB schemas directly
  */
+/**
+ * CreateLocationInput type for creating locations
+ * locationId (ULID) is auto-generated, locationCode is required from user
+ */
 export type CreateLocationInput = CreateInput<typeof LocationSchema, "locationId">;
 
 /**
@@ -26,7 +30,7 @@ export type CreateLocationInput = CreateInput<typeof LocationSchema, "locationId
 export async function createLocation(
   input: CreateLocationInput,
 ): Promise<Location> {
-  const locationId = ulid();
+  const locationId = ulid(); // Generate ULID for database ID
   const timestamp = now();
 
   const location: Location = {
@@ -34,6 +38,7 @@ export async function createLocation(
     SK: Keys.locationSK(),
     itemType: "Location",
     locationId,
+    locationCode: input.locationCode,
     name: input.name,
     address: input.address,
     city: input.city,
@@ -48,13 +53,18 @@ export async function createLocation(
   // Validate with Zod
   const validated = LocationSchema.parse(location);
 
-  await docClient.send(
-    new PutCommand({
-      TableName: TABLE_NAME,
-      Item: validated,
-      ConditionExpression: "attribute_not_exists(PK)",
-    }),
-  );
+  try {
+    await docClient.send(
+      new PutCommand({
+        TableName: TABLE_NAME,
+        Item: validated,
+        ConditionExpression: "attribute_not_exists(PK)",
+      }),
+    );
+  } catch (error) {
+    console.error("[LocationRepo] DynamoDB PutCommand failed:", error);
+    throw error;
+  }
 
   return validated;
 }
@@ -80,4 +90,42 @@ export async function getLocationById(
   }
 
   return LocationSchema.parse(result.Item);
+}
+
+/**
+ * List all locations
+ * Uses scan with filter to get all Location items
+ */
+export async function listAllLocations(): Promise<Location[]> {
+  const locations: Location[] = [];
+  let lastEvaluatedKey: Record<string, any> | undefined;
+
+  do {
+    // Scan table and filter for Location items
+    const result = await docClient.send(
+      new ScanCommand({
+        TableName: TABLE_NAME,
+        FilterExpression: "itemType = :type",
+        ExpressionAttributeValues: {
+          ":type": "Location",
+        },
+        ExclusiveStartKey: lastEvaluatedKey,
+      }),
+    );
+
+    if (result.Items) {
+      for (const item of result.Items) {
+        try {
+          const location = LocationSchema.parse(item);
+          locations.push(location);
+        } catch (error) {
+          console.error("[LocationRepo] Failed to parse location:", error);
+        }
+      }
+    }
+
+    lastEvaluatedKey = result.LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
+  return locations;
 }
