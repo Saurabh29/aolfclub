@@ -47,7 +47,7 @@ export const authOptions: SolidAuthConfig = {
           emailAddress,
           user.name || null,
           user.image || null,
-          account?.provider || "unknown",
+          account?.provider,
         );
 
         if (result.isNewUser) {
@@ -67,9 +67,7 @@ export const authOptions: SolidAuthConfig = {
       if (user?.email) {
         const dbUser = await findUserByEmail(user.email);
         if (dbUser) {
-          token.userId = dbUser.id;
-          token.userType = dbUser.userType;
-          token.userStatus = dbUser.status;
+          token.userId = dbUser.userId;
         }
       }
       return token;
@@ -78,8 +76,6 @@ export const authOptions: SolidAuthConfig = {
       // Add user info to session from token
       if (token.userId) {
         (session as any).user.id = token.userId;
-        (session as any).user.userType = token.userType;
-        (session as any).user.status = token.userStatus;
       }
       return session;
     },

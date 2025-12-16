@@ -1,35 +1,21 @@
 /**
- * REPOSITORY INDEX
+ * REPOSITORY EXPORTS (ReBAC Design)
  *
- * Exports for all repositories
+ * Single-table DynamoDB repositories
+ * NO GSIs | Query-driven | Location-scoped operations
  */
 
-// Base Repository
-export { BaseRepository } from "./base.repository";
+// User
+export * from "./user.repository";
 
-// Core Entity Repositories
-export {
-  UserRepository,
-  LocationRepository,
-  userRepository,
-  locationRepository,
-} from "./core-entities.repository";
+// Location
+export * from "./location.repository";
 
-// Email Repository
-export { EmailRepository, emailRepository } from "./email.repository";
+// Role & Page
+export * from "./role-page.repository";
 
-// Relationship Repository
-export {
-  RelationshipRepository,
-  relationshipRepository,
-} from "./relationship.repository";
+// Access Control (ReBAC)
+export * from "./access.repository";
 
-// Re-export client utilities
-export {
-  docClient,
-  TABLE_CONFIG,
-  KeyUtils,
-  EntityNotFoundError,
-  ValidationError,
-  DatabaseError,
-} from "../client";
+// Email Identity (OAuth)
+export * from "./email-identity.repository";

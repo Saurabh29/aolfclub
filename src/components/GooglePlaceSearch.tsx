@@ -41,7 +41,7 @@ export default function GooglePlaceSearch(props: GooglePlaceSearchProps) {
 
   if (!API_KEY) {
     console.error(
-      "Google Maps API key not found. Please set VITE_GOOGLE_MAPS_API_KEY in .env.local",
+      "Google Maps API key not found. Please set VITE_GOOGLE_MAPS_API_KEY in .env file.",
     );
   }
 

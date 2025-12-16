@@ -8,3 +8,50 @@ Workflow, User logins with Oauth and later admin associates role for the created
 Relationship Schema Rules
 Must support many-to-many
 
+
+java -Djava.library.path=./ -jar DynamoDBLocal.jar -sharedDb
+
+# ====================================
+# AUTHENTICATION
+# ====================================
+# Generate with: openssl rand -base64 32
+AUTH_SECRET=WUHd7ZlyJwIClqMFAB2n8hlK6vDvLkdK
+
+# GitHub OAuth
+GITHUB_CLIENT_ID=Ov23lieRn6eTX8sqWkaq
+GITHUB_CLIENT_SECRET=86a4ba60e10db4c6ed35d4c607254b55b4174cdb
+
+# Google OAuth (replace with your credentials)
+GOOGLE_CLIENT_ID=your-google-client-id-here
+GOOGLE_CLIENT_SECRET=your-google-client-secret-here
+
+# ====================================
+# DATABASE (DynamoDB)
+# ====================================
+# Table name for single-table design
+DYNAMODB_TABLE_NAME=aolfclub-entities
+
+# AWS Region
+AWS_REGION=us-east-1
+
+# Local DynamoDB endpoint (for development)
+DYNAMODB_ENDPOINT=http://localhost:8000
+
+# AWS Credentials (not needed for local development)
+# Uncomment and fill these when deploying to production
+# AWS_ACCESS_KEY_ID=your-access-key-id
+# AWS_SECRET_ACCESS_KEY=your-secret-access-key
+
+# ====================================
+# DEVELOPMENT ONLY - SSL WORKAROUND
+# ====================================
+# Disables SSL certificate verification for OAuth in local development
+# This is needed on Windows when testing with http://localhost
+# ⚠️ NEVER SET THIS IN PRODUCTION
+NODE_TLS_REJECT_UNAUTHORIZED=0
+
+# ====================================
+# GOOGLE MAPS API
+# ====================================
+# Google Maps API Key (if needed for location features)
+GOOGLE_MAPS_API_KEY=AIzaSyATU_c30CPNnUzXQ7kJtj9DKA0HpVtJDn0

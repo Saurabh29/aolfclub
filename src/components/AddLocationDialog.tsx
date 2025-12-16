@@ -11,7 +11,7 @@ import { Input } from "~/components/ui/input";
 import GooglePlaceSearch, {
   type PlaceDetails,
 } from "~/components/GooglePlaceSearch";
-import { createLocation, updateLocation } from "~/server/actions/locations";
+import { createLocation } from "~/server/actions/locations";
 import type { Location } from "~/lib/schemas/ui/location.schema";
 import type { AddLocationForm } from "~/lib/schemas/ui/location.schema";
 
@@ -147,14 +147,13 @@ export default function AddLocationDialog(props: AddLocationDialogProps) {
         longitude: longitude(),
       };
 
-      let result;
+      // TODO: Update functionality not yet implemented in ReBAC design
       if (props.editingLocation) {
-        // Update existing location
-        result = await updateLocation(props.editingLocation.id, locationData);
-      } else {
-        // Create new location
-        result = await createLocation(locationData);
+        throw new Error("Update location not yet implemented");
       }
+
+      // Create new location
+      const result = await createLocation(locationData);
 
       if (!result.success) {
         throw new Error(result.error || "Failed to save location");

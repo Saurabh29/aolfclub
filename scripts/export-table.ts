@@ -11,11 +11,11 @@ import { join } from "path";
 
 const client = new DynamoDBClient({
   region: process.env.AWS_REGION || "us-east-1",
-  endpoint: process.env.DYNAMODB_ENDPOINT || "http://localhost:8000",
-  credentials: {
-    accessKeyId: "local",
-    secretAccessKey: "local",
-  },
+  ...(process.env.DYNAMODB_ENDPOINT ? { endpoint: process.env.DYNAMODB_ENDPOINT } : {}),
+  // Only set credentials if running locally (for AWS SDK v3 best practice)
+  ...(process.env.DYNAMODB_ENDPOINT
+    ? { credentials: { accessKeyId: "local", secretAccessKey: "local" } }
+    : {}),
 });
 
 const docClient = DynamoDBDocumentClient.from(client);

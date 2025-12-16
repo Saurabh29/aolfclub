@@ -1,126 +1,79 @@
 /**
- * USER AUTHENTICATION SERVICE
+ * USER AUTHENTICATION SERVICE (ReBAC Design)
  *
- * Handles OAuth user creation and authentication workflows
- * Separates business logic from auth configuration
+ * Simplified OAuth workflow for ReBAC single-table design
+ * Users are created globally, roles assigned per location later
  */
 
 import {
-  userRepository,
-  emailRepository,
-  relationshipRepository,
+  createUser,
+  getUserById,
+  getUserIdByEmail,
+  createEmailIdentity,
+  type CreateUserInput,
 } from "~/server/db/repositories";
-import type { User } from "~/lib/schemas/db/core-entities.schema";
-import type { Email } from "~/lib/schemas/db/email.schema";
 
 /**
  * Result of OAuth user creation
  */
 export interface OAuthUserCreationResult {
   user: User;
-  email: Email;
   isNewUser: boolean;
 }
 
 /**
  * Create or retrieve user from OAuth login
  *
- * Workflow:
- * 1. Check if email exists
+ * Simplified workflow:
+ * 1. Check if user exists by email (in User entity)
  * 2. If exists, return existing user
- * 3. If new, create User + Email + Relationships atomically
+ * 3. If new, create User with email
  *
  * @param emailAddress - User's email from OAuth provider
  * @param name - User's name from OAuth provider
  * @param imageUrl - User's profile image from OAuth provider
- * @param provider - OAuth provider (github, google)
  * @returns User creation result with isNewUser flag
  */
 export async function createOrGetOAuthUser(
   emailAddress: string,
   name: string | null,
   imageUrl: string | null,
-  provider: string,
+  provider?: string,
 ): Promise<OAuthUserCreationResult> {
-  const normalizedEmail = emailAddress.toLowerCase();
+  const normalizedEmail = emailAddress.toLowerCase().trim();
 
-  // Check if email already exists
-  const existingEmail = await emailRepository.findByEmail(normalizedEmail);
+  // Check if email already exists via EmailIdentity
+  const existingUser = await findUserByEmail(normalizedEmail);
 
-  if (existingEmail) {
-    // Email exists - find associated user
-    const relationships = await relationshipRepository.findFromSource(
-      "Email",
-      existingEmail.id,
-      "IDENTIFIES",
-    );
-
-    if (relationships.length === 0) {
-      throw new Error("Email exists but has no associated user");
-    }
-
-    const userId = relationships[0].targetId;
-    const user = await userRepository.getById(userId);
-
-    if (!user) {
-      throw new Error("User not found for existing email");
-    }
-
+  if (existingUser) {
     return {
-      user,
-      email: existingEmail,
+      user: existingUser,
       isNewUser: false,
     };
   }
 
-  // New user - create everything atomically
-  const now = new Date().toISOString();
-
-  // Create User entity with pending_assignment status
-  const user = await userRepository.create({
+  // Create new User entity - TypeScript will error if types don't match
+  const userInput: CreateUserInput = {
     name: name || normalizedEmail.split("@")[0],
-    imageUrl: imageUrl || undefined,
-    userType: null, // Will be assigned by admin
-    status: "pending_assignment",
-  });
-
-  // Create Email entity
-  const email = await emailRepository.create({
     email: normalizedEmail,
-    provider: provider,
-    verifiedAt: now, // OAuth emails are pre-verified
-    isPrimary: true,
+    imageUrl: imageUrl || undefined,
     status: "active",
-  });
+  };
 
-  // Create bidirectional USER-EMAIL relationship
-  // Forward: USER -> EMAIL
-  await relationshipRepository.createRelationship(
-    "User",
-    user.id,
-    "HAS_EMAIL",
-    "Email",
-    email.id,
-  );
+  const user = await createUser(userInput);
 
-  // Reverse: EMAIL -> USER
-  await relationshipRepository.createRelationship(
-    "Email",
-    email.id,
-    "IDENTIFIES",
-    "User",
-    user.id,
-  );
+  // Create EmailIdentity mapping for future lookups
+  await createEmailIdentity(normalizedEmail, user.userId, provider);
 
   return {
     user,
-    email,
     isNewUser: true,
   };
 }
 
 /**
  * Find user by email address
+ * Uses EmailIdentity mapping for O(1) lookup
  *
  * @param emailAddress - Email to look up
  * @returns User entity or null if not found
@@ -128,24 +81,16 @@ export async function createOrGetOAuthUser(
 export async function findUserByEmail(
   emailAddress: string,
 ): Promise<User | null> {
-  const normalizedEmail = emailAddress.toLowerCase();
+  const normalizedEmail = emailAddress.toLowerCase().trim();
 
-  const email = await emailRepository.findByEmail(normalizedEmail);
-  if (!email) {
+  // Look up userId via EmailIdentity
+  const userId = await getUserIdByEmail(normalizedEmail);
+
+  if (!userId) {
     return null;
   }
 
-  // Find user via relationship
-  const relationships = await relationshipRepository.findFromSource(
-    "Email",
-    email.id,
-    "IDENTIFIES",
-  );
-
-  if (relationships.length === 0) {
-    return null;
-  }
-
-  const userId = relationships[0].targetId;
-  return await userRepository.getById(userId);
+  // Fetch user by userId
+  const user = await getUserById(userId);
+  return user || null;
 }
