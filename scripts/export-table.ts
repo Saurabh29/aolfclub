@@ -9,13 +9,14 @@ import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { writeFileSync } from "fs";
 import { join } from "path";
 
+// Use the same local credentials and endpoint logic as list-tables.ts
 const client = new DynamoDBClient({
   region: process.env.AWS_REGION || "us-east-1",
-  ...(process.env.DYNAMODB_ENDPOINT ? { endpoint: process.env.DYNAMODB_ENDPOINT } : {}),
-  // Only set credentials if running locally (for AWS SDK v3 best practice)
-  ...(process.env.DYNAMODB_ENDPOINT
-    ? { credentials: { accessKeyId: "local", secretAccessKey: "local" } }
-    : {}),
+  endpoint: process.env.DYNAMODB_ENDPOINT || "http://localhost:8000",
+  credentials: {
+    accessKeyId: "local",
+    secretAccessKey: "local",
+  },
 });
 
 const docClient = DynamoDBDocumentClient.from(client);

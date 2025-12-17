@@ -12,6 +12,7 @@ import {
   createEmailIdentity,
   type CreateUserInput,
 } from "~/server/db/repositories";
+import type { User } from "~/lib/schemas/db/user.schema";
 
 /**
  * Result of OAuth user creation

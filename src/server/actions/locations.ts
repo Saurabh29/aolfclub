@@ -8,6 +8,29 @@ import {
 } from "~/server/db/repositories";
 import type { AddLocationForm } from "~/lib/schemas/ui/location.schema";
 import { AddLocationFormSchema } from "~/lib/schemas/ui/location.schema";
+import type { Location } from "~/lib/schemas/ui/location.schema";
+
+// Action result shape used by server actions
+type ActionResult<T> =
+  | { success: true; data: T }
+  | { success: false; error: string };
+
+// Map DB Location (server schema) to UI Location shape
+function toUiLocation(dbLoc: any): Location {
+  return {
+    id: dbLoc.locationId,
+    locationCode: dbLoc.locationCode,
+    name: dbLoc.name,
+    address: dbLoc.address,
+    description: (dbLoc as any).description,
+    placeId: (dbLoc as any).placeId,
+    formattedAddress: (dbLoc as any).formattedAddress,
+    latitude: (dbLoc as any).latitude,
+    longitude: (dbLoc as any).longitude,
+    createdAt: dbLoc.createdAt,
+    updatedAt: dbLoc.updatedAt,
+  } as Location;
+}
 
 /**
  * Create a new location
@@ -35,19 +58,16 @@ export async function createLocation(formData: AddLocationForm) {
       locationCode: validatedData.locationCode,
       name: validatedData.name,
       address: validatedData.formattedAddress || validatedData.address,
-      city: validatedData.city,
-      state: validatedData.state,
-      zipCode: validatedData.zipCode,
-      phone: validatedData.phone,
-      status: validatedData.status || "active",
+      // UI form doesn't include city/state/zipCode/phone — set status to default
+      status: "active",
     };
 
     // Create location using repository
-    const location = await createLocationRepo(dbInput);
+    const dbLocation = await createLocationRepo(dbInput);
 
     return {
       success: true,
-      data: location,
+      data: toUiLocation(dbLocation),
     };
   } catch (error) {
     console.error("[createLocation] Error:", error);
@@ -66,9 +86,9 @@ export async function getLocationById(locationId: string) {
   "use server";
 
   try {
-    const location = await getLocationByIdRepo(locationId);
+    const dbLocation = await getLocationByIdRepo(locationId);
 
-    if (!location) {
+    if (!dbLocation) {
       return {
         success: false,
         error: "Location not found",
@@ -77,7 +97,7 @@ export async function getLocationById(locationId: string) {
 
     return {
       success: true,
-      data: location,
+      data: toUiLocation(dbLocation),
     };
   } catch (error) {
     console.error("Failed to get location:", error);
@@ -98,10 +118,11 @@ export async function getLocations(): Promise<ActionResult<Location[]>> {
   "use server";
 
   try {
-    const locations = await listAllLocations();
+    const dbLocations = await listAllLocations();
+    const uiLocations = dbLocations.map(toUiLocation);
     return {
       success: true,
-      data: locations,
+      data: uiLocations,
     };
   } catch (error) {
     console.error("[getLocations] Failed to fetch locations:", error);
