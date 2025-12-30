@@ -26,20 +26,14 @@ export default function AppHeader() {
 							size="icon"
 							class="h-10 w-10 p-0 rounded-full bg-white text-gray-700 border border-gray-200 shadow-sm"
 						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								class="h-5 w-5 text-gray-700"
-								viewBox="0 0 20 20"
-								fill="currentColor"
-								aria-hidden
-							>
-								<path d="M10 2a4 4 0 100 8 4 4 0 000-8z" />
-								<path d="M2 16a6 6 0 0112 0H2z" />
+							<svg class="w-5 h-5 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z" />
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 20c0-3.314 2.686-6 6-6s6 2.686 6 6" />
 							</svg>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent class="w-48">
 							<DropdownMenuItem>
-								<a href="#" class="flex items-center gap-2">
+								<a href="/api/auth/signin?provider=google" class="flex items-center gap-2">
 									<img
 										src="https://www.google.com/favicon.ico"
 										alt="Google"
@@ -49,7 +43,7 @@ export default function AppHeader() {
 								</a>
 							</DropdownMenuItem>
 							<DropdownMenuItem>
-								<a href="#" class="flex items-center gap-2">
+								<a href="/api/auth/signin?provider=github" class="flex items-center gap-2">
 									<img
 										src="https://github.githubassets.com/favicons/favicon.svg"
 										alt="GitHub"
