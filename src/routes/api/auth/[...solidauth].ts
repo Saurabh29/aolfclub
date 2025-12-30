@@ -1,6 +1,6 @@
 /**
  * Auth.js API Route Handler
- * 
+ *
  * Handles all authentication routes via catch-all [...solidauth] parameter.
  * Routes handled: /api/auth/signin, /api/auth/callback/*, /api/auth/signout, etc.
  */
