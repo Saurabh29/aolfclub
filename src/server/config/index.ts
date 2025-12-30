@@ -17,8 +17,6 @@ export type Env = z.infer<typeof EnvSchema>;
 
 // Perform validation at module import time (server startup)
 export function validateEnv() {
-	console.log("Validating environment variables...");
-	console.log(process.env);
 	const raw = {
 		VITE_GOOGLE_MAPS_API_KEY: process.env.VITE_GOOGLE_MAPS_API_KEY,
 		DYNAMODB_TABLE_NAME: process.env.DYNAMODB_TABLE_NAME,

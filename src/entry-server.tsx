@@ -1,5 +1,6 @@
 // @refresh reload
 import { createHandler, StartServer } from "@solidjs/start/server";
+import "~/server/config"; // Ensure environment variables are validated at startup
 
 export default createHandler(() => (
 	<StartServer
