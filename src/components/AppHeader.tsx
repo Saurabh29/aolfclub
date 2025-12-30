@@ -22,9 +22,9 @@ export default function AppHeader() {
 					<DropdownMenu>
 						<DropdownMenuTrigger
 							as={Button<"button">}
-							variant="ghost"
-							size="icon"
-							class="h-10 w-10 p-0 rounded-full bg-white text-gray-700 border border-gray-200 shadow-sm"
+							variant="outline"
+							size="sm"
+							class="p-2"
 						>
 							<svg
 								class="w-5 h-5 text-gray-700"
