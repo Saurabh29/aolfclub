@@ -1,6 +1,6 @@
 import github from "@auth/core/providers/github";
 import type { StartAuthJSConfig } from "start-authjs";
-import { env } from "../config/env";
+import { env } from "../config";
 
 export const authConfig: StartAuthJSConfig = {
 	secret: env.AUTH_SECRET,

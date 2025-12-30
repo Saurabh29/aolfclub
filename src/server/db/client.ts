@@ -15,7 +15,7 @@
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import { env } from "~/server/config/env";
+import { env } from "~/server/config";
 
 // Configuration from validated env
 export const TABLE_NAME = env.DYNAMODB_TABLE_NAME ?? "aolfclub-entities";

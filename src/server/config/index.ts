@@ -4,11 +4,11 @@ export const EnvSchema = z.object({
 	VITE_GOOGLE_MAPS_API_KEY: z.string().min(1),
 	DYNAMODB_TABLE_NAME: z.string().min(1),
 	AWS_REGION: z.string().min(1),
-	DYNAMODB_ENDPOINT: z.string().url().optional(),
+	DYNAMODB_ENDPOINT: z.url().optional(),
 	AWS_ACCESS_KEY_ID: z.string().min(1).optional(),
 	AWS_SECRET_ACCESS_KEY: z.string().min(1).optional(),
 	AUTH_SECRET: z.string().min(32),
-	AUTH_URL: z.string().url(),
+	AUTH_URL: z.url(),
 	GITHUB_CLIENT_ID: z.string().min(1),
 	GITHUB_CLIENT_SECRET: z.string().min(1),
 });
@@ -17,6 +17,8 @@ export type Env = z.infer<typeof EnvSchema>;
 
 // Perform validation at module import time (server startup)
 export function validateEnv() {
+	console.log("Validating environment variables...");
+	console.log(process.env);
 	const raw = {
 		VITE_GOOGLE_MAPS_API_KEY: process.env.VITE_GOOGLE_MAPS_API_KEY,
 		DYNAMODB_TABLE_NAME: process.env.DYNAMODB_TABLE_NAME,
@@ -46,3 +48,5 @@ export function validateEnv() {
 
 // Run validation immediately
 export const env = validateEnv();
+
+console.log("Environment variables validated successfully.");

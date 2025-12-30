@@ -1,5 +1,5 @@
 {
-	"name": "example-with-tailwindcss",
+	"name": "aolf-club",
 	"type": "module",
 	"scripts": {
 		"dev": "vinxi dev",
@@ -28,6 +28,7 @@
 		"@tailwindcss/vite": "^4.0.7",
 		"@types/node": "^25.0.3",
 		"tailwindcss": "^4.0.7",
+		"dotenv": "^16.3.1",
 		"typescript": "^5.9.3"
 	},
 	"engines": {
