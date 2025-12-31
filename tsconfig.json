@@ -10,11 +10,12 @@
 		"allowJs": true,
 		"noEmit": true,
 		"strict": true,
-		"types": ["vinxi/types/client"],
+		"types": ["vinxi/types/client", "@auth/core/types"],
 		"isolatedModules": true,
 		"skipLibCheck": true,
 		"paths": {
 			"~/*": ["./src/*"]
-		}
-	}
+		},
+	},
+	"include": ["src",  "src/**/*.d.ts"],
 }

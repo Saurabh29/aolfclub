@@ -1,7 +1,6 @@
 import github from "@auth/core/providers/github";
 import type { StartAuthJSConfig } from "start-authjs";
 import { env } from "../config";
-import { getUserById } from "../db/repositories";
 import {
 	createOrGetOAuthUser,
 	findUserByEmail,
@@ -66,16 +65,7 @@ export const authConfig: StartAuthJSConfig = {
 		session: async ({ session, token }) => {
 			// Add user info to session from token
 			if (token.userId) {
-				(session as any).user.id = token.userId;
-				try {
-					// Populate activeLocationId from persisted user preference if set
-					const u = await getUserById(token.userId as string);
-					if (u?.activeLocationId) {
-						(session as any).user.activeLocationId = u.activeLocationId;
-					}
-				} catch (e) {
-					// ignore errors here
-				}
+				session.user.id = token.userId;
 			}
 			return session;
 		},
