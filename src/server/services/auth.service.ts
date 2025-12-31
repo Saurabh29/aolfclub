@@ -11,7 +11,7 @@ import {
 	getUserIdByEmail,
 	createEmailIdentity,
 } from "~/server/db/repositories";
-import type { User } from "~/lib/schemas/db";
+import type { OAuthProvider, User } from "~/lib/schemas/db";
 import { CreateUserInput } from "~/lib/schemas/input";
 
 /**
@@ -39,7 +39,7 @@ export async function createOrGetOAuthUser(
 	emailAddress: string,
 	name: string | null,
 	imageUrl: string | null,
-	provider?: string,
+	provider?: OAuthProvider,
 ): Promise<OAuthUserCreationResult> {
 	const normalizedEmail = emailAddress.toLowerCase().trim();
 
@@ -68,7 +68,7 @@ export async function createOrGetOAuthUser(
 	await createEmailIdentity({
 		email: normalizedEmail,
 		userId: user.userId,
-		provider: provider as any,
+		provider: provider,
 	});
 
 	return {

@@ -7,9 +7,9 @@
 
 import { GetCommand, PutCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { ulid } from "ulid";
-import { User, UserSchema } from "~/lib/schemas/db";
-import { CreateUserInput } from "~/lib/schemas/input";
 import { docClient, TABLE_NAME, now } from "~/server/db/client";
+import { UserSchema, type User } from "~/lib/schemas/db";
+import { CreateUserInput } from "~/lib/schemas/input";
 import { Keys } from "../keys";
 
 /**
@@ -49,8 +49,6 @@ export async function createUser(input: CreateUserInput): Promise<User> {
 			}),
 		);
 
-		// Add backward-compatible alias `userId` for callers still expecting it
-		(validated as any).userId = validated.userId;
 		return validated;
 	} catch (error) {
 		console.error("[createUser] Failed:", error);
@@ -82,9 +80,7 @@ export async function getUserById(userId: string): Promise<User | null> {
 			return null;
 		}
 
-		const parsed = UserSchema.parse(result.Item);
-		(parsed as any).userId = parsed.userId;
-		return parsed;
+		return UserSchema.parse(result.Item);
 	} catch (error) {
 		console.error("[getUserById] Failed:", error);
 		throw new Error(
@@ -191,9 +187,7 @@ export async function updateUser(
 			throw new Error("Update did not return attributes");
 		}
 
-		const parsed = UserSchema.parse(result.Attributes);
-		(parsed as any).userId = parsed.userId;
-		return parsed;
+		return UserSchema.parse(result.Attributes);
 	} catch (error: unknown) {
 		if (
 			error instanceof Error &&

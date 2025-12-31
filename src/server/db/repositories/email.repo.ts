@@ -7,10 +7,7 @@
 
 import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { docClient, TABLE_NAME, now } from "~/server/db/client";
-import {
-	EmailIdentitySchema as EmailIdentitySchema,
-	type EmailIdentity as EmailIdentity,
-} from "~/lib/schemas/db";
+import { EmailIdentitySchema, type EmailIdentity } from "~/lib/schemas/db";
 import { Keys } from "../keys";
 import { CreateEmailIdentityInput } from "~/lib/schemas/input";
 
@@ -60,10 +57,6 @@ export async function createEmailIdentity(
 	input: CreateEmailIdentityInput,
 ): Promise<EmailIdentity> {
 	const timestamp = now();
-
-	if (!input.provider) {
-		throw new Error("provider is required when creating an email identity");
-	}
 
 	const identity: EmailIdentity = {
 		PK: Keys.emailPK(input.email),
