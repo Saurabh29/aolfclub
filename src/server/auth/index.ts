@@ -35,7 +35,7 @@ export const authConfig: StartAuthJSConfig = {
 					emailAddress,
 					user.name || null,
 					user.image || null,
-					account?.provider,
+					account?.provider as any,
 				);
 
 				if (result.isNewUser) {

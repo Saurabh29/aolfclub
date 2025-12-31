@@ -11,11 +11,6 @@ declare module "@auth/core/types" {
   interface User extends DefaultUser {
     id: string;
   }
-
-  // Narrow Account provider to our OAuthProvider union
-  interface Account {
-    provider: OAuthProvider;
-  }
 }
 
 declare module "@auth/core/jwt" {
