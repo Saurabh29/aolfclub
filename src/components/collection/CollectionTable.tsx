@@ -1,4 +1,4 @@
-import { For, Show, createMemo } from "solid-js";
+import { For, Show, createMemo, createSignal, onMount, type JSX } from "solid-js";
 import {
   createSolidTable,
   getCoreRowModel,
@@ -16,6 +16,16 @@ export interface CollectionTableProps<T, TField extends string = string> {
   getId: (item: T) => string;
   selectable?: boolean;
   onRowClick?: (item: T) => void;
+  /** Additional CSS class for the container div */
+  containerClass?: string;
+  /** Additional CSS class for the table wrapper div */
+  tableClass?: string;
+  /** Message to display when no items are found */
+  emptyMessage?: string;
+  /** Icon element to display when empty */
+  emptyIcon?: JSX.Element;
+  /** Action element (e.g., button) to display when empty */
+  emptyAction?: JSX.Element;
 }
 
 /**
@@ -25,10 +35,20 @@ export interface CollectionTableProps<T, TField extends string = string> {
  * - Table reads sorting/pagination from controller.querySpec()
  * - Table changes call controller.setSorting()/setPagination() directly
  * - NO separate adapter layer - internal conversion only
+ * 
+ * Features:
+ * - Server-side sorting and pagination
+ * - Empty state with custom message, icon, and action
+ * - Container and table class customization
+ * - Hydration mismatch protection
  */
 export function CollectionTable<T, TField extends string = string>(
   props: CollectionTableProps<T, TField>
 ) {
+  // Track client-side mount to avoid hydration mismatch for interactive elements
+  const [isClient, setIsClient] = createSignal(false);
+  onMount(() => setIsClient(true));
+
   // Derive TanStack-compatible state FROM QuerySpec (one-way: QuerySpec → Table UI)
   const tableState = createMemo(() => {
     const spec = props.controller.querySpec();
@@ -100,8 +120,13 @@ export function CollectionTable<T, TField extends string = string>(
     props.onRowClick?.(item);
   };
 
+  const hasItems = () => {
+    const data = props.controller.data();
+    return data && data.items.length > 0;
+  };
+
   return (
-    <div class="w-full">
+    <div class={props.containerClass || "w-full"}>
       {/* Loading/Error states */}
       <Show when={props.controller.isLoading()}>
         <div class="p-8 text-center text-muted-foreground">Loading...</div>
@@ -115,7 +140,7 @@ export function CollectionTable<T, TField extends string = string>(
 
       {/* Table */}
       <Show when={!props.controller.isLoading() && !props.controller.error()}>
-        <div class="rounded-md border">
+        <div class={props.tableClass || "rounded-md border"}>
           <Table>
             <TableHeader>
               <For each={table.getHeaderGroups()}>
@@ -182,7 +207,21 @@ export function CollectionTable<T, TField extends string = string>(
                       colSpan={props.columns.length + (props.selectable ? 1 : 0)}
                       class="h-24 text-center"
                     >
-                      No results.
+                      <Show
+                        when={props.emptyMessage || props.emptyIcon || props.emptyAction}
+                        fallback="No results."
+                      >
+                        <div class="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                          <Show when={props.emptyIcon}>{props.emptyIcon}</Show>
+                          <p class="text-lg font-medium mt-4">
+                            {props.emptyMessage ?? "No results."}
+                          </p>
+                          {/* Render emptyAction only on client to avoid hydration mismatch */}
+                          <Show when={isClient() && props.emptyAction}>
+                            <div class="mt-4">{props.emptyAction}</div>
+                          </Show>
+                        </div>
+                      </Show>
                     </TableCell>
                   </TableRow>
                 }

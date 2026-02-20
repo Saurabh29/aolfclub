@@ -1,4 +1,4 @@
-import { Show } from "solid-js";
+import { Show, type JSX } from "solid-js";
 import type { ColumnDef } from "@tanstack/solid-table";
 import type { CollectionQueryState } from "~/lib/controllers/types";
 import type { CardRenderer } from "./types";
@@ -18,6 +18,20 @@ export interface ResponsiveCollectionViewProps<T, TField extends string = string
    * Default: "(min-width: 768px)" (tablets and up)
    */
   breakpoint?: string;
+  /** Number of columns for card grid (default: 3) */
+  cardColumns?: number;
+  /** Container class for card view */
+  containerClass?: string;
+  /** Card wrapper class for card view */
+  cardClass?: string;
+  /** Table wrapper class for table view */
+  tableClass?: string;
+  /** Empty state message */
+  emptyMessage?: string;
+  /** Empty state icon */
+  emptyIcon?: JSX.Element;
+  /** Empty state action button */
+  emptyAction?: JSX.Element;
 }
 
 /**
@@ -51,6 +65,12 @@ export function ResponsiveCollectionView<T, TField extends string = string>(
           getId={props.getId}
           renderCard={props.renderCard}
           selectable={props.selectable}
+          columns={props.cardColumns}
+          containerClass={props.containerClass}
+          cardClass={props.cardClass}
+          emptyMessage={props.emptyMessage}
+          emptyIcon={props.emptyIcon}
+          emptyAction={props.emptyAction}
         />
       }
     >
@@ -60,6 +80,11 @@ export function ResponsiveCollectionView<T, TField extends string = string>(
         getId={props.getId}
         selectable={props.selectable}
         onRowClick={props.onRowClick}
+        containerClass={props.containerClass}
+        tableClass={props.tableClass}
+        emptyMessage={props.emptyMessage}
+        emptyIcon={props.emptyIcon}
+        emptyAction={props.emptyAction}
       />
     </Show>
   );
