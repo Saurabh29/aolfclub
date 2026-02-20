@@ -1,5 +1,5 @@
 {
-  "name": "example-with-tailwindcss",
+  "name": "aolf-club",
   "type": "module",
   "scripts": {
     "dev": "vinxi dev",
@@ -10,6 +10,7 @@
     "@kobalte/core": "^0.13.11",
     "@solidjs/router": "^0.15.0",
     "@solidjs/start": "^1.1.0",
+    "@tanstack/solid-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "solid-js": "^1.9.5",
