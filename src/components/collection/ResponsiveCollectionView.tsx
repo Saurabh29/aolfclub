@@ -1,12 +1,13 @@
-import { Show, type JSX } from "solid-js";
+import { Show } from "solid-js";
 import type { ColumnDef } from "@tanstack/solid-table";
 import type { CollectionQueryState } from "~/lib/controllers/types";
-import type { CardRenderer } from "./types";
+import type { CardRenderer, EmptyStateConfig } from "./types";
 import { CollectionTable } from "./CollectionTable";
 import { CollectionCards } from "./CollectionCards";
 import { useMediaQuery } from "./hooks/useMediaQuery";
 
-export interface ResponsiveCollectionViewProps<T, TField extends string = string> {
+export interface ResponsiveCollectionViewProps<T, TField extends string = string>
+  extends EmptyStateConfig {
   controller: CollectionQueryState<T, TField>;
   columns: ColumnDef<T, any>[];
   getId: (item: T) => string;
@@ -26,12 +27,6 @@ export interface ResponsiveCollectionViewProps<T, TField extends string = string
   cardClass?: string;
   /** Table wrapper class for table view */
   tableClass?: string;
-  /** Empty state message */
-  emptyMessage?: string;
-  /** Empty state icon */
-  emptyIcon?: JSX.Element;
-  /** Empty state action button */
-  emptyAction?: JSX.Element;
 }
 
 /**
