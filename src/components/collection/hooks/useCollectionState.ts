@@ -1,5 +1,5 @@
 import { createSignal, createMemo, onMount } from "solid-js";
-import type { CollectionQueryState } from "~/lib/controllers/types";
+import type { CollectionQueryState } from "~/lib/controllers";
 
 /**
  * useCollectionState - Shared collection state helpers

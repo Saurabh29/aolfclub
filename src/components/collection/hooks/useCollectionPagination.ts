@@ -1,5 +1,5 @@
 import { createMemo } from "solid-js";
-import type { CollectionQueryState } from "~/lib/controllers/types";
+import type { CollectionQueryState } from "~/lib/controllers";
 import type { PaginationSpec } from "~/lib/schemas/query";
 
 /**

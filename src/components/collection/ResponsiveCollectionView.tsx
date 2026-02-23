@@ -1,6 +1,6 @@
 import { Show } from "solid-js";
 import type { ColumnDef } from "@tanstack/solid-table";
-import type { CollectionQueryState } from "~/lib/controllers/types";
+import type { CollectionQueryState } from "~/lib/controllers";
 import type { CardRenderer, EmptyStateConfig } from "./types";
 import { CollectionTable } from "./CollectionTable";
 import { CollectionCards } from "./CollectionCards";

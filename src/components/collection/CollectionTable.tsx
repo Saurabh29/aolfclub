@@ -8,7 +8,7 @@ import {
   type SortingState,
   type PaginationState,
 } from "@tanstack/solid-table";
-import type { CollectionQueryState } from "~/lib/controllers/types";
+import type { CollectionQueryState } from "~/lib/controllers";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "~/components/ui/table";
 import { Checkbox } from "~/components/ui/checkbox";
 import { useCollectionState, useCollectionPagination } from "./hooks";
@@ -18,7 +18,7 @@ import {
   CollectionErrorState,
   CollectionEmptyState,
   CollectionPaginationControls,
-} from "./components";
+} from "./collection-state-components";
 
 export interface CollectionTableProps<T, TField extends string = string>
   extends EmptyStateConfig {

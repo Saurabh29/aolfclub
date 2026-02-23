@@ -1,5 +1,5 @@
 import { For, Show } from "solid-js";
-import type { CollectionQueryState } from "~/lib/controllers/types";
+import type { CollectionQueryState } from "~/lib/controllers";
 import type { CardRenderer, EmptyStateConfig } from "./types";
 import { useCollectionState, useCollectionPagination } from "./hooks";
 import {
@@ -7,7 +7,7 @@ import {
   CollectionErrorState,
   CollectionEmptyState,
   CollectionPaginationControls,
-} from "./components";
+} from "./collection-state-components";
 
 export interface CollectionCardsProps<T, TField extends string = string>
   extends EmptyStateConfig {
