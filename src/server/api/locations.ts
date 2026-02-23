@@ -1,6 +1,7 @@
 import { query } from "@solidjs/router";
 import { queryLocations, getLocationById } from "../services/locations.service";
 import type { QuerySpec } from "~/lib/schemas/query";
+import { QuerySpecSchema } from "~/lib/schemas/query";
 import type { LocationField } from "~/lib/schemas/domain";
 
 /**
@@ -17,7 +18,9 @@ import type { LocationField } from "~/lib/schemas/domain";
  */
 export const queryLocationsQuery = query(async (spec: QuerySpec<LocationField>) => {
   "use server";
-  const result = await queryLocations(spec);
+  // Validate input spec
+  const validatedSpec = QuerySpecSchema.parse(spec);
+  const result = await queryLocations(validatedSpec as QuerySpec<LocationField>);
   if (!result.success) throw new Error(result.error);
   return result.data;
 }, "query-locations");

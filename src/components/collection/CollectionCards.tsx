@@ -1,7 +1,8 @@
-import { For, Show, createSignal, onMount, type JSX } from "solid-js";
+import { For, Show, type JSX } from "solid-js";
 import type { CollectionQueryState } from "~/lib/controllers/types";
 import type { CardRenderer } from "./types";
 import { Button } from "~/components/ui/button";
+import { useCollectionState, useCollectionPagination } from "./hooks";
 
 export interface CollectionCardsProps<T, TField extends string = string> {
   controller: CollectionQueryState<T, TField>;
@@ -35,9 +36,9 @@ export interface CollectionCardsProps<T, TField extends string = string> {
 export function CollectionCards<T, TField extends string = string>(
   props: CollectionCardsProps<T, TField>
 ) {
-  // Track client-side mount to avoid hydration mismatch for interactive elements
-  const [isClient, setIsClient] = createSignal(false);
-  onMount(() => setIsClient(true));
+  // Use shared hooks for common logic
+  const state = useCollectionState(props.controller);
+  const pagination = useCollectionPagination(props.controller);
 
   const handleCardClick = (item: T) => {
     if (props.selectable) {
@@ -67,42 +68,37 @@ export function CollectionCards<T, TField extends string = string>(
     return `grid grid-cols-1 ${mdColsClass} ${lgColsClass} gap-4`;
   };
 
-  const hasItems = () => {
-    const data = props.controller.data();
-    return data && data.items.length > 0;
-  };
-
   return (
     <div class={props.containerClass}>
-      <Show when={props.controller.isLoading()}>
+      <Show when={state.isLoading()}>
         <div class="p-8 text-center text-muted-foreground">Loading...</div>
       </Show>
 
-      <Show when={props.controller.error()}>
+      <Show when={state.hasError()}>
         <div class="p-8 text-center text-destructive">
-          Error: {props.controller.error()?.message}
+          Error: {state.error()?.message}
         </div>
       </Show>
 
-      <Show when={!props.controller.isLoading() && !props.controller.error()}>
+      <Show when={state.shouldShowContent()}>
         {/* Empty state */}
-        <Show when={!hasItems()}>
+        <Show when={state.isEmpty()}>
           <div class="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <Show when={props.emptyIcon}>{props.emptyIcon}</Show>
             <p class="text-lg font-medium mt-4">
               {props.emptyMessage ?? "No items found"}
             </p>
             {/* Render emptyAction only on client to avoid hydration mismatch */}
-            <Show when={isClient() && props.emptyAction}>
+            <Show when={state.isClient() && props.emptyAction}>
               <div class="mt-4">{props.emptyAction}</div>
             </Show>
           </div>
         </Show>
 
         {/* Card grid */}
-        <Show when={hasItems()}>
+        <Show when={state.hasItems()}>
           <div class={gridClass()}>
-            <For each={props.controller.data()?.items ?? []}>
+            <For each={state.items()}>
               {(item) => {
                 const id = props.getId(item);
                 const isSelected = props.controller.selectedIds().has(id);
@@ -126,58 +122,37 @@ export function CollectionCards<T, TField extends string = string>(
           </div>
         </Show>
 
-        {/* Pagination controls for cards */}
-        <Show when={hasItems() && props.controller.data()?.pageInfo}>
-          {(pageInfo) => (
-            <div class="mt-6 flex items-center justify-between">
-              <div class="text-sm text-muted-foreground">
-                <Show when={pageInfo().totalCount}>
-                  {(count) => {
-                    const spec = props.controller.querySpec();
-                    const pageIndex = spec.pagination.pageIndex ?? 0;
-                    const pageSize = spec.pagination.pageSize;
-                    const start = pageIndex * pageSize + 1;
-                    const end = Math.min((pageIndex + 1) * pageSize, count());
-                    return <span>Showing {start} to {end} of {count()} results</span>;
-                  }}
-                </Show>
-              </div>
-              <div class="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const spec = props.controller.querySpec();
-                    const currentPage = spec.pagination.pageIndex ?? 0;
-                    if (currentPage > 0) {
-                      props.controller.setPagination({
-                        ...spec.pagination,
-                        pageIndex: currentPage - 1,
-                      });
-                    }
-                  }}
-                  disabled={(props.controller.querySpec().pagination.pageIndex ?? 0) === 0}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const spec = props.controller.querySpec();
-                    const currentPage = spec.pagination.pageIndex ?? 0;
-                    props.controller.setPagination({
-                      ...spec.pagination,
-                      pageIndex: currentPage + 1,
-                    });
-                  }}
-                  disabled={!pageInfo().hasNextPage}
-                >
-                  Next
-                </Button>
-              </div>
+        {/* Pagination controls */}
+        <Show when={state.hasItems() && pagination.pageInfo()}>
+          <div class="mt-6 flex items-center justify-between">
+            <div class="text-sm text-muted-foreground">
+              <Show when={pagination.displayInfo()}>
+                {(info) => (
+                  <span>
+                    Showing {info().start} to {info().end} of {info().totalCount} results
+                  </span>
+                )}
+              </Show>
             </div>
-          )}
+            <div class="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={pagination.goToPreviousPage}
+                disabled={!pagination.canGoPrevious()}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={pagination.goToNextPage}
+                disabled={!pagination.canGoNext()}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         </Show>
       </Show>
     </div>

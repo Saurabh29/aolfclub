@@ -1,6 +1,7 @@
 import { query } from "@solidjs/router";
 import { queryUsers, getUserById } from "../services/users.service";
 import type { QuerySpec } from "~/lib/schemas/query";
+import { QuerySpecSchema } from "~/lib/schemas/query";
 import type { UserField } from "~/lib/schemas/domain";
 
 /**
@@ -17,7 +18,9 @@ import type { UserField } from "~/lib/schemas/domain";
  */
 export const queryUsersQuery = query(async (spec: QuerySpec<UserField>) => {
   "use server";
-  const result = await queryUsers(spec);
+  // Validate input spec
+  const validatedSpec = QuerySpecSchema.parse(spec);
+  const result = await queryUsers(validatedSpec as QuerySpec<UserField>);
   if (!result.success) throw new Error(result.error);
   return result.data;
 }, "query-users");

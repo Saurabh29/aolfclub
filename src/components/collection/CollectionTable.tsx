@@ -1,14 +1,18 @@
-import { For, Show, createMemo, createSignal, onMount, type JSX } from "solid-js";
+import { For, Show, createMemo, type JSX } from "solid-js";
 import {
   createSolidTable,
   getCoreRowModel,
   type ColumnDef,
   flexRender,
+  type Updater,
+  type SortingState,
+  type PaginationState,
 } from "@tanstack/solid-table";
 import type { CollectionQueryState } from "~/lib/controllers/types";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "~/components/ui/table";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
+import { useCollectionState, useCollectionPagination } from "./hooks";
 
 export interface CollectionTableProps<T, TField extends string = string> {
   controller: CollectionQueryState<T, TField>;
@@ -45,9 +49,9 @@ export interface CollectionTableProps<T, TField extends string = string> {
 export function CollectionTable<T, TField extends string = string>(
   props: CollectionTableProps<T, TField>
 ) {
-  // Track client-side mount to avoid hydration mismatch for interactive elements
-  const [isClient, setIsClient] = createSignal(false);
-  onMount(() => setIsClient(true));
+  // Use shared hooks for common logic
+  const state = useCollectionState(props.controller);
+  const pagination = useCollectionPagination(props.controller);
 
   // Derive TanStack-compatible state FROM QuerySpec (one-way: QuerySpec → Table UI)
   const tableState = createMemo(() => {
@@ -64,7 +68,7 @@ export function CollectionTable<T, TField extends string = string>(
   // Create TanStack Table instance (controlled by QuerySpec)
   const table = createSolidTable({
     get data() {
-      return Array.from(props.controller.data()?.items ?? []);
+      return Array.from(state.items());
     },
     get columns() {
       return props.columns;
@@ -85,24 +89,21 @@ export function CollectionTable<T, TField extends string = string>(
     },
     // Page count from server response
     get pageCount() {
-      const data = props.controller.data();
-      const totalCount = data?.pageInfo.totalCount;
-      const pageSize = props.controller.querySpec().pagination.pageSize;
-      return totalCount ? Math.ceil(totalCount / pageSize) : -1;
+      return pagination.totalPages() ?? -1;
     },
     // Sync sorting changes back to QuerySpec
-    onSortingChange: (updater: any) => {
+    onSortingChange: (updater: Updater<SortingState>) => {
       const currentSorting = tableState().sorting;
       const newSorting = typeof updater === "function" ? updater(currentSorting) : updater;
       props.controller.setSorting(
-        newSorting.map((s: any) => ({
+        newSorting.map((s) => ({
           field: s.id as TField,
           direction: s.desc ? "desc" : "asc",
         }))
       );
     },
     // Sync pagination changes back to QuerySpec
-    onPaginationChange: (updater: any) => {
+    onPaginationChange: (updater: Updater<PaginationState>) => {
       const currentPagination = tableState().pagination;
       const newPagination =
         typeof updater === "function" ? updater(currentPagination) : updater;
@@ -120,26 +121,21 @@ export function CollectionTable<T, TField extends string = string>(
     props.onRowClick?.(item);
   };
 
-  const hasItems = () => {
-    const data = props.controller.data();
-    return data && data.items.length > 0;
-  };
-
   return (
     <div class={props.containerClass || "w-full"}>
       {/* Loading/Error states */}
-      <Show when={props.controller.isLoading()}>
+      <Show when={state.isLoading()}>
         <div class="p-8 text-center text-muted-foreground">Loading...</div>
       </Show>
 
-      <Show when={props.controller.error()}>
+      <Show when={state.hasError()}>
         <div class="p-8 text-center text-destructive">
-          Error: {props.controller.error()?.message}
+          Error: {state.error()?.message}
         </div>
       </Show>
 
       {/* Table */}
-      <Show when={!props.controller.isLoading() && !props.controller.error()}>
+      <Show when={state.shouldShowContent()}>
         <div class={props.tableClass || "rounded-md border"}>
           <Table>
             <TableHeader>
@@ -217,7 +213,7 @@ export function CollectionTable<T, TField extends string = string>(
                             {props.emptyMessage ?? "No results."}
                           </p>
                           {/* Render emptyAction only on client to avoid hydration mismatch */}
-                          <Show when={isClient() && props.emptyAction}>
+                          <Show when={state.isClient() && props.emptyAction}>
                             <div class="mt-4">{props.emptyAction}</div>
                           </Show>
                         </div>
@@ -263,17 +259,12 @@ export function CollectionTable<T, TField extends string = string>(
         {/* Pagination controls */}
         <div class="mt-4 flex items-center justify-between">
           <div class="text-sm text-muted-foreground">
-            <Show when={props.controller.data()?.pageInfo.totalCount}>
-              {(count) => {
-                const state = table.getState().pagination;
-                const start = state.pageIndex * state.pageSize + 1;
-                const end = Math.min((state.pageIndex + 1) * state.pageSize, count());
-                return (
-                  <span>
-                    Showing {start} to {end} of {count()} results
-                  </span>
-                );
-              }}
+            <Show when={pagination.displayInfo()}>
+              {(info) => (
+                <span>
+                  Showing {info().start} to {info().end} of {info().totalCount} results
+                </span>
+              )}
             </Show>
           </div>
           <div class="flex gap-2">
