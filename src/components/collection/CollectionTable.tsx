@@ -10,9 +10,14 @@ import {
 } from "@tanstack/solid-table";
 import type { CollectionQueryState } from "~/lib/controllers/types";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "~/components/ui/table";
-import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { useCollectionState, useCollectionPagination } from "./hooks";
+import {
+  CollectionLoadingState,
+  CollectionErrorState,
+  CollectionEmptyState,
+  CollectionPaginationControls,
+} from "./components";
 
 export interface CollectionTableProps<T, TField extends string = string> {
   controller: CollectionQueryState<T, TField>;
@@ -125,13 +130,11 @@ export function CollectionTable<T, TField extends string = string>(
     <div class={props.containerClass || "w-full"}>
       {/* Loading/Error states */}
       <Show when={state.isLoading()}>
-        <div class="p-8 text-center text-muted-foreground">Loading...</div>
+        <CollectionLoadingState />
       </Show>
 
       <Show when={state.hasError()}>
-        <div class="p-8 text-center text-destructive">
-          Error: {state.error()?.message}
-        </div>
+        <CollectionErrorState error={state.error()} />
       </Show>
 
       {/* Table */}
@@ -207,16 +210,12 @@ export function CollectionTable<T, TField extends string = string>(
                         when={props.emptyMessage || props.emptyIcon || props.emptyAction}
                         fallback="No results."
                       >
-                        <div class="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                          <Show when={props.emptyIcon}>{props.emptyIcon}</Show>
-                          <p class="text-lg font-medium mt-4">
-                            {props.emptyMessage ?? "No results."}
-                          </p>
-                          {/* Render emptyAction only on client to avoid hydration mismatch */}
-                          <Show when={state.isClient() && props.emptyAction}>
-                            <div class="mt-4">{props.emptyAction}</div>
-                          </Show>
-                        </div>
+                        <CollectionEmptyState
+                          message={props.emptyMessage ?? "No results."}
+                          icon={props.emptyIcon}
+                          action={props.emptyAction}
+                          isClient={state.isClient()}
+                        />
                       </Show>
                     </TableCell>
                   </TableRow>
@@ -257,35 +256,13 @@ export function CollectionTable<T, TField extends string = string>(
         </div>
 
         {/* Pagination controls */}
-        <div class="mt-4 flex items-center justify-between">
-          <div class="text-sm text-muted-foreground">
-            <Show when={pagination.displayInfo()}>
-              {(info) => (
-                <span>
-                  Showing {info().start} to {info().end} of {info().totalCount} results
-                </span>
-              )}
-            </Show>
-          </div>
-          <div class="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
+        <CollectionPaginationControls
+          displayInfo={pagination.displayInfo() ?? undefined}
+          onPrevious={() => table.previousPage()}
+          onNext={() => table.nextPage()}
+          canGoPrevious={table.getCanPreviousPage()}
+          canGoNext={table.getCanNextPage()}
+        />
       </Show>
     </div>
   );

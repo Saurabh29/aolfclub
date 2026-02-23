@@ -1,8 +1,13 @@
 import { For, Show, type JSX } from "solid-js";
 import type { CollectionQueryState } from "~/lib/controllers/types";
 import type { CardRenderer } from "./types";
-import { Button } from "~/components/ui/button";
 import { useCollectionState, useCollectionPagination } from "./hooks";
+import {
+  CollectionLoadingState,
+  CollectionErrorState,
+  CollectionEmptyState,
+  CollectionPaginationControls,
+} from "./components";
 
 export interface CollectionCardsProps<T, TField extends string = string> {
   controller: CollectionQueryState<T, TField>;
@@ -71,28 +76,22 @@ export function CollectionCards<T, TField extends string = string>(
   return (
     <div class={props.containerClass}>
       <Show when={state.isLoading()}>
-        <div class="p-8 text-center text-muted-foreground">Loading...</div>
+        <CollectionLoadingState />
       </Show>
 
       <Show when={state.hasError()}>
-        <div class="p-8 text-center text-destructive">
-          Error: {state.error()?.message}
-        </div>
+        <CollectionErrorState error={state.error()} />
       </Show>
 
       <Show when={state.shouldShowContent()}>
         {/* Empty state */}
         <Show when={state.isEmpty()}>
-          <div class="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <Show when={props.emptyIcon}>{props.emptyIcon}</Show>
-            <p class="text-lg font-medium mt-4">
-              {props.emptyMessage ?? "No items found"}
-            </p>
-            {/* Render emptyAction only on client to avoid hydration mismatch */}
-            <Show when={state.isClient() && props.emptyAction}>
-              <div class="mt-4">{props.emptyAction}</div>
-            </Show>
-          </div>
+          <CollectionEmptyState
+            message={props.emptyMessage}
+            icon={props.emptyIcon}
+            action={props.emptyAction}
+            isClient={state.isClient()}
+          />
         </Show>
 
         {/* Card grid */}
@@ -124,35 +123,14 @@ export function CollectionCards<T, TField extends string = string>(
 
         {/* Pagination controls */}
         <Show when={state.hasItems() && pagination.pageInfo()}>
-          <div class="mt-6 flex items-center justify-between">
-            <div class="text-sm text-muted-foreground">
-              <Show when={pagination.displayInfo()}>
-                {(info) => (
-                  <span>
-                    Showing {info().start} to {info().end} of {info().totalCount} results
-                  </span>
-                )}
-              </Show>
-            </div>
-            <div class="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={pagination.goToPreviousPage}
-                disabled={!pagination.canGoPrevious()}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={pagination.goToNextPage}
-                disabled={!pagination.canGoNext()}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
+          <CollectionPaginationControls
+            displayInfo={pagination.displayInfo() ?? undefined}
+            onPrevious={pagination.goToPreviousPage}
+            onNext={pagination.goToNextPage}
+            canGoPrevious={pagination.canGoPrevious()}
+            canGoNext={pagination.canGoNext()}
+            class="mt-6 flex items-center justify-between"
+          />
         </Show>
       </Show>
     </div>
