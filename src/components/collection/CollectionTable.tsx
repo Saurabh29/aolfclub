@@ -1,4 +1,4 @@
-import { For, Show, createMemo, type JSX } from "solid-js";
+import { For, Show, createMemo } from "solid-js";
 import {
   createSolidTable,
   getCoreRowModel,
@@ -12,6 +12,7 @@ import type { CollectionQueryState } from "~/lib/controllers/types";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "~/components/ui/table";
 import { Checkbox } from "~/components/ui/checkbox";
 import { useCollectionState, useCollectionPagination } from "./hooks";
+import type { EmptyStateConfig } from "./types";
 import {
   CollectionLoadingState,
   CollectionErrorState,
@@ -19,7 +20,8 @@ import {
   CollectionPaginationControls,
 } from "./components";
 
-export interface CollectionTableProps<T, TField extends string = string> {
+export interface CollectionTableProps<T, TField extends string = string>
+  extends EmptyStateConfig {
   controller: CollectionQueryState<T, TField>;
   columns: ColumnDef<T, any>[];
   getId: (item: T) => string;
@@ -29,12 +31,6 @@ export interface CollectionTableProps<T, TField extends string = string> {
   containerClass?: string;
   /** Additional CSS class for the table wrapper div */
   tableClass?: string;
-  /** Message to display when no items are found */
-  emptyMessage?: string;
-  /** Icon element to display when empty */
-  emptyIcon?: JSX.Element;
-  /** Action element (e.g., button) to display when empty */
-  emptyAction?: JSX.Element;
 }
 
 /**

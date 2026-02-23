@@ -1,32 +1,24 @@
 import { usersDataSource } from "../data-sources/instances";
-import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
-import type { ApiResult } from "~/lib/types";
+import { createCollectionService } from "./create-collection-service";
 import type { User, UserField } from "~/lib/schemas/domain";
 
 /**
- * Query users
- * Directly uses usersDataSource instance
+ * User Service - Uses generic collection service factory
+ * Eliminates boilerplate by delegating to createCollectionService
  */
-export async function queryUsers(spec: QuerySpec<UserField>): Promise<ApiResult<QueryResult<User>>> {
-  return await usersDataSource.query(spec);
-}
+const service = createCollectionService<User, UserField>(usersDataSource);
+
+/**
+ * Query users using QuerySpec
+ */
+export const queryUsers = service.query;
 
 /**
  * Get user by ID
  */
-export async function getUserById(id: string): Promise<ApiResult<User | null>> {
-  if (!usersDataSource.getById) {
-    return { success: false, error: "getById not supported" };
-  }
-  return await usersDataSource.getById(id);
-}
+export const getUserById = service.getById;
 
 /**
- * Get user count
+ * Get user count with optional filters
  */
-export async function getUserCount(filters?: QuerySpec<UserField>["filters"]): Promise<ApiResult<number>> {
-  if (!usersDataSource.getCount) {
-    return { success: false, error: "getCount not supported" };
-  }
-  return await usersDataSource.getCount(filters);
-}
+export const getUserCount = service.getCount;

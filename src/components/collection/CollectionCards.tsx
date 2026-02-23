@@ -1,6 +1,6 @@
-import { For, Show, type JSX } from "solid-js";
+import { For, Show } from "solid-js";
 import type { CollectionQueryState } from "~/lib/controllers/types";
-import type { CardRenderer } from "./types";
+import type { CardRenderer, EmptyStateConfig } from "./types";
 import { useCollectionState, useCollectionPagination } from "./hooks";
 import {
   CollectionLoadingState,
@@ -9,7 +9,8 @@ import {
   CollectionPaginationControls,
 } from "./components";
 
-export interface CollectionCardsProps<T, TField extends string = string> {
+export interface CollectionCardsProps<T, TField extends string = string>
+  extends EmptyStateConfig {
   controller: CollectionQueryState<T, TField>;
   getId: (item: T) => string;
   renderCard: CardRenderer<T>;
@@ -19,12 +20,6 @@ export interface CollectionCardsProps<T, TField extends string = string> {
   containerClass?: string;
   /** Additional CSS class for each card wrapper */
   cardClass?: string;
-  /** Message to display when no items are found */
-  emptyMessage?: string;
-  /** Icon element to display when empty */
-  emptyIcon?: JSX.Element;
-  /** Action element (e.g., button) to display when empty */
-  emptyAction?: JSX.Element;
 }
 
 /**

@@ -1,31 +1,24 @@
 import { locationsDataSource } from "../data-sources/instances";
-import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
-import type { ApiResult } from "~/lib/types";
+import { createCollectionService } from "./create-collection-service";
 import type { Location, LocationField } from "~/lib/schemas/domain";
 
 /**
- * Query locations
+ * Location Service - Uses generic collection service factory
+ * Eliminates boilerplate by delegating to createCollectionService
  */
-export async function queryLocations(spec: QuerySpec<LocationField>): Promise<ApiResult<QueryResult<Location>>> {
-  return await locationsDataSource.query(spec);
-}
+const service = createCollectionService<Location, LocationField>(locationsDataSource);
+
+/**
+ * Query locations using QuerySpec
+ */
+export const queryLocations = service.query;
 
 /**
  * Get location by ID
  */
-export async function getLocationById(id: string): Promise<ApiResult<Location | null>> {
-  if (!locationsDataSource.getById) {
-    return { success: false, error: "getById not supported" };
-  }
-  return await locationsDataSource.getById(id);
-}
+export const getLocationById = service.getById;
 
 /**
- * Get location count
+ * Get location count with optional filters
  */
-export async function getLocationCount(filters?: QuerySpec<LocationField>["filters"]): Promise<ApiResult<number>> {
-  if (!locationsDataSource.getCount) {
-    return { success: false, error: "getCount not supported" };
-  }
-  return await locationsDataSource.getCount(filters);
-}
+export const getLocationCount = service.getCount;
