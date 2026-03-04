@@ -1,4 +1,5 @@
 import { DummyDataSource } from "./dummy.data-source";
+import { DummyTaskDataSource } from "./task.data-source";
 import { generateDummyUsers, generateDummyLocations } from "./dummy-data";
 import type { User, UserField, Location, LocationField } from "~/lib/schemas/domain";
 
@@ -19,6 +20,7 @@ const dummyLocations = generateDummyLocations(20);
  */
 export const usersDataSource = new DummyDataSource<User, UserField>(dummyUsers);
 export const locationsDataSource = new DummyDataSource<Location, LocationField>(dummyLocations);
+export const tasksDataSource = new DummyTaskDataSource();
 
 /**
  * Later, to migrate to DynamoDB, just change the instantiation:

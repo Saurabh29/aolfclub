@@ -6,6 +6,12 @@ import { z } from "zod";
 export const UserTypeEnum = z.enum(["MEMBER", "LEAD"]);
 export type UserType = z.infer<typeof UserTypeEnum>;
 
+/**
+ * Interest level from last call
+ */
+export const InterestLevelEnum = z.enum(["High", "Medium", "Low", "Not_Interested"]);
+export type InterestLevel = z.infer<typeof InterestLevelEnum>;
+
 export const UserSchema = z.object({
 	id: z.ulid(),
 	email: z.email(),
@@ -17,6 +23,18 @@ export const UserSchema = z.object({
 	activeLocationId: z.ulid().optional(),
 	createdAt: z.iso.datetime(),
 	updatedAt: z.iso.datetime(),
+	
+	// Program tracking
+	memberSince: z.iso.datetime().optional(),
+	programsDone: z.array(z.string()).default([]),
+	interestedPrograms: z.array(z.string()).default([]),
+	
+	// Call history (from last call)
+	lastCallDate: z.iso.datetime().optional(),
+	lastInterestLevel: InterestLevelEnum.optional(),
+	nextFollowUpDate: z.iso.datetime().optional(),
+	lastNotes: z.string().optional(),
+	totalCallCount: z.number().int().default(0),
 });
 
 export type User = z.infer<typeof UserSchema>;
