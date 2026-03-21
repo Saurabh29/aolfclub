@@ -1,6 +1,6 @@
 import { DummyDataSource } from "./dummy.data-source";
 import { DummyTaskDataSource } from "./task.data-source";
-import { DummyLocationDataSource } from "./location.data-source";
+import { DynamoDBLocationDataSource } from "./dynamo-location.data-source";
 import { generateDummyUsers } from "./dummy-data";
 import type { User, UserField } from "~/lib/schemas/domain";
 
@@ -19,7 +19,7 @@ const dummyUsers = generateDummyUsers(100);
  * ✅ Easy to swap implementations (just change the instantiation)
  */
 export const usersDataSource = new DummyDataSource<User, UserField>(dummyUsers);
-export const locationsDataSource = new DummyLocationDataSource();
+export const locationsDataSource = new DynamoDBLocationDataSource();
 export const tasksDataSource = new DummyTaskDataSource();
 
 /**
