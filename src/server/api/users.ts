@@ -1,5 +1,5 @@
 import { query } from "@solidjs/router";
-import { queryUsers, getUserById } from "../services/users.service";
+import { queryUsers, getUserById, getActiveLocationId, setActiveLocation } from "../services/users.service";
 import type { QuerySpec } from "~/lib/schemas/query";
 import { QuerySpecSchema } from "~/lib/schemas/query";
 import type { UserField } from "~/lib/schemas/domain";
@@ -39,3 +39,27 @@ export const getUserByIdQuery = query(async (id: string) => {
   if (!result.success) throw new Error(result.error);
   return result.data;
 }, "user-by-id");
+
+/**
+ * Get the active location ID stored for a user.
+ * Returns null if the user has not selected a location yet.
+ */
+export const getActiveLocationIdQuery = query(async (userId: string) => {
+  "use server";
+  const result = await getActiveLocationId(userId);
+  if (!result.success) throw new Error(result.error);
+  return result.data;
+}, "user-active-location-id");
+
+/**
+ * Set the active location for a user.
+ * Stub: persists in server memory. Replace with real DB update once auth is wired.
+ */
+export const setActiveLocationMutation = query(
+  async (userId: string, locationId: string) => {
+    "use server";
+    const result = await setActiveLocation(userId, locationId);
+    if (!result.success) throw new Error(result.error);
+  },
+  "set-active-location"
+);
