@@ -9,6 +9,7 @@ import { createSignal, onMount, type Component, Show } from "solid-js";
 import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
 import { cn } from "~/lib/utils";
 import { Search, X } from "lucide-solid";
+import { clientEnv } from "~/lib/env";
 import {
 	Combobox,
 	ComboboxControl,
@@ -85,12 +86,7 @@ export const GooglePlaceSearch: Component<GooglePlaceSearchProps> = (props) => {
 	const [error, setError] = createSignal<string | null>(null);
 
 	onMount(async () => {
-		const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-		if (!apiKey) {
-			setError("VITE_GOOGLE_MAPS_API_KEY is missing.");
-			setIsLoading(false);
-			return;
-		}
+		const apiKey = clientEnv.VITE_GOOGLE_MAPS_API_KEY;
 
 		try {
 			// Use a single config object for the loader
