@@ -1,8 +1,14 @@
 import { createSignal } from "solid-js";
-import { useNavigate, useAction } from "@solidjs/router";
+import { useNavigate, useAction, type RouteDefinition } from "@solidjs/router";
 import { LocationForm } from "~/components/locations/LocationForm";
 import { createLocationAction } from "~/server/api";
 import type { CreateLocationRequest } from "~/lib/schemas/domain";
+
+// Empty preload signals Solid Router to eagerly load this route's JS module
+// on hover over any <A href="/locations/new"> link, before the click lands.
+export const route = {
+  preload: () => {},
+} satisfies RouteDefinition;
 
 export default function NewLocationPage() {
   const navigate = useNavigate();

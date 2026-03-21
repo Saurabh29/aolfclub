@@ -18,7 +18,7 @@ export const route = {
 } satisfies RouteDefinition;
 
 export default function LocationsPage() {
-  const locationsData = createAsync(() => queryLocationsQuery(LIST_SPEC), { deferStream: true });
+  const locationsData = createAsync(() => queryLocationsQuery(LIST_SPEC));
   const deleteLocation = useAction(deleteLocationAction);
   const [deletingId, setDeletingId] = createSignal<string | undefined>();
 
