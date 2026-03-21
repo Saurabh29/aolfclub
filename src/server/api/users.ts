@@ -41,24 +41,29 @@ export const getUserByIdQuery = query(async (id: string) => {
 }, "user-by-id");
 
 /**
- * Get the active location ID stored for a user.
- * Returns null if the user has not selected a location yet.
+ * Get the active location ID for the currently authenticated user.
+ * userId is read from the session server-side — never trusted from the client.
  */
-export const getActiveLocationIdQuery = query(async (userId: string) => {
+export const getActiveLocationIdQuery = query(async () => {
   "use server";
-  const result = await getActiveLocationId(userId);
-  if (!result.success) throw new Error(result.error);
-  return result.data;
+  const { getSessionInfo } = await import("~/lib/auth");
+  const session = await getSessionInfo();
+  if (!session.userId) return null;
+  const result = await getActiveLocationId(session.userId);
+  return result.success ? (result.data ?? null) : null;
 }, "user-active-location-id");
 
 /**
- * Set the active location for a user.
- * Stub: persists in server memory. Replace with real DB update once auth is wired.
+ * Set the active location for the currently authenticated user.
+ * userId is read from the session — not accepted from the client.
  */
 export const setActiveLocationMutation = query(
-  async (userId: string, locationId: string) => {
+  async (locationId: string) => {
     "use server";
-    const result = await setActiveLocation(userId, locationId);
+    const { getSessionInfo } = await import("~/lib/auth");
+    const session = await getSessionInfo();
+    if (!session.userId) throw new Error("Not authenticated");
+    const result = await setActiveLocation(session.userId, locationId);
     if (!result.success) throw new Error(result.error);
   },
   "set-active-location"
