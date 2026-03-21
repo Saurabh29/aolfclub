@@ -1,4 +1,4 @@
-import { query } from "@solidjs/router";
+import { query, action } from "@solidjs/router";
 import {
   queryLocations,
   getLocationById,
@@ -61,23 +61,19 @@ export const checkSlugAvailableQuery = query(async (slug: string, excludeId?: st
   return !taken;
 }, "location-slug-available");
 
-export const createLocationMutation = query(async (data: CreateLocationRequest) => {
+// ── Actions (mutations) — use action(), NOT query() ─────────────────────────
+
+export const createLocationAction = action(async (data: CreateLocationRequest) => {
   "use server";
-  const result = await createLocation(data);
-  if (!result.success) throw new Error(result.error);
-  return result.data;
+  return await createLocation(data);
 }, "create-location");
 
-export const updateLocationMutation = query(async (id: string, data: UpdateLocationRequest) => {
+export const updateLocationAction = action(async (id: string, data: UpdateLocationRequest) => {
   "use server";
-  const result = await updateLocation(id, data);
-  if (!result.success) throw new Error(result.error);
-  return result.data;
+  return await updateLocation(id, data);
 }, "update-location");
 
-export const deleteLocationMutation = query(async (id: string) => {
+export const deleteLocationAction = action(async (id: string) => {
   "use server";
-  const result = await deleteLocation(id);
-  if (!result.success) throw new Error(result.error);
-  return result.data;
+  return await deleteLocation(id);
 }, "delete-location");

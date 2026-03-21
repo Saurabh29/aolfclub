@@ -1,11 +1,12 @@
 import { createSignal } from "solid-js";
-import { useNavigate } from "@solidjs/router";
+import { useNavigate, useAction } from "@solidjs/router";
 import { LocationForm } from "~/components/locations/LocationForm";
-import { createLocationMutation } from "~/server/api";
+import { createLocationAction } from "~/server/api";
 import type { CreateLocationRequest } from "~/lib/schemas/domain";
 
 export default function NewLocationPage() {
   const navigate = useNavigate();
+  const createLocation = useAction(createLocationAction);
   const [isSubmitting, setIsSubmitting] = createSignal(false);
   const [serverError, setServerError] = createSignal<string | undefined>();
 
@@ -13,10 +14,12 @@ export default function NewLocationPage() {
     setIsSubmitting(true);
     setServerError(undefined);
     try {
-      await createLocationMutation(data);
+      const result = await createLocation(data);
+      if (!result.success) {
+        setServerError(result.error ?? "Failed to create location");
+        return;
+      }
       navigate("/locations");
-    } catch (err) {
-      setServerError(err instanceof Error ? err.message : "Failed to create location");
     } finally {
       setIsSubmitting(false);
     }
@@ -24,7 +27,6 @@ export default function NewLocationPage() {
 
   return (
     <main class="container mx-auto p-4 sm:p-8 max-w-2xl">
-      {/* Header */}
       <div class="mb-6">
         <a href="/locations" class="text-sm text-muted-foreground hover:text-foreground">← Back to Locations</a>
         <h1 class="text-2xl font-bold mt-2">📍 Add New Location</h1>
@@ -41,3 +43,4 @@ export default function NewLocationPage() {
     </main>
   );
 }
+
