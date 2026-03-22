@@ -8,14 +8,14 @@ export interface AssignStrategy {
   maxLeadsPerAgent?: number;
   evenDistribution: boolean;
   assignments?: LeadAssignment[];
-  leadPoolIds?: string[];
+  contactPoolIds?: string[];
 }
 
 export interface AssignmentStrategyStepProps {
   /** Assignment mode */
   assignmentMode: AssignmentMode;
-  /** Number of matched leads */
-  matchedLeadCount: number;
+  /** Number of matched contacts (leads or members) */
+  matchedContactCount: number;
   /** Number of selected agents */
   selectedAgentCount: number;
   /** Selected agent IDs for assignment preview */
@@ -37,7 +37,7 @@ export const AssignmentStrategyStep: Component<AssignmentStrategyStepProps> = (p
   const distributionPreview = createMemo(() => {
     if (props.selectedAgentCount === 0) return null;
     
-    const total = props.matchedLeadCount;
+    const total = props.matchedContactCount;
     const agents = props.selectedAgentCount;
     
     if (evenDistribution()) {
@@ -83,16 +83,16 @@ export const AssignmentStrategyStep: Component<AssignmentStrategyStepProps> = (p
       maxLeadsPerAgent: maxLeadsPerAgent(),
     };
 
-    // For LeadPool mode, all matched leads go to pool
+    // For LeadPool mode, all matched contacts go to pool
     if (currentMode === "LeadPool") {
-      strategy.leadPoolIds = []; // Will be filled with actual lead IDs by parent
+      strategy.contactPoolIds = []; // Will be filled with actual contact IDs by parent
       strategy.assignments = [];
     }
     // For PreAssigned and Hybrid, we'll compute assignments
     else {
-      strategy.assignments = []; // Will be computed by parent with actual lead IDs
+      strategy.assignments = []; // Will be computed by parent with actual contact IDs
       if (currentMode === "Hybrid") {
-        strategy.leadPoolIds = [];
+        strategy.contactPoolIds = [];
       }
     }
 
@@ -111,8 +111,8 @@ export const AssignmentStrategyStep: Component<AssignmentStrategyStepProps> = (p
       {/* Summary Stats */}
       <div class="grid grid-cols-3 gap-4">
         <Card class="p-4 text-center">
-          <div class="text-2xl font-bold text-primary">{props.matchedLeadCount}</div>
-          <div class="text-xs text-muted-foreground mt-1">Matched Leads</div>
+          <div class="text-2xl font-bold text-primary">{props.matchedContactCount}</div>
+          <div class="text-xs text-muted-foreground mt-1">Matched Contacts</div>
         </Card>
         <Card class="p-4 text-center">
           <div class="text-2xl font-bold text-primary">{props.selectedAgentCount}</div>
@@ -193,7 +193,7 @@ export const AssignmentStrategyStep: Component<AssignmentStrategyStepProps> = (p
             <Show when={mode() === "LeadPool"}>
               <div class="mt-3 pt-3 border-t">
                 <Badge variant="outline" class="text-xs">
-                  All {props.matchedLeadCount} leads will be available in the pool
+                  All {props.matchedContactCount} contacts will be available in the pool
                 </Badge>
               </div>
             </Show>
@@ -271,10 +271,10 @@ export const AssignmentStrategyStep: Component<AssignmentStrategyStepProps> = (p
         </Card>
       </Show>
 
-      <Show when={props.matchedLeadCount === 0}>
+      <Show when={props.matchedContactCount === 0}>
         <Card class="p-4 bg-destructive/10 border-destructive/20">
           <p class="text-sm text-destructive">
-            ⚠️ No leads match your filters. Please adjust filters in step 1.
+            ⚠️ No contacts match your filters. Please adjust filters in step 1.
           </p>
         </Card>
       </Show>

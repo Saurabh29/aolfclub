@@ -32,11 +32,12 @@ export default function CreateTaskPage() {
     name: "",
     objective: "",
     selectedAgentIds: [],
-    matchedLeadIds: [],
-    leadFilterSpec: "",
+    matchedContactIds: [],
+    contactFilterSpec: "",
     assignments: [],
-    leadPoolIds: [],
+    contactPoolIds: [],
     assignmentMode: "PreAssigned",
+    targetUserType: "LEAD",
   });
 
   const isLastStep = () => currentStep() === STEPS.length - 1;
@@ -66,7 +67,7 @@ export default function CreateTaskPage() {
     try {
       const data = taskData();
       // Validate required fields
-      if (!data.name || !data.leadFilterSpec || !data.selectedAgentIds || data.selectedAgentIds.length === 0) {
+      if (!data.name || !data.contactFilterSpec || !data.selectedAgentIds || data.selectedAgentIds.length === 0) {
         throw new Error("Missing required fields");
       }
 
@@ -170,8 +171,8 @@ export default function CreateTaskPage() {
           {/* Step 1: Filter Leads */}
           <Show when={currentStep() === 1}>
             <FilterLeadsStep
-              leadFilterSpec={taskData().leadFilterSpec || ""}
-              onFilterChange={(spec) => updateTaskData({ leadFilterSpec: spec })}
+              contactFilterSpec={taskData().contactFilterSpec || ""}
+              onFilterChange={(spec) => updateTaskData({ contactFilterSpec: spec })}
               matchedCount={0}
             />
           </Show>
@@ -188,14 +189,14 @@ export default function CreateTaskPage() {
           <Show when={currentStep() === 3}>
             <AssignmentStrategyStep
               assignmentMode={taskData().assignmentMode || "PreAssigned"}
-              matchedLeadCount={0}
+              matchedContactCount={0}
               selectedAgentCount={taskData().selectedAgentIds?.length || 0}
               selectedAgentIds={taskData().selectedAgentIds || []}
               onStrategyChange={(strategy: AssignStrategy) => {
                 updateTaskData({
                   assignmentMode: strategy.mode,
                   assignments: strategy.assignments,
-                  leadPoolIds: strategy.leadPoolIds,
+                  contactPoolIds: strategy.contactPoolIds,
                 });
               }}
             />
@@ -205,7 +206,7 @@ export default function CreateTaskPage() {
           <Show when={currentStep() === 4}>
             <ReviewLaunchStep
               taskData={taskData()}
-              matchedLeadCount={0}
+              matchedContactCount={0}
               selectedAgentCount={taskData().selectedAgentIds?.length || 0}
               onEditStep={(stepIndex) => setCurrentStep(stepIndex)}
             />

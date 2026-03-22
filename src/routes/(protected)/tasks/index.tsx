@@ -130,7 +130,7 @@ export default function TasksPage() {
                     <div>
                       <div class="text-muted-foreground text-xs">Leads</div>
                       <div class="font-medium">
-                        {task.matchedLeadIds.length}
+                        {task.matchedContactIds.length}
                       </div>
                     </div>
                     <div>

@@ -112,7 +112,7 @@ export default function MyLeadsPage() {
   // Handle call button
   const handleCall = (lead: User) => {
     // Find task for this lead
-    const task = tasks().find((t) => t.matchedLeadIds?.includes(lead.id));
+    const task = tasks().find((t) => t.matchedContactIds?.includes(lead.id));
     
     // Launch native dialer
     if (lead.phone) {
@@ -216,7 +216,7 @@ export default function MyLeadsPage() {
             <For each={tasks()}>
               {(task) => {
                 const taskLeads = allLeads().filter((l) =>
-                  task.matchedLeadIds?.includes(l.id)
+                  task.matchedContactIds?.includes(l.id)
                 );
                 const progress = calculateCompletionRate(taskLeads);
                 return (

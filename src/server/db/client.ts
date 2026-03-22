@@ -12,8 +12,20 @@
  * Otherwise it falls back to the default AWS credential chain (IAM roles, env vars, etc.).
  *
  * PK / SK patterns (single-table design):
- *   Location item:   PK = "LOCATION#<id>",  SK = "META"
- *   Slug lookup:     PK = "SLUG#<slug>",    SK = "META"
+ *   Location item:      PK = "LOCATION#<id>",    SK = "META"
+ *   Slug lookup:        PK = "SLUG#<slug>",       SK = "META"
+ *   User item:          PK = "USER#<id>",         SK = "META"
+ *   Email lookup:       PK = "EMAIL#<email>",     SK = "META"
+ *   Group item:         PK = "GROUP#<id>",        SK = "META"
+ *   Location→Group:     PK = "LOCATION#<id>",    SK = "GROUP#<groupId>"
+ *   User→Group:         PK = "USER#<userId>",     SK = "GROUP#<groupId>"
+ *   Group→User:         PK = "GROUP#<groupId>",   SK = "USER#<userId>"
+ *   User→Location:      PK = "USER#<userId>",     SK = "LOCATION#<locationId>"
+ *   Location→User:      PK = "LOCATION#<id>",    SK = "USER#<userId>"
+ *   Role item:          PK = "ROLE#<roleName>",   SK = "META"
+ *   Page item:          PK = "PAGE#<pageName>",   SK = "META"
+ *   Group→Role:         PK = "GROUP#<groupId>",   SK = "ROLE#<roleName>"
+ *   Role→Page:          PK = "ROLE#<roleName>",   SK = "PAGE#<pageName>"
  */
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
@@ -53,9 +65,29 @@ export const docClient = DynamoDBDocumentClient.from(createDynamoDBClient(), {
  * Key helpers — centralise PK/SK generation so all operations stay consistent.
  */
 export const Keys = {
+  // Entity PK helpers
   locationPK: (id: string): string => `LOCATION#${id}`,
-  slugPK: (slug: string): string => `SLUG#${slug}`,
-  metaSK: (): "META" => "META" as const,
+  slugPK:     (slug: string): string => `SLUG#${slug}`,
+  userPK:     (id: string): string => `USER#${id}`,
+  emailPK:    (email: string): string => `EMAIL#${email.toLowerCase()}`,
+  groupPK:    (id: string): string => `GROUP#${id}`,
+  rolePK:     (name: string): string => `ROLE#${name}`,
+  pagePK:     (name: string): string => `PAGE#${name}`,
+
+  // SK helpers (for edge items and begins_with queries)
+  metaSK:       (): "META" => "META" as const,
+  locationSK:   (id: string): string => `LOCATION#${id}`,
+  userSK:       (id: string): string => `USER#${id}`,
+  groupSK:      (id: string): string => `GROUP#${id}`,
+  roleSK:       (name: string): string => `ROLE#${name}`,
+  pageSK:       (name: string): string => `PAGE#${name}`,
+
+  // Prefix constants for begins_with KeyConditionExpressions
+  LOCATION_PREFIX: "LOCATION#",
+  USER_PREFIX:     "USER#",
+  GROUP_PREFIX:    "GROUP#",
+  ROLE_PREFIX:     "ROLE#",
+  PAGE_PREFIX:     "PAGE#",
 };
 
 /** Current ISO-8601 timestamp — used for createdAt / updatedAt. */

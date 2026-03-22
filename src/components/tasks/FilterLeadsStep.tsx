@@ -18,10 +18,10 @@ export const AVAILABLE_PROGRAMS = [
 
 export interface FilterLeadsStepProps {
   /** Current filter specification as JSON string */
-  leadFilterSpec: string;
+  contactFilterSpec: string;
   /** Callback when filter changes */
   onFilterChange: (filterSpec: string) => void;
-  /** Estimated count of matching leads */
+  /** Estimated count of matching contacts */
   matchedCount?: number;
 }
 
@@ -33,7 +33,7 @@ export const FilterLeadsStep: Component<FilterLeadsStepProps> = (props) => {
   // Parse existing filter or start fresh
   const initialFilter = (): QuerySpec<UserField> => {
     try {
-      return props.leadFilterSpec ? JSON.parse(props.leadFilterSpec) : {
+      return props.contactFilterSpec ? JSON.parse(props.contactFilterSpec) : {
         filters: [],
         sorting: [],
         pagination: { pageSize: 20, pageIndex: 0 },

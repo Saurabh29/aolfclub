@@ -35,7 +35,7 @@ export function generateDummyTasks(count: number = 10): Task[] {
     const matchedLeadCount = Math.floor(Math.random() * 200) + 50;
     const agentCount = Math.floor(matchedLeadCount / 40); // ~40 leads per agent
     
-    const matchedLeadIds = Array.from({ length: matchedLeadCount }, () => ulid());
+    // matchedContactIds built below after targetUserType is set
     const selectedAgentIds = Array.from({ length: agentCount }, () => ulid());
     
     const assignmentModes: Task["assignmentMode"][] = ["PreAssigned", "LeadPool", "Hybrid"];
@@ -44,49 +44,55 @@ export function generateDummyTasks(count: number = 10): Task[] {
     const statuses: Task["status"][] = ["Draft", "Active", "Active", "Active", "Completed", "Paused"];
     const status = statuses[i % statuses.length];
     
+    // Alternate between LEAD and MEMBER tasks
+    const targetUserType: Task["targetUserType"] = i % 2 === 0 ? "LEAD" : "MEMBER";
+
     // Simple example filter (JSON stringified QuerySpec)
     const filterSpec = JSON.stringify({
       filters: [
-        { field: "userType", op: "eq", value: "LEAD" },
+        { field: "userType", op: "eq", value: targetUserType },
         { field: "lastInterestLevel", op: "eq", value: "High" },
       ],
       sorting: [{ field: "nextFollowUpDate", direction: "asc" }],
       pagination: { pageSize: 1000, pageIndex: 0 },
     });
-    
+
+    const matchedContactIds = Array.from({ length: matchedLeadCount }, () => ulid());
+
     // Generate assignments based on mode
     const assignments =
       assignmentMode === "PreAssigned"
         ? selectedAgentIds.map((agentId, idx) => ({
             agentId,
-            leadIds: matchedLeadIds.slice(
+            contactIds: matchedContactIds.slice(
               idx * Math.floor(matchedLeadCount / agentCount),
               (idx + 1) * Math.floor(matchedLeadCount / agentCount)
             ),
             assignedAt: createdDate.toISOString(),
           }))
         : [];
-    
-    const leadPoolIds =
+
+    const contactPoolIds =
       assignmentMode === "LeadPool"
-        ? matchedLeadIds
+        ? matchedContactIds
         : assignmentMode === "Hybrid"
-        ? matchedLeadIds.slice(Math.floor(matchedLeadCount / 2))
+        ? matchedContactIds.slice(Math.floor(matchedLeadCount / 2))
         : [];
-    
+
     tasks.push({
       id: ulid(),
       name: taskNames[i % taskNames.length],
       objective: objectives[i % objectives.length],
       deadline: deadline.toISOString(),
       targetCallsPerAgent: 40,
-      leadFilterSpec: filterSpec,
-      matchedLeadIds,
+      targetUserType,
+      contactFilterSpec: filterSpec,
+      matchedContactIds,
       selectedAgentIds,
       assignmentMode,
       assignments,
       maxLeadsPerAgent: assignmentMode !== "PreAssigned" ? 50 : undefined,
-      leadPoolIds,
+      contactPoolIds,
       status,
       createdBy: ulid(), // Admin user
       createdAt: createdDate.toISOString(),

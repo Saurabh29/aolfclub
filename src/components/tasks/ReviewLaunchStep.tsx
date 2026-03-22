@@ -7,8 +7,8 @@ import type { CreateTaskRequest, AssignmentMode } from "~/lib/schemas/domain";
 export interface ReviewLaunchStepProps {
   /** Complete task data to review */
   taskData: Partial<CreateTaskRequest>;
-  /** Number of matched leads */
-  matchedLeadCount: number;
+  /** Number of matched contacts */
+  matchedContactCount: number;
   /** Selected agent count */
   selectedAgentCount: number;
   /** Callback to navigate to specific step */
@@ -24,7 +24,7 @@ export const ReviewLaunchStep: Component<ReviewLaunchStepProps> = (props) => {
     const data = props.taskData;
     return !!(
       data.name &&
-      data.leadFilterSpec &&
+      data.contactFilterSpec &&
       data.selectedAgentIds &&
       data.selectedAgentIds.length > 0
     );
@@ -40,8 +40,8 @@ export const ReviewLaunchStep: Component<ReviewLaunchStepProps> = (props) => {
     if (!data.selectedAgentIds || data.selectedAgentIds.length === 0) {
       issues.push("At least one agent must be selected");
     }
-    if (props.matchedLeadCount === 0) {
-      issues.push("No leads match your filters");
+    if (props.matchedContactCount === 0) {
+      issues.push("No contacts match your filters");
     }
     if (!data.deadline) {
       issues.push("No deadline set (optional but recommended)");
@@ -153,17 +153,17 @@ export const ReviewLaunchStep: Component<ReviewLaunchStepProps> = (props) => {
           <div class="flex items-center gap-4">
             <div class="flex-1">
               <div class="text-2xl font-bold text-primary">
-                {props.matchedLeadCount}
+                {props.matchedContactCount}
               </div>
-              <div class="text-xs text-muted-foreground">Matched Leads</div>
+              <div class="text-xs text-muted-foreground">Matched Contacts</div>
             </div>
-            <Show when={props.taskData.leadFilterSpec}>
+            <Show when={props.taskData.contactFilterSpec}>
               <details class="flex-1 text-xs">
                 <summary class="cursor-pointer text-muted-foreground">
                   View Filters
                 </summary>
                 <pre class="mt-2 p-2 bg-muted rounded overflow-auto max-h-32">
-                  {JSON.stringify(JSON.parse(props.taskData.leadFilterSpec || "{}"), null, 2)}
+                  {JSON.stringify(JSON.parse(props.taskData.contactFilterSpec || "{}"), null, 2)}
                 </pre>
               </details>
             </Show>
@@ -216,7 +216,7 @@ export const ReviewLaunchStep: Component<ReviewLaunchStepProps> = (props) => {
                 <dt class="text-muted-foreground">Distribution:</dt>
                 <dd class="font-medium">
                   {props.selectedAgentCount > 0
-                    ? `~${Math.floor(props.matchedLeadCount / props.selectedAgentCount)} leads/agent`
+                    ? `~${Math.floor(props.matchedContactCount / props.selectedAgentCount)} contacts/agent`
                     : "—"}
                 </dd>
               </div>
@@ -237,8 +237,8 @@ export const ReviewLaunchStep: Component<ReviewLaunchStepProps> = (props) => {
         <h4 class="font-medium mb-4 text-center">Launch Summary</h4>
         <div class="grid grid-cols-3 gap-4 text-center">
           <div>
-            <div class="text-3xl font-bold text-primary">{props.matchedLeadCount}</div>
-            <div class="text-xs text-muted-foreground mt-1">Total Leads</div>
+            <div class="text-3xl font-bold text-primary">{props.matchedContactCount}</div>
+            <div class="text-xs text-muted-foreground mt-1">Total Contacts</div>
           </div>
           <div>
             <div class="text-3xl font-bold text-primary">{props.selectedAgentCount}</div>
@@ -247,10 +247,10 @@ export const ReviewLaunchStep: Component<ReviewLaunchStepProps> = (props) => {
           <div>
             <div class="text-3xl font-bold text-primary">
               {props.selectedAgentCount > 0
-                ? Math.floor(props.matchedLeadCount / props.selectedAgentCount)
+                ? Math.floor(props.matchedContactCount / props.selectedAgentCount)
                 : 0}
             </div>
-            <div class="text-xs text-muted-foreground mt-1">Avg Leads/Agent</div>
+            <div class="text-xs text-muted-foreground mt-1">Avg Contacts/Agent</div>
           </div>
         </div>
       </Card>

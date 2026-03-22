@@ -25,18 +25,20 @@ export const TaskStatusEnum = z.enum([
 export type TaskStatus = z.infer<typeof TaskStatusEnum>;
 
 /**
- * Individual lead assignment to an agent
+ * Individual contact assignment to an agent.
+ * "Contact" = the person being called, regardless of whether they are a Lead or Member.
  */
 export const LeadAssignmentSchema = z.object({
 	agentId: z.ulid(),
-	leadIds: z.array(z.ulid()),
+	contactIds: z.array(z.ulid()),
 	assignedAt: z.iso.datetime(),
 });
 export type LeadAssignment = z.infer<typeof LeadAssignmentSchema>;
 
 /**
  * Call Task entity
- * Represents a call campaign with filtered leads and assigned agents
+ * Represents a call campaign with filtered contacts (leads OR members) and assigned agents.
+ * A task exclusively targets one userType — never a mix.
  */
 export const TaskSchema = z.object({
 	id: z.ulid(),
@@ -47,10 +49,13 @@ export const TaskSchema = z.object({
 	deadline: z.iso.datetime().optional(),
 	targetCallsPerAgent: z.number().int().positive().optional(),
 	
-	// Lead filtering (Step 1)
+	// Who is being called (Step 0 — set once, never mixed)
+	targetUserType: z.enum(["LEAD", "MEMBER"]),
+
+	// Contact filtering (Step 1)
 	// Store as JSON string since QuerySpec is complex
-	leadFilterSpec: z.string(), // JSON.stringify(QuerySpec<UserField>)
-	matchedLeadIds: z.array(z.ulid()), // Cached result of filter
+	contactFilterSpec: z.string(), // JSON.stringify(QuerySpec<UserField>)
+	matchedContactIds: z.array(z.ulid()), // Cached result of filter
 	
 	// Team selection (Step 2)
 	selectedAgentIds: z.array(z.ulid()),
@@ -59,7 +64,7 @@ export const TaskSchema = z.object({
 	assignmentMode: AssignmentModeEnum,
 	assignments: z.array(LeadAssignmentSchema).default([]),
 	maxLeadsPerAgent: z.number().int().positive().optional(),
-	leadPoolIds: z.array(z.ulid()).default([]), // Unassigned leads for pool mode
+	contactPoolIds: z.array(z.ulid()).default([]), // Unassigned contacts for pool mode
 	
 	// Metadata
 	status: TaskStatusEnum.default("Draft"),
@@ -83,13 +88,14 @@ export const CreateTaskRequestSchema = z.object({
 	objective: z.string().optional(),
 	deadline: z.iso.datetime().optional(),
 	targetCallsPerAgent: z.number().int().positive().optional(),
-	leadFilterSpec: z.string(),
-	matchedLeadIds: z.array(z.ulid()),
+	targetUserType: z.enum(["LEAD", "MEMBER"]),
+	contactFilterSpec: z.string(),
+	matchedContactIds: z.array(z.ulid()),
 	selectedAgentIds: z.array(z.ulid()).min(1),
 	assignmentMode: AssignmentModeEnum,
 	assignments: z.array(LeadAssignmentSchema).default([]),
 	maxLeadsPerAgent: z.number().int().positive().optional(),
-	leadPoolIds: z.array(z.ulid()).default([]),
+	contactPoolIds: z.array(z.ulid()).default([]),
 });
 
 export type CreateTaskRequest = z.infer<typeof CreateTaskRequestSchema>;
