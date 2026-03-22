@@ -40,7 +40,7 @@ export const PublicTopBar: Component = () => {
         onSignOut={() => {
           window.location.href = "/api/auth/signout";
         }}
-        onSelectLocation={(slug) => navigate(`/app/leads`)}
+        onSelectLocation={(slug) => navigate(`/leads`)}
       />
     </header>
   );

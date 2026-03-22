@@ -1,11 +1,12 @@
 /**
- * /app — authenticated app shell layout.
+ * Protected layout — wraps all authenticated routes.
  *
- * Wraps all /app/* child routes with the AppShell (sidebar + bottom nav).
- * Active location is loaded from the server (stored on the user record in DB),
- * NOT derived from the URL. Switching locations updates the DB record.
+ * Any route file placed inside (protected)/ is covered by this layout.
+ * SolidStart strips the "(protected)" prefix from URLs, so children get
+ * clean paths: /leads, /members, /tasks, /locations, etc.
  *
- * Uses real Auth.js session — STUB constants removed.
+ * Enforces authentication: redirects to "/" if no valid session.
+ * Active location is loaded from DB (not from URL).
  */
 import { createSignal, createEffect, Show, type Component } from "solid-js";
 import { createAsync, type RouteSectionProps } from "@solidjs/router";
@@ -20,7 +21,7 @@ import type { LocationField, Location } from "~/lib/schemas/domain";
 import type { QuerySpec } from "~/lib/schemas/query";
 import type { StubSession } from "~/components/shell/AvatarMenu";
 
-const AppLayout: Component<RouteSectionProps> = (props) => {
+const ProtectedLayout: Component<RouteSectionProps> = (props) => {
   // Enforce authentication — throws redirect("/") if not signed in.
   // deferStream: true blocks SSR streaming until auth is confirmed.
   const user = createAsync(() => getUser(), { deferStream: true });
@@ -101,5 +102,4 @@ const AppLayout: Component<RouteSectionProps> = (props) => {
   );
 };
 
-export default AppLayout;
-
+export default ProtectedLayout;

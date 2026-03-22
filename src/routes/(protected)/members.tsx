@@ -1,3 +1,7 @@
+/**
+ * /members — members list page (authenticated).
+ * Moved from routes/users.tsx.
+ */
 import { createColumnHelper } from "@tanstack/solid-table";
 import { Show } from "solid-js";
 import { queryUsersQuery } from "~/server/api";
@@ -52,8 +56,7 @@ const userColumns = [
   }),
 ];
 
-export default function UsersPage() {
-  // Phase 5: Collection Query Controller
+export default function MembersPage() {
   const controller = createCollectionQueryController<User, UserField>({
     queryFn: (spec) => queryUsersQuery(spec),
     initialQuery: {
@@ -63,7 +66,6 @@ export default function UsersPage() {
     },
   });
 
-  // Card renderer for mobile view
   const renderUserCard = (user: User) => (
     <Card>
       <CardHeader>
@@ -92,9 +94,8 @@ export default function UsersPage() {
 
   return (
     <main class="container mx-auto p-8">
-      <h1 class="text-4xl font-bold mb-8">Phase 5 Demo: Collection Components</h1>
+      <h1 class="text-3xl font-bold mb-8">Members</h1>
 
-      {/* Actions and selection info */}
       <div class="mb-6 flex items-center justify-between">
         <div class="text-sm text-muted-foreground">
           <Show when={controller.selectedIds().size > 0}>
@@ -113,16 +114,15 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Responsive collection view */}
       <ResponsiveCollectionView
         controller={controller}
         columns={userColumns}
         getId={(user) => user.id}
         renderCard={renderUserCard}
         selectable={true}
-        onRowClick={(user) => console.log("User clicked:", user)}
+        onRowClick={(user) => console.log("Member clicked:", user)}
         cardColumns={3}
-        emptyMessage="No users found"
+        emptyMessage="No members found"
         emptyIcon={
           <svg
             class="w-16 h-16 text-muted-foreground"
@@ -139,38 +139,9 @@ export default function UsersPage() {
           </svg>
         }
         emptyAction={
-          <Button onClick={() => controller.refresh()}>
-            Refresh to Load Users
-          </Button>
+          <Button onClick={() => controller.refresh()}>Refresh</Button>
         }
       />
-
-      {/* Query-as-data pattern demo */}
-      <section class="mt-12 p-6 bg-muted rounded-lg">
-        <h2 class="text-xl font-semibold mb-4">🎯 Phase 5: Query-as-Data with Controller</h2>
-        <div class="space-y-4 text-sm">
-          <div>
-            <h3 class="font-semibold mb-2">Current QuerySpec:</h3>
-            <pre class="bg-background p-3 rounded overflow-x-auto border">
-              {JSON.stringify(controller.querySpec(), null, 2)}
-            </pre>
-          </div>
-          <div class="grid gap-2">
-            <h3 class="font-semibold">Features:</h3>
-            <ul class="list-disc list-inside space-y-1">
-              <li>Auto-responsive: Cards on mobile, table on desktop</li>
-              <li>TanStack Table with server-side sorting & pagination</li>
-              <li>Row selection with checkbox support</li>
-              <li>QuerySpec as single source of truth</li>
-              <li>Built with Solid UI components</li>
-              <li>Empty state with custom message, icon, and action button</li>
-              <li>Container and card class customization</li>
-              <li>Hydration mismatch protection for interactive elements</li>
-              <li>Explicit Tailwind classes for JIT compiler optimization</li>
-            </ul>
-          </div>
-        </div>
-      </section>
     </main>
   );
 }

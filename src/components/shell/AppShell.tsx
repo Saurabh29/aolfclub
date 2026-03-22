@@ -28,9 +28,9 @@ interface NavItem {
 
 function buildNav(): NavItem[] {
   return [
-    { href: "/app/leads", label: "My Leads", icon: "🏠" },
-    { href: "/app/tasks", label: "Tasks", icon: "📋" },
-    { href: "/app/members", label: "Members", icon: "👥" },
+    { href: "/leads", label: "My Leads", icon: "🏠" },
+    { href: "/tasks", label: "Tasks", icon: "📋" },
+    { href: "/members", label: "Members", icon: "👥" },
   ];
 }
 
