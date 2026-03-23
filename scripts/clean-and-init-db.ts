@@ -7,7 +7,7 @@
  * Seed data:
  *   - 1 admin user  (jsaurabh@gmail.com)
  *   - Roles:  ADMIN, VOLUNTEER
- *   - Pages:  /leads, /members, /tasks, /locations
+ *   - Pages:  /leads, /contacts, /tasks, /locations
  *   - Role→Page permissions: ADMIN gets all pages; VOLUNTEER gets /leads and /tasks
  *
  * No seed locations — locations are created via the UI.
@@ -123,11 +123,7 @@ async function seedDb(): Promise<void> {
               id: adminId,
               email: adminEmail,
               displayName: "Saurabh Jain",
-              userType: "MEMBER",
               isAdmin: true,
-              programsDone: [],
-              interestedPrograms: [],
-              totalCallCount: 0,
               createdAt: timestamp,
               updatedAt: timestamp,
             },
@@ -180,7 +176,7 @@ async function seedDb(): Promise<void> {
   console.log("📄 Seeding pages...");
   const pages = [
     { pageName: "/leads",     description: "Leads management" },
-    { pageName: "/members",   description: "Members management" },
+    { pageName: "/community", description: "Community (Leads, Members, Team)" },
     { pageName: "/tasks",     description: "Call task management" },
     { pageName: "/locations", description: "Location management" },
   ];
@@ -205,7 +201,7 @@ async function seedDb(): Promise<void> {
   // ── Role→Page permissions ──────────────────────────────────────────────────
   console.log("🔒 Seeding role→page permissions...");
 
-  const adminPages = ["/leads", "/members", "/tasks", "/locations"];
+  const adminPages = ["/leads", "/community", "/tasks", "/locations"];
   const volunteerPages = ["/leads", "/tasks"];
 
   const permissionItems = [

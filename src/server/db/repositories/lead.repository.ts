@@ -1,12 +1,13 @@
 /**
- * User Repository
+ * Lead Repository
  *
- * Data access layer for User entities.
- * Users are identified by ULID and looked up via email through an email sentinel item.
+ * Data access layer for Lead entities.
+ * Uniqueness enforced by phone (E.164) via a LEAD_MOBILE# sentinel.
+ * Leads do not log in — no email sentinel.
  *
  * Item shapes:
- *   USER#<id>     / META   — User entity
- *   EMAIL#<email> / META   — Email→userId lookup (uniqueness sentinel)
+ *   LEAD#<id>                / META  — Lead entity
+ *   LEAD_MOBILE#<phone>      / META  — Mobile uniqueness sentinel
  */
 
 import {
@@ -17,30 +18,29 @@ import {
   TransactWriteCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { ulid } from "ulid";
-import { docClient, TABLE_NAME, Keys, now } from "~/server/db/client";
-import type { User } from "~/lib/schemas/domain";
+import { docClient, TABLE_NAME, Keys, normalizePhone, now } from "~/server/db/client";
+import type { Lead } from "~/lib/schemas/domain";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export interface CreateUserInput {
-  email: string;
+export interface CreateLeadInput {
   displayName: string;
+  phone: string;
+  email?: string;
   image?: string;
-  phone?: string;
-  isAdmin?: boolean;
   activeLocationId?: string;
+  interestedPrograms?: string[];
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Strip DynamoDB key fields before returning a domain User object. */
-function toUser(item: Record<string, unknown>): User {
+function toLead(item: Record<string, unknown>): Lead {
   const { PK, SK, itemType, ...rest } = item;
-  return rest as unknown as User;
+  return rest as unknown as Lead;
 }
 
 // ---------------------------------------------------------------------------
@@ -48,39 +48,41 @@ function toUser(item: Record<string, unknown>): User {
 // ---------------------------------------------------------------------------
 
 /**
- * Create a new user.
+ * Create a new lead.
  *
  * Atomically writes:
- *   - USER#<id>/META  — the user entity
- *   - EMAIL#<email>/META — uniqueness sentinel
+ *   - LEAD#<id>/META             — the lead entity
+ *   - LEAD_MOBILE#<phone>/META   — uniqueness sentinel
  *
- * Throws if the email is already taken.
+ * Throws if the phone number is already registered as a lead.
  */
-export async function createUser(input: CreateUserInput): Promise<User> {
+export async function createLead(input: CreateLeadInput): Promise<Lead> {
   const id = ulid();
   const timestamp = now();
+  const phone = normalizePhone(input.phone);
 
-  const userItem = {
-    PK: Keys.userPK(id),
+  const leadItem = {
+    PK: Keys.leadPK(id),
     SK: Keys.metaSK(),
-    itemType: "User",
+    itemType: "Lead",
     id,
-    email: input.email,
     displayName: input.displayName,
+    phone,
+    email: input.email,
     image: input.image,
-    phone: input.phone,
-    isAdmin: input.isAdmin ?? false,
     activeLocationId: input.activeLocationId,
+    interestedPrograms: input.interestedPrograms ?? [],
+    totalCallCount: 0,
     createdAt: timestamp,
     updatedAt: timestamp,
   };
 
-  const emailSentinel = {
-    PK: Keys.emailPK(input.email),
+  const mobileSentinel = {
+    PK: Keys.leadMobilePK(phone),
     SK: Keys.metaSK(),
-    itemType: "EmailLookup",
-    userId: id,
-    email: input.email,
+    itemType: "LeadMobileLookup",
+    leadId: id,
+    phone,
     createdAt: timestamp,
   };
 
@@ -91,14 +93,14 @@ export async function createUser(input: CreateUserInput): Promise<User> {
           {
             Put: {
               TableName: TABLE_NAME,
-              Item: userItem,
+              Item: leadItem,
               ConditionExpression: "attribute_not_exists(PK)",
             },
           },
           {
             Put: {
               TableName: TABLE_NAME,
-              Item: emailSentinel,
+              Item: mobileSentinel,
               ConditionExpression: "attribute_not_exists(PK)",
             },
           },
@@ -107,92 +109,80 @@ export async function createUser(input: CreateUserInput): Promise<User> {
     );
   } catch (error) {
     if (error instanceof Error && error.name === "TransactionCanceledException") {
-      throw new Error(`Email "${input.email}" is already registered.`);
+      throw new Error(`Phone "${phone}" is already registered as a lead.`);
     }
     throw error;
   }
 
-  return toUser(userItem);
+  return toLead(leadItem);
 }
 
 /**
- * Get user by ULID.
+ * Get lead by ULID.
  */
-export async function getUserById(id: string): Promise<User | null> {
+export async function getLeadById(id: string): Promise<Lead | null> {
   const result = await docClient.send(
     new GetCommand({
       TableName: TABLE_NAME,
-      Key: { PK: Keys.userPK(id), SK: Keys.metaSK() },
+      Key: { PK: Keys.leadPK(id), SK: Keys.metaSK() },
     })
   );
-  return result.Item ? toUser(result.Item as Record<string, unknown>) : null;
+  return result.Item ? toLead(result.Item as Record<string, unknown>) : null;
 }
 
 /**
- * Get user by email (two-step: sentinel → user item).
+ * Get lead by phone (two-step: sentinel → lead item).
  */
-export async function getUserByEmail(email: string): Promise<User | null> {
+export async function getLeadByPhone(rawPhone: string): Promise<Lead | null> {
+  const phone = normalizePhone(rawPhone);
   const sentinel = await docClient.send(
     new GetCommand({
       TableName: TABLE_NAME,
-      Key: { PK: Keys.emailPK(email), SK: Keys.metaSK() },
+      Key: { PK: Keys.leadMobilePK(phone), SK: Keys.metaSK() },
     })
   );
   if (!sentinel.Item) return null;
-
-  const userId = sentinel.Item.userId as string;
-  return getUserById(userId);
+  return getLeadById(sentinel.Item.leadId as string);
 }
 
 /**
- * Update user fields.
- *
- * If the email changes, atomically replaces the old email sentinel with the new one.
+ * Update lead fields.
+ * If phone changes, atomically replaces old sentinel with new one.
  */
-export async function updateUser(
+export async function updateLead(
   id: string,
-  updates: Partial<
-    Pick<
-      User,
-      | "displayName"
-      | "isAdmin"
-      | "image"
-      | "phone"
-      | "email"
-      | "activeLocationId"
-    >
-  >
-): Promise<User> {
+  updates: Partial<Omit<Lead, "id" | "createdAt">>
+): Promise<Lead> {
   const timestamp = now();
 
-  // If email is changing, handle sentinel swap atomically
-  if (updates.email !== undefined) {
-    const existing = await getUserById(id);
-    if (!existing) throw new Error(`User "${id}" not found`);
+  if (updates.phone !== undefined) {
+    const existing = await getLeadById(id);
+    if (!existing) throw new Error(`Lead "${id}" not found`);
 
-    if (existing.email !== updates.email) {
-      const ts = now();
-      const newUserItem = {
+    const newPhone = normalizePhone(updates.phone);
+    if (existing.phone !== newPhone) {
+      const newItem = {
         ...existing,
         ...updates,
-        updatedAt: ts,
-        PK: Keys.userPK(id),
+        phone: newPhone,
+        updatedAt: timestamp,
+        PK: Keys.leadPK(id),
         SK: Keys.metaSK(),
-        itemType: "User",
+        itemType: "Lead",
       };
       const newSentinel = {
-        PK: Keys.emailPK(updates.email),
+        PK: Keys.leadMobilePK(newPhone),
         SK: Keys.metaSK(),
-        itemType: "EmailLookup",
-        userId: id,
-        email: updates.email,
-        createdAt: ts,
+        itemType: "LeadMobileLookup",
+        leadId: id,
+        phone: newPhone,
+        createdAt: timestamp,
       };
 
       await docClient.send(
         new TransactWriteCommand({
           TransactItems: [
-            { Put: { TableName: TABLE_NAME, Item: newUserItem } },
+            { Put: { TableName: TABLE_NAME, Item: newItem } },
             {
               Put: {
                 TableName: TABLE_NAME,
@@ -203,24 +193,25 @@ export async function updateUser(
             {
               Delete: {
                 TableName: TABLE_NAME,
-                Key: { PK: Keys.emailPK(existing.email), SK: Keys.metaSK() },
+                Key: { PK: Keys.leadMobilePK(existing.phone), SK: Keys.metaSK() },
               },
             },
           ],
         })
       );
 
-      return toUser(newUserItem as Record<string, unknown>);
+      return toLead(newItem as Record<string, unknown>);
     }
   }
 
-  // Simple field update (no email change)
   const updateParts: string[] = [];
   const names: Record<string, string> = {};
   const values: Record<string, unknown> = {};
 
   const fields = [
-    "displayName", "isAdmin", "image", "phone", "activeLocationId",
+    "displayName", "phone", "email", "image", "activeLocationId",
+    "interestedPrograms", "lastCallDate", "lastInterestLevel",
+    "nextFollowUpDate", "lastNotes", "totalCallCount",
   ] as const;
 
   for (const field of fields) {
@@ -238,7 +229,7 @@ export async function updateUser(
   const result = await docClient.send(
     new UpdateCommand({
       TableName: TABLE_NAME,
-      Key: { PK: Keys.userPK(id), SK: Keys.metaSK() },
+      Key: { PK: Keys.leadPK(id), SK: Keys.metaSK() },
       UpdateExpression: `SET ${updateParts.join(", ")}`,
       ExpressionAttributeNames: names,
       ExpressionAttributeValues: values,
@@ -246,14 +237,14 @@ export async function updateUser(
     })
   );
 
-  return toUser(result.Attributes as Record<string, unknown>);
+  return toLead(result.Attributes as Record<string, unknown>);
 }
 
 /**
- * Delete a user and their email sentinel atomically.
+ * Delete a lead and their mobile sentinel atomically.
  */
-export async function deleteUser(id: string): Promise<void> {
-  const existing = await getUserById(id);
+export async function deleteLead(id: string): Promise<void> {
+  const existing = await getLeadById(id);
   if (!existing) return;
 
   await docClient.send(
@@ -262,13 +253,13 @@ export async function deleteUser(id: string): Promise<void> {
         {
           Delete: {
             TableName: TABLE_NAME,
-            Key: { PK: Keys.userPK(id), SK: Keys.metaSK() },
+            Key: { PK: Keys.leadPK(id), SK: Keys.metaSK() },
           },
         },
         {
           Delete: {
             TableName: TABLE_NAME,
-            Key: { PK: Keys.emailPK(existing.email), SK: Keys.metaSK() },
+            Key: { PK: Keys.leadMobilePK(existing.phone), SK: Keys.metaSK() },
           },
         },
       ],

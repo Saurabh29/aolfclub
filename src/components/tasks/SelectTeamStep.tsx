@@ -17,65 +17,38 @@ export interface SelectTeamStepProps {
 
 /**
  * Step 2: Select Team
- * Choose agents who will work on this task
+ * Choose volunteers (Users) who will work on this task
  */
 export const SelectTeamStep: Component<SelectTeamStepProps> = (props) => {
   const [searchTerm, setSearchTerm] = createSignal("");
 
-  // Query for agents (Members will be volunteers)
+  // Query all volunteers
   const [volunteersData] = createResource(async () => {
     const spec: QuerySpec<UserField> = {
-      filters: [
-        { field: "userType" as UserField, op: "eq", value: "MEMBER" },
-      ],
-      sorting: [],
+      filters: [],
+      sorting: [{ field: "displayName", direction: "asc" }],
       pagination: { pageSize: 100, pageIndex: 0 },
     };
     return await queryUsersQuery(spec);
   });
 
-  // Also query for Leads (will be teachers/trainers)
-  const [teachersData] = createResource(async () => {
-    const spec: QuerySpec<UserField> = {
-      filters: [
-        { field: "userType" as UserField, op: "eq", value: "LEAD" },
-      ],
-      sorting: [],
-      pagination: { pageSize: 100, pageIndex: 0 },
-    };
-    return await queryUsersQuery(spec);
-  });
-
-  // Combine volunteers and teachers
   const allAgents = createMemo(() => {
     const vData = volunteersData();
-    const tData = teachersData();
-    const volunteers = vData ? Array.from(vData.items) : [];
-    const teachers = tData ? Array.from(tData.items) : [];
-    return [...volunteers, ...teachers];
+    return vData ? Array.from(vData.items) : [];
   });
 
   // Filter by search term
   const filteredAgents = createMemo(() => {
     const term = searchTerm().toLowerCase();
     if (!term) return allAgents();
-    
     return allAgents().filter((agent) => {
       const name = agent.displayName.toLowerCase();
-      const email = agent.email.toLowerCase();
+      const email = (agent.email ?? "").toLowerCase();
       return name.includes(term) || email.includes(term);
     });
   });
 
-  // Separate by type
-  const volunteers = createMemo(() =>
-    filteredAgents().filter((a) => a.userType === "MEMBER")
-  );
-  const teachers = createMemo(() =>
-    filteredAgents().filter((a) => a.userType === "LEAD")
-  );
-
-  const selectedAgents = createMemo(() => 
+  const selectedAgents = createMemo(() =>
     allAgents().filter((a) => props.selectedAgentIds.includes(a.id))
   );
 
@@ -110,14 +83,14 @@ export const SelectTeamStep: Component<SelectTeamStepProps> = (props) => {
     props.onSelectionChange(updated);
   };
 
-  const isLoading = () => volunteersData.loading || teachersData.loading;
+  const isLoading = () => volunteersData.loading;
 
   return (
     <div class="space-y-6">
       <div>
         <h3 class="text-lg font-semibold mb-1">Select Team Members</h3>
         <p class="text-sm text-muted-foreground">
-          Choose agents who will make calls for this task
+          Choose volunteers who will make calls for this task
         </p>
       </div>
 
@@ -176,62 +149,23 @@ export const SelectTeamStep: Component<SelectTeamStepProps> = (props) => {
       <Show when={!isLoading()}>
         <div class="space-y-6">
           {/* Volunteers */}
-          <Show when={volunteers().length > 0}>
+          <Show when={filteredAgents().length > 0}>
             <div class="space-y-3">
               <div class="flex items-center justify-between">
-                <h4 class="font-medium">Volunteers ({volunteers().length})</h4>
+                <h4 class="font-medium">Volunteers ({filteredAgents().length})</h4>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => selectAll(volunteers())}
+                  onClick={() => selectAll(filteredAgents())}
                 >
-                  {volunteers().every((v) => isAgentSelected(v.id))
+                  {filteredAgents().every((v) => isAgentSelected(v.id))
                     ? "Deselect All"
                     : "Select All"}
                 </Button>
               </div>
               <div class="space-y-2 max-h-64 overflow-y-auto border rounded-md p-2">
-                <For each={volunteers()}>
-                  {(agent) => (
-                    <label class="flex items-start gap-3 p-2 hover:bg-muted rounded cursor-pointer">
-                      <Checkbox
-                        checked={isAgentSelected(agent.id)}
-                        onChange={() => toggleAgent(agent.id)}
-                      />
-                      <div class="flex-1 min-w-0">
-                        <div class="font-medium text-sm">
-                          {agent.displayName}
-                        </div>
-                        <div class="text-xs text-muted-foreground truncate">
-                          {agent.email}
-                        </div>
-                      </div>
-                    </label>
-                  )}
-                </For>
-              </div>
-            </div>
-          </Show>
-
-          {/* Teachers */}
-          <Show when={teachers().length > 0}>
-            <div class="space-y-3">
-              <div class="flex items-center justify-between">
-                <h4 class="font-medium">Teachers ({teachers().length})</h4>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => selectAll(teachers())}
-                >
-                  {teachers().every((t) => isAgentSelected(t.id))
-                    ? "Deselect All"
-                    : "Select All"}
-                </Button>
-              </div>
-              <div class="space-y-2 max-h-64 overflow-y-auto border rounded-md p-2">
-                <For each={teachers()}>
+                <For each={filteredAgents()}>
                   {(agent) => (
                     <label class="flex items-start gap-3 p-2 hover:bg-muted rounded cursor-pointer">
                       <Checkbox
@@ -256,7 +190,7 @@ export const SelectTeamStep: Component<SelectTeamStepProps> = (props) => {
           {/* No results */}
           <Show when={filteredAgents().length === 0 && !isLoading()}>
             <div class="text-center py-8 text-muted-foreground">
-              <p>No agents found</p>
+              <p>No volunteers found</p>
               <Show when={searchTerm()}>
                 <Button
                   type="button"

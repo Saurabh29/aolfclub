@@ -5,8 +5,8 @@ import { CallLogSheet, type CallLogData } from "~/components/volunteer/CallLogSh
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { queryUsersQuery, queryTasksQuery } from "~/server/api";
-import type { UserField, TaskField, User, Task } from "~/lib/schemas/domain";
+import { queryLeadsQuery, queryTasksQuery } from "~/server/api";
+import type { LeadField, TaskField, Lead, Task } from "~/lib/schemas/domain";
 import type { QuerySpec } from "~/lib/schemas/query";
 import {
   getLeadStatus,
@@ -25,7 +25,7 @@ export default function MyLeadsPage() {
   const [selectedTaskId, setSelectedTaskId] = createSignal<string | null>(
     (typeof searchParams.task === "string" ? searchParams.task : null)
   );
-  const [callLogLead, setCallLogLead] = createSignal<User | null>(null);
+  const [callLogLead, setCallLogLead] = createSignal<Lead | null>(null);
   const [callLogTask, setCallLogTask] = createSignal<Task | null>(null);
 
   // TODO: Get actual volunteer ID from session
@@ -45,15 +45,14 @@ export default function MyLeadsPage() {
 
   // Fetch all assigned leads for this volunteer
   const [leadsData] = createResource(async () => {
-    const spec: QuerySpec<UserField> = {
+    const spec: QuerySpec<LeadField> = {
       filters: [
-        // In real app: filter by users assigned to this volunteer's tasks
-        { field: "userType", op: "eq", value: "LEAD" }, // Temp: show all leads
+        // In real app: filter by leads assigned to this volunteer's tasks
       ],
       sorting: [{ field: "displayName", direction: "asc" }],
       pagination: { pageSize: 100, pageIndex: 0 },
     };
-    return await queryUsersQuery(spec);
+    return await queryLeadsQuery(spec);
   });
 
   const tasks = createMemo(() => tasksData()?.items || []);
@@ -110,7 +109,7 @@ export default function MyLeadsPage() {
   };
 
   // Handle call button
-  const handleCall = (lead: User) => {
+  const handleCall = (lead: Lead) => {
     // Find task for this lead
     const task = tasks().find((t) => t.matchedContactIds?.includes(lead.id));
     
@@ -125,7 +124,7 @@ export default function MyLeadsPage() {
   };
 
   // Handle WhatsApp button
-  const handleWhatsApp = (lead: User) => {
+  const handleWhatsApp = (lead: Lead) => {
     if (!lead.phone) return;
     
     const message = `Hi ${lead.displayName}, this is from [NGO Name]. `;
@@ -151,7 +150,7 @@ export default function MyLeadsPage() {
   };
 
   // Handle notes update
-  const handleUpdateNotes = async (lead: User, notes: string) => {
+  const handleUpdateNotes = async (lead: Lead, notes: string) => {
     console.log("Updating notes for", lead.displayName, ":", notes);
     // TODO: Call API to update lead notes
     // await updateLeadMutation({
@@ -161,7 +160,7 @@ export default function MyLeadsPage() {
   };
 
   // Handle reschedule
-  const handleReschedule = async (lead: User, date: string) => {
+  const handleReschedule = async (lead: Lead, date: string) => {
     console.log("Rescheduling", lead.displayName, "to:", date);
     // TODO: Call API to update follow-up date
     // await updateLeadMutation({

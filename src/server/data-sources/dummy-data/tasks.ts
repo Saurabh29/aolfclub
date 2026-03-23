@@ -47,10 +47,9 @@ export function generateDummyTasks(count: number = 10): Task[] {
     // Alternate between LEAD and MEMBER tasks
     const targetUserType: Task["targetUserType"] = i % 2 === 0 ? "LEAD" : "MEMBER";
 
-    // Simple example filter (JSON stringified QuerySpec)
+    // Simple example filter spec for the target entity type
     const filterSpec = JSON.stringify({
       filters: [
-        { field: "userType", op: "eq", value: targetUserType },
         { field: "lastInterestLevel", op: "eq", value: "High" },
       ],
       sorting: [{ field: "nextFollowUpDate", direction: "asc" }],

@@ -1,46 +1,27 @@
 import { z } from "zod";
 
 /**
- * User types within the system
+ * User — a volunteer or admin who logs into the system and makes calls.
+ *
+ * Uniqueness is enforced by email via an EMAIL# sentinel.
+ *
+ * DB keys:
+ *   USER#<id>       / META  — User entity
+ *   EMAIL#<email>  / META  — Email uniqueness sentinel (used for auth lookup)
  */
-export const UserTypeEnum = z.enum(["MEMBER", "LEAD"]);
-export type UserType = z.infer<typeof UserTypeEnum>;
-
-/**
- * Interest level from last call
- */
-export const InterestLevelEnum = z.enum(["High", "Medium", "Low", "Not_Interested"]);
-export type InterestLevel = z.infer<typeof InterestLevelEnum>;
-
 export const UserSchema = z.object({
 	id: z.ulid(),
 	email: z.email(),
-	image: z.url().optional(),
-	phone: z.string().optional(),
 	displayName: z.string().min(1),
-	userType: UserTypeEnum,
+	phone: z.string().optional(),
+	image: z.url().optional(),
 	isAdmin: z.boolean().default(false),
 	activeLocationId: z.ulid().optional(),
 	createdAt: z.iso.datetime(),
 	updatedAt: z.iso.datetime(),
-	
-	// Program tracking
-	memberSince: z.iso.datetime().optional(),
-	programsDone: z.array(z.string()).default([]),
-	interestedPrograms: z.array(z.string()).default([]),
-	
-	// Call history (from last call)
-	lastCallDate: z.iso.datetime().optional(),
-	lastInterestLevel: InterestLevelEnum.optional(),
-	nextFollowUpDate: z.iso.datetime().optional(),
-	lastNotes: z.string().optional(),
-	totalCallCount: z.number().int().default(0),
 });
 
 export type User = z.infer<typeof UserSchema>;
 
-/**
- * UserField - Type-safe field names for User entity
- * Used in QuerySpec<UserField> for compile-time safety
- */
+/** Type-safe field names for QuerySpec<UserField> */
 export type UserField = keyof User;

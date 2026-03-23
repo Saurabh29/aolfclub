@@ -1,7 +1,7 @@
 import { createSignal, Show, For, type Component } from "solid-js";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import type { User, Task, InterestLevel } from "~/lib/schemas/domain";
+import type { Lead, Task, InterestLevel } from "~/lib/schemas/domain";
 
 export interface CallLogData {
   outcome: "answered" | "no_answer" | "busy" | "invalid" | "skip";
@@ -13,7 +13,7 @@ export interface CallLogData {
 
 export interface CallLogSheetProps {
   /** Lead being called */
-  lead: User;
+  lead: Lead;
   /** Associated task for context */
   task?: Task;
   /** Whether sheet is visible */

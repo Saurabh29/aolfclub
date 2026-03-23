@@ -2,26 +2,26 @@ import { Show, createSignal, type Component } from "solid-js";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import type { User, Task } from "~/lib/schemas/domain";
+import type { Lead, Task } from "~/lib/schemas/domain";
 import { formatFollowUpDate, formatRelativeTime } from "~/lib/utils/lead-status";
 
 export interface LeadCardProps {
   /** Lead/member to display */
-  lead: User;
+  lead: Lead;
   /** Associated task (optional - shown when viewing all tasks) */
   task?: Task;
   /** Show task badge even in single task view */
   showTaskBadge?: boolean;
   /** Callback when call button clicked */
-  onCall: (lead: User) => void;
+  onCall: (lead: Lead) => void;
   /** Callback when WhatsApp button clicked */
-  onWhatsApp: (lead: User) => void;
+  onWhatsApp: (lead: Lead) => void;
   /** Callback when card is expanded */
-  onExpand?: (lead: User) => void;
+  onExpand?: (lead: Lead) => void;
   /** Callback when notes are updated */
-  onUpdateNotes?: (lead: User, notes: string) => void;
+  onUpdateNotes?: (lead: Lead, notes: string) => void;
   /** Callback when follow-up date is rescheduled */
-  onReschedule?: (lead: User, date: string) => void;
+  onReschedule?: (lead: Lead, date: string) => void;
 }
 
 /**

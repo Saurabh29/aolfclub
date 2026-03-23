@@ -66,13 +66,9 @@ export async function createOrGetOAuthUser(
     email: normalised,
     displayName: name || normalised.split("@")[0],
     image: imageUrl ?? undefined,
-    userType: "MEMBER",
     isAdmin: false,
     createdAt: now,
     updatedAt: now,
-    programsDone: [],
-    interestedPrograms: [],
-    totalCallCount: 0,
   };
 
   _oauthUsers.set(newUser.id, newUser);

@@ -4,7 +4,7 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import type { QuerySpec } from "~/lib/schemas/query";
-import type { UserField } from "~/lib/schemas/domain";
+import type { LeadField } from "~/lib/schemas/domain";
 
 export const AVAILABLE_PROGRAMS = [
   "Yoga 101",
@@ -27,11 +27,12 @@ export interface FilterLeadsStepProps {
 
 /**
  * Step 1: Filter Leads
- * Allows filtering users by type, programs, interest, call history
+ * Allows filtering by programs, interest level, and call history.
+ * The task's targetUserType (LEAD|MEMBER) determines which data source is queried.
  */
 export const FilterLeadsStep: Component<FilterLeadsStepProps> = (props) => {
   // Parse existing filter or start fresh
-  const initialFilter = (): QuerySpec<UserField> => {
+  const initialFilter = (): QuerySpec<LeadField> => {
     try {
       return props.contactFilterSpec ? JSON.parse(props.contactFilterSpec) : {
         filters: [],
@@ -47,7 +48,6 @@ export const FilterLeadsStep: Component<FilterLeadsStepProps> = (props) => {
     }
   };
 
-  const [userTypes, setUserTypes] = createSignal<string[]>(["Lead", "Member"]);
   const [interestedPrograms, setInterestedPrograms] = createSignal<string[]>([]);
   const [programsDone, setProgramsDone] = createSignal<string[]>([]);
   const [interestLevels, setInterestLevels] = createSignal<string[]>([]);
@@ -55,23 +55,14 @@ export const FilterLeadsStep: Component<FilterLeadsStepProps> = (props) => {
   const [hasFollowUp, setHasFollowUp] = createSignal<boolean | null>(null);
 
   // Build QuerySpec from current selections
-  const buildFilterSpec = createMemo((): QuerySpec<UserField> => {
-    const filters: QuerySpec<UserField>["filters"] = [];
-
-    // User type filter
-    if (userTypes().length > 0 && userTypes().length < 2) {
-      filters.push({
-        field: "type" as UserField,
-        op: "eq",
-        value: userTypes()[0],
-      });
-    }
+  const buildFilterSpec = createMemo((): QuerySpec<LeadField> => {
+    const filters: QuerySpec<LeadField>["filters"] = [];
 
     // Interested programs
     if (interestedPrograms().length > 0) {
       interestedPrograms().forEach((program) => {
         filters.push({
-          field: "interestedPrograms" as UserField,
+          field: "interestedPrograms" as LeadField,
           op: "contains",
           value: program,
         });
@@ -82,7 +73,7 @@ export const FilterLeadsStep: Component<FilterLeadsStepProps> = (props) => {
     if (programsDone().length > 0) {
       programsDone().forEach((program) => {
         filters.push({
-          field: "programsDone" as UserField,
+          field: "interestedPrograms" as LeadField, // approximation for cross-entity filter
           op: "contains",
           value: program,
         });
@@ -93,18 +84,17 @@ export const FilterLeadsStep: Component<FilterLeadsStepProps> = (props) => {
     if (interestLevels().length > 0) {
       interestLevels().forEach((level) => {
         filters.push({
-          field: "lastInterestLevel" as UserField,
+          field: "lastInterestLevel" as LeadField,
           op: "eq",
           value: level,
         });
       });
     }
 
-    // Call history presence - use neq for "notEmpty", eq with empty string for "empty"
+    // Call history presence
     if (hasCallHistory() !== null) {
-      // Note: DataSource will handle these as existence checks
       filters.push({
-        field: "lastCallDate" as UserField,
+        field: "lastCallDate" as LeadField,
         op: hasCallHistory() ? "neq" : "eq",
         value: hasCallHistory() ? null : null,
       });
@@ -113,7 +103,7 @@ export const FilterLeadsStep: Component<FilterLeadsStepProps> = (props) => {
     // Follow-up presence
     if (hasFollowUp() !== null) {
       filters.push({
-        field: "nextFollowUpDate" as UserField,
+        field: "nextFollowUpDate" as LeadField,
         op: hasFollowUp() ? "neq" : "eq",
         value: hasFollowUp() ? null : null,
       });
@@ -130,16 +120,6 @@ export const FilterLeadsStep: Component<FilterLeadsStepProps> = (props) => {
   const handleFilterChange = () => {
     const spec = buildFilterSpec();
     props.onFilterChange(JSON.stringify(spec));
-  };
-
-  const toggleUserType = (type: string) => {
-    setUserTypes((prev) => {
-      const updated = prev.includes(type)
-        ? prev.filter((t) => t !== type)
-        : [...prev, type];
-      handleFilterChange();
-      return updated;
-    });
   };
 
   const toggleProgram = (program: string, list: "interested" | "done") => {
@@ -166,7 +146,6 @@ export const FilterLeadsStep: Component<FilterLeadsStepProps> = (props) => {
   };
 
   const clearAllFilters = () => {
-    setUserTypes(["Lead", "Member"]);
     setInterestedPrograms([]);
     setProgramsDone([]);
     setInterestLevels([]);
@@ -197,24 +176,6 @@ export const FilterLeadsStep: Component<FilterLeadsStepProps> = (props) => {
       </Show>
 
       <div class="grid md:grid-cols-2 gap-6">
-        {/* User Type */}
-        <div class="space-y-3">
-          <label class="text-sm font-medium">User Type</label>
-          <div class="space-y-2">
-            <For each={["Lead", "Member"]}>
-              {(type) => (
-                <label class="flex items-center gap-2 cursor-pointer">
-                  <Checkbox
-                    checked={userTypes().includes(type)}
-                    onChange={() => toggleUserType(type)}
-                  />
-                  <span class="text-sm">{type}</span>
-                </label>
-              )}
-            </For>
-          </div>
-        </div>
-
         {/* Interest Level */}
         <div class="space-y-3">
           <label class="text-sm font-medium">Interest Level</label>

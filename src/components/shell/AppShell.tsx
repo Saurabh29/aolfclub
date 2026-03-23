@@ -30,7 +30,7 @@ function buildNav(): NavItem[] {
   return [
     { href: "/leads", label: "My Leads", icon: "🏠" },
     { href: "/tasks", label: "Tasks", icon: "📋" },
-    { href: "/members", label: "Members", icon: "👥" },
+    { href: "/community", label: "Community", icon: "👥" },
   ];
 }
 
