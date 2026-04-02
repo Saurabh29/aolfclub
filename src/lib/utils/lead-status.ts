@@ -118,7 +118,7 @@ export function formatFollowUpDate(isoDate: string): string {
 /**
  * Calculate completion percentage for a set of leads
  */
-export function calculateCompletionRate(leads: User[]): {
+export function calculateCompletionRate(leads: Lead[]): {
   total: number;
   completed: number;
   scheduled: number;
