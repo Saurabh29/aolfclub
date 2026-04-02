@@ -3,6 +3,7 @@ import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
 import type { DataSource } from "./data-source.interface";
 import { generateDummyTasks } from "./dummy-data";
+import { executeQuery } from "./query-executor";
 import { ulid } from "ulid";
 
 /**
@@ -17,78 +18,7 @@ export class DummyTaskDataSource implements DataSource<Task, TaskField> {
 
   async query(spec: QuerySpec<TaskField>): Promise<ApiResult<QueryResult<Task>>> {
     try {
-      let results = [...this.tasks];
-
-      // Apply filters
-      for (const filter of spec.filters) {
-        results = results.filter((task) => {
-          const value = (task as any)[filter.field];
-
-          switch (filter.op) {
-            case "eq":
-              return value === filter.value;
-            case "neq":
-              return value !== filter.value;
-            case "contains":
-              return typeof value === "string" && value.includes(String(filter.value));
-            case "startsWith":
-              return typeof value === "string" && value.startsWith(String(filter.value));
-            case "endsWith":
-              return typeof value === "string" && value.endsWith(String(filter.value));
-            case "gt":
-              return (value as any) > (filter.value as any);
-            case "lt":
-              return (value as any) < (filter.value as any);
-            case "gte":
-              return (value as any) >= (filter.value as any);
-            case "lte":
-              return (value as any) <= (filter.value as any);
-            case "in":
-              return Array.isArray(filter.value) && filter.value.includes(value);
-            default:
-              return true;
-          }
-        });
-      }
-
-      // Apply sorting
-      if (spec.sorting.length > 0) {
-        results.sort((a, b) => {
-          for (const sort of spec.sorting) {
-            const aVal = (a as any)[sort.field];
-            const bVal = (b as any)[sort.field];
-
-            if (aVal === bVal) continue;
-            if (aVal === undefined) return 1;
-            if (bVal === undefined) return -1;
-
-            const comparison = aVal < bVal ? -1 : 1;
-            return sort.direction === "asc" ? comparison : -comparison;
-          }
-          return 0;
-        });
-      }
-
-      const totalCount = results.length;
-
-      // Apply pagination
-      const pageIndex = spec.pagination.pageIndex ?? 0;
-      const offset = pageIndex * spec.pagination.pageSize;
-      const items = results.slice(offset, offset + spec.pagination.pageSize);
-
-      const hasNextPage = offset + spec.pagination.pageSize < totalCount;
-
-      return {
-        success: true,
-        data: {
-          items,
-          pageInfo: {
-            totalCount,
-            hasNextPage,
-            nextCursor: hasNextPage ? btoa(String(offset + spec.pagination.pageSize)) : undefined,
-          },
-        },
-      };
+      return { success: true, data: executeQuery(this.tasks, spec) };
     } catch (error) {
       return {
         success: false,
