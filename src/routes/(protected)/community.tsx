@@ -17,6 +17,8 @@ import { ResponsiveCollectionView } from "~/components/collection";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
+import { ImportSheet } from "~/components/community/ImportSheet";
+import type { ImportEntityType } from "~/components/community/ImportSheet";
 
 // ── Lead columns ──────────────────────────────────────────────────────────────
 
@@ -103,14 +105,6 @@ const userColumns = [
     header: "Email",
     cell: (info) => <span class="text-sm text-muted-foreground">{info.getValue()}</span>,
   }),
-  userColHelper.accessor("isAdmin", {
-    header: "Role",
-    cell: (info) => (
-      <Show when={info.getValue()} fallback={<Badge variant="outline">Volunteer</Badge>}>
-        <Badge variant="error">Admin</Badge>
-      </Show>
-    ),
-  }),
   userColHelper.accessor("createdAt", {
     header: "Joined",
     cell: (info) => <span class="text-sm">{new Date(info.getValue()).toLocaleDateString()}</span>,
@@ -125,6 +119,7 @@ type ContactTab = "leads" | "members" | "team";
 
 export default function CommunityPage() {
   const [activeTab, setActiveTab] = createSignal<ContactTab>("leads");
+  const [showImport, setShowImport] = createSignal(false);
 
   // One controller per entity type, created once
   const leadsController = createCollectionQueryController<Lead, LeadField>({
@@ -191,9 +186,14 @@ export default function CommunityPage() {
                 {leadsController.selectedIds().size} selected
               </Show>
             </div>
-            <Button variant="outline" onClick={() => leadsController.refresh()}>
-              Refresh
-            </Button>
+            <div class="flex gap-2">
+              <Button variant="outline" onClick={() => setShowImport(true)}>
+                ⬆ Import
+              </Button>
+              <Button variant="outline" onClick={() => leadsController.refresh()}>
+                Refresh
+              </Button>
+            </div>
           </div>
           <ResponsiveCollectionView
             controller={leadsController}
@@ -230,9 +230,14 @@ export default function CommunityPage() {
                 {membersController.selectedIds().size} selected
               </Show>
             </div>
-            <Button variant="outline" onClick={() => membersController.refresh()}>
-              Refresh
-            </Button>
+            <div class="flex gap-2">
+              <Button variant="outline" onClick={() => setShowImport(true)}>
+                ⬆ Import
+              </Button>
+              <Button variant="outline" onClick={() => membersController.refresh()}>
+                Refresh
+              </Button>
+            </div>
           </div>
           <ResponsiveCollectionView
             controller={membersController}
@@ -271,9 +276,14 @@ export default function CommunityPage() {
                 {usersController.selectedIds().size} selected
               </Show>
             </div>
-            <Button variant="outline" onClick={() => usersController.refresh()}>
-              Refresh
-            </Button>
+            <div class="flex gap-2">
+              <Button variant="outline" onClick={() => setShowImport(true)}>
+                ⬆ Import
+              </Button>
+              <Button variant="outline" onClick={() => usersController.refresh()}>
+                Refresh
+              </Button>
+            </div>
           </div>
           <ResponsiveCollectionView
             controller={usersController}
@@ -293,9 +303,7 @@ export default function CommunityPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Show when={user.isAdmin} fallback={<Badge variant="outline">Volunteer</Badge>}>
-                    <Badge variant="error">Admin</Badge>
-                  </Show>
+                  <Badge variant="outline">Volunteer</Badge>
                 </CardContent>
               </Card>
             )}
@@ -305,6 +313,14 @@ export default function CommunityPage() {
           />
         </Match>
       </Switch>
+
+      {/* Import sheet — rendered outside Switch so it overlays correctly */}
+      <Show when={showImport()}>
+        <ImportSheet
+          entityType={activeTab() as ImportEntityType}
+          onClose={() => setShowImport(false)}
+        />
+      </Show>
     </main>
   );
 }

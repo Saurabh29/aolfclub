@@ -2,14 +2,14 @@ import { ulid } from "ulid";
 import type { Location, LocationField, CreateLocationRequest, UpdateLocationRequest } from "~/lib/schemas/domain";
 import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
-import type { WritableDataSource } from "./task.data-source";
+import type { DataSource } from "./data-source.interface";
 import { generateDummyLocations } from "./dummy-data";
 
 /**
  * In-memory writable data source for Location entities.
  * Mirrors DummyTaskDataSource pattern — swap for DynamoDB by changing instances.ts only.
  */
-export class DummyLocationDataSource implements WritableDataSource<Location, LocationField> {
+export class DummyLocationDataSource implements DataSource<Location, LocationField> {
   private locations: Location[];
 
   constructor() {

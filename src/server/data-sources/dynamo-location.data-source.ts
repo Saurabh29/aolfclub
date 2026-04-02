@@ -1,7 +1,7 @@
 /**
  * DynamoDB Location Data Source
  *
- * Implements WritableDataSource<Location, LocationField> backed by DynamoDB.
+ * Implements DataSource<Location, LocationField> backed by DynamoDB.
  * Drop-in replacement for DummyLocationDataSource — swap in instances.ts only.
  *
  * Table design (single-table, PK + SK, no GSI):
@@ -29,10 +29,10 @@ import type {
 } from "~/lib/schemas/domain";
 import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
-import type { WritableDataSource } from "./task.data-source";
+import type { DataSource } from "./data-source.interface";
 
 export class DynamoDBLocationDataSource
-  implements WritableDataSource<Location, LocationField>
+  implements DataSource<Location, LocationField>
 {
   // ─── Read operations ──────────────────────────────────────────────────────
 

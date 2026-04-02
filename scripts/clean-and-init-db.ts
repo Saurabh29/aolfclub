@@ -5,12 +5,13 @@
  * Run with: pnpm db:init
  *
  * Seed data:
- *   - 1 admin user  (jsaurabh@gmail.com)
+ *   - Whitelist entry for jsaurabh@gmail.com with canBootstrap = true
+ *     (no User entity — created on first OAuth login)
  *   - Roles:  ADMIN, VOLUNTEER
- *   - Pages:  /leads, /contacts, /tasks, /locations
+ *   - Pages:  /leads, /community, /tasks, /locations
  *   - Role→Page permissions: ADMIN gets all pages; VOLUNTEER gets /leads and /tasks
  *
- * No seed locations — locations are created via the UI.
+ * No seed locations — the bootstrap user creates the first location via the UI.
  *
  * WARNING: Deletes ALL existing data before seeding.
  */
@@ -21,9 +22,7 @@ import {
   ScanCommand,
   BatchWriteCommand,
   PutCommand,
-  TransactWriteCommand,
 } from "@aws-sdk/lib-dynamodb";
-import { ulid } from "ulid";
 import { env } from "~/server/config";
 
 // ─── Client setup ─────────────────────────────────────────────────────────────
@@ -49,13 +48,10 @@ const BATCH_SIZE = 25;
 // ─── Key helpers (mirrors client.ts) ──────────────────────────────────────────
 
 const Keys = {
-  userPK:   (id: string) => `USER#${id}`,
-  emailPK:  (email: string) => `EMAIL#${email.toLowerCase()}`,
+  whitelistPK: (email: string) => `WHITELIST#${email.toLowerCase()}`,
   rolePK:   (name: string) => `ROLE#${name}`,
   pagePK:   (name: string) => `PAGE#${name}`,
-  groupPK:  (id: string) => `GROUP#${id}`,
   metaSK:   () => "META" as const,
-  roleSK:   (name: string) => `ROLE#${name}`,
   pageSK:   (name: string) => `PAGE#${name}`,
 };
 
@@ -105,47 +101,25 @@ async function cleanDb(): Promise<void> {
 async function seedDb(): Promise<void> {
   const timestamp = now();
 
-  // ── Admin user ─────────────────────────────────────────────────────────────
-  console.log("👤 Seeding admin user...");
-  const adminId = ulid();
-  const adminEmail = "jsaurabh@gmail.com";
+  // ── Bootstrap whitelist entry ─────────────────────────────────────────────
+  console.log("🔑 Seeding bootstrap whitelist entry...");
+  const bootstrapEmail = "jsaurabh@gmail.com";
 
   await docClient.send(
-    new TransactWriteCommand({
-      TransactItems: [
-        {
-          Put: {
-            TableName: TABLE_NAME,
-            Item: {
-              PK: Keys.userPK(adminId),
-              SK: Keys.metaSK(),
-              itemType: "User",
-              id: adminId,
-              email: adminEmail,
-              displayName: "Saurabh Jain",
-              isAdmin: true,
-              createdAt: timestamp,
-              updatedAt: timestamp,
-            },
-          },
-        },
-        {
-          Put: {
-            TableName: TABLE_NAME,
-            Item: {
-              PK: Keys.emailPK(adminEmail),
-              SK: Keys.metaSK(),
-              itemType: "EmailLookup",
-              userId: adminId,
-              email: adminEmail,
-              createdAt: timestamp,
-            },
-          },
-        },
-      ],
+    new PutCommand({
+      TableName: TABLE_NAME,
+      Item: {
+        PK: Keys.whitelistPK(bootstrapEmail),
+        SK: Keys.metaSK(),
+        itemType: "Whitelist",
+        email: bootstrapEmail,
+        canBootstrap: true,
+        createdAt: timestamp,
+      },
     })
   );
-  console.log(`   Admin user: ${adminEmail} (id: ${adminId})`);
+  console.log(`   Whitelist: ${bootstrapEmail} (canBootstrap: true)`);
+  console.log("   User entity will be created on first OAuth login.");
 
   // ── Roles ──────────────────────────────────────────────────────────────────
   console.log("🔑 Seeding roles...");

@@ -1,78 +1,65 @@
 /**
  * Auth Service — user lookup and creation on OAuth sign-in.
  *
- * In-memory implementation for the dummy-data phase.
- * When DynamoDB is wired, replace the Maps with repository calls
- * (same pattern as aolf-club's auth.service.ts + db/repositories).
- *
- * Searches pre-seeded dummy users first, then falls back to the
- * in-memory OAuth user store so tests / seed data works out-of-the-box.
+ * Flow:
+ *   1. Check WHITELIST#<email> — deny if absent.
+ *   2. If User already exists (email lookup via DataSource) → return existing user.
+ *   3. Otherwise create User via DataSource.
+ *   4. Surface canBootstrap from the whitelist entry in the returned result.
  */
-import { ulid } from "ulid";
 import type { User } from "~/lib/schemas/domain";
 import { usersDataSource } from "~/server/data-sources/instances";
-
-// In-memory stores — keyed by normalised email / userId
-const _emailIndex = new Map<string, string>(); // email → userId
-const _oauthUsers = new Map<string, User>(); // userId → User
+import { getWhitelistEntry } from "~/server/db/repositories/whitelist.repository";
 
 export interface OAuthUserResult {
   user: User;
   isNewUser: boolean;
+  canBootstrap: boolean;
 }
 
 /**
- * Find a user by email.
- * Checks OAuth users first, then the pre-seeded DummyDataSource.
+ * Find a user by email via the DataSource lookup.
  */
 export async function findUserByEmail(email: string): Promise<User | null> {
-  const normalised = email.toLowerCase().trim();
-
-  // 1. OAuth user created during this process lifetime
-  const userId = _emailIndex.get(normalised);
-  if (userId) return _oauthUsers.get(userId) ?? null;
-
-  // 2. Pre-seeded dummy data
-  const result = await usersDataSource.query({
-    filters: [{ field: "email" as any, op: "eq", value: normalised }],
-    sorting: [],
-    pagination: { pageSize: 1, pageIndex: 0 },
-  });
-  if (result.success && result.data.items.length > 0) {
-    return result.data.items[0];
-  }
-
-  return null;
+  const result = await usersDataSource.getByUniqueField!("email", email.toLowerCase().trim());
+  return result.success ? result.data : null;
 }
 
 /**
- * Create or retrieve a user on OAuth sign-in.
- * Idempotent — calling multiple times with the same email returns the same user.
+ * Gate OAuth sign-in against the whitelist, then create or return the User.
+ * Throws if the email is not whitelisted (caller maps this to signIn → false).
  */
 export async function createOrGetOAuthUser(
   email: string,
   name: string | null,
   imageUrl: string | null,
-  provider?: string,
+  _provider?: string,
 ): Promise<OAuthUserResult> {
   const normalised = email.toLowerCase().trim();
 
-  const existing = await findUserByEmail(normalised);
-  if (existing) return { user: existing, isNewUser: false };
+  // 1. Whitelist check
+  const whitelist = await getWhitelistEntry(normalised);
+  if (!whitelist) {
+    throw new Error(`Email "${normalised}" is not whitelisted.`);
+  }
 
-  const now = new Date().toISOString();
-  const newUser: User = {
-    id: ulid(),
+  // 2. Existing User?
+  const existing = await findUserByEmail(normalised);
+  if (existing) {
+    return { user: existing, isNewUser: false, canBootstrap: whitelist.canBootstrap };
+  }
+
+  // 3. Create new User via DataSource
+  const createResult = await usersDataSource.create!({
     email: normalised,
     displayName: name || normalised.split("@")[0],
     image: imageUrl ?? undefined,
-    isAdmin: false,
-    createdAt: now,
-    updatedAt: now,
-  };
+  });
 
-  _oauthUsers.set(newUser.id, newUser);
-  _emailIndex.set(normalised, newUser.id);
+  if (!createResult.success) {
+    throw new Error(createResult.error);
+  }
 
-  return { user: newUser, isNewUser: true };
+  return { user: createResult.data, isNewUser: true, canBootstrap: whitelist.canBootstrap };
 }
+

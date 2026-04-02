@@ -35,6 +35,8 @@ export const authConfig: StartAuthJSConfig = {
         } else {
           console.log("[auth] Existing user signed in:", email);
         }
+        // Stash canBootstrap on the user object so the jwt callback can read it
+        (user as any)._canBootstrap = result.canBootstrap;
         return true;
       } catch (err) {
         console.error("[auth] signIn callback error:", err);
@@ -55,6 +57,10 @@ export const authConfig: StartAuthJSConfig = {
             token.activeLocationId = dbUser.activeLocationId;
           }
         }
+        // Carry canBootstrap into the token (only true before setup completes)
+        if ((user as any)._canBootstrap) {
+          token.canBootstrap = true;
+        }
       }
       return token;
     },
@@ -64,6 +70,8 @@ export const authConfig: StartAuthJSConfig = {
       if (token.userId) (session as any).user.id = token.userId;
       if (token.activeLocationId)
         (session as any).user.activeLocationId = token.activeLocationId;
+      if (token.canBootstrap)
+        (session as any).user.canBootstrap = token.canBootstrap;
       return session;
     },
   },

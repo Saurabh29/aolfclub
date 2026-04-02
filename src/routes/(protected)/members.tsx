@@ -34,22 +34,6 @@ const userColumns = [
     header: "Email",
     cell: (info) => <span class="text-sm text-muted-foreground">{info.getValue()}</span>,
   }),
-  columnHelper.accessor("userType", {
-    header: "Type",
-    cell: (info) => (
-      <Badge variant={info.getValue() === "LEAD" ? "default" : "secondary"}>
-        {info.getValue()}
-      </Badge>
-    ),
-  }),
-  columnHelper.accessor("isAdmin", {
-    header: "Admin",
-    cell: (info) => (
-      <Show when={info.getValue()}>
-        <Badge variant="error">Admin</Badge>
-      </Show>
-    ),
-  }),
   columnHelper.accessor("createdAt", {
     header: "Created",
     cell: (info) => new Date(info.getValue()).toLocaleDateString(),
@@ -80,14 +64,7 @@ export default function MembersPage() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div class="flex gap-2">
-          <Badge variant={user.userType === "LEAD" ? "default" : "secondary"}>
-            {user.userType}
-          </Badge>
-          <Show when={user.isAdmin}>
-            <Badge variant="error">Admin</Badge>
-          </Show>
-        </div>
+        <Badge variant="outline">Volunteer</Badge>
       </CardContent>
     </Card>
   );

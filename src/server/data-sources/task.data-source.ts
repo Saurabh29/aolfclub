@@ -6,19 +6,9 @@ import { generateDummyTasks } from "./dummy-data";
 import { ulid } from "ulid";
 
 /**
- * Extended DataSource interface for entities that support create/update
- */
-export interface WritableDataSource<T, TField extends string = string>
-  extends DataSource<T, TField> {
-  create(data: Partial<T>): Promise<ApiResult<T>>;
-  update(id: string, data: Partial<T>): Promise<ApiResult<T>>;
-  delete?(id: string): Promise<ApiResult<void>>;
-}
-
-/**
  * In-memory task data source with create/update support
  */
-export class DummyTaskDataSource implements WritableDataSource<Task, TaskField> {
+export class DummyTaskDataSource implements DataSource<Task, TaskField> {
   private tasks: Task[];
 
   constructor() {

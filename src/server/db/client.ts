@@ -30,6 +30,8 @@
  *   Page item:              PK = "PAGE#<pageName>",        SK = "META"
  *   Group→Role:             PK = "GROUP#<groupId>",        SK = "ROLE#<roleName>"
  *   Role→Page:              PK = "ROLE#<roleName>",        SK = "PAGE#<pageName>"
+ *   Whitelist:               PK = "WHITELIST#<email>",       SK = "META"
+ *   Location admin edge:      PK = "LOCATION_ADMIN#<locId>",  SK = "USER#<userId>"
  */
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
@@ -77,8 +79,10 @@ export const Keys = {
   memberPK:        (id: string): string => `MEMBER#${id}`,
   memberMobilePK:  (phone: string): string => `MEMBER_MOBILE#${phone}`,
   leadPK:          (id: string): string => `LEAD#${id}`,
-  leadMobilePK:    (phone: string): string => `LEAD_MOBILE#${phone}`,
-  groupPK:         (id: string): string => `GROUP#${id}`,
+  leadMobilePK:        (phone: string): string => `LEAD_MOBILE#${phone}`,
+  whitelistPK:         (email: string): string => `WHITELIST#${email.toLowerCase()}`,
+  locationAdminPK:     (locationId: string): string => `LOCATION_ADMIN#${locationId}`,
+  groupPK:             (id: string): string => `GROUP#${id}`,
   rolePK:          (name: string): string => `ROLE#${name}`,
   pagePK:          (name: string): string => `PAGE#${name}`,
 
@@ -91,13 +95,15 @@ export const Keys = {
   pageSK:       (name: string): string => `PAGE#${name}`,
 
   // Prefix constants for begins_with KeyConditionExpressions
-  LOCATION_PREFIX: "LOCATION#",
-  USER_PREFIX:     "USER#",
-  MEMBER_PREFIX:   "MEMBER#",
-  LEAD_PREFIX:     "LEAD#",
-  GROUP_PREFIX:    "GROUP#",
-  ROLE_PREFIX:     "ROLE#",
-  PAGE_PREFIX:     "PAGE#",
+  LOCATION_PREFIX:       "LOCATION#",
+  USER_PREFIX:           "USER#",
+  MEMBER_PREFIX:         "MEMBER#",
+  LEAD_PREFIX:           "LEAD#",
+  GROUP_PREFIX:          "GROUP#",
+  ROLE_PREFIX:           "ROLE#",
+  PAGE_PREFIX:           "PAGE#",
+  WHITELIST_PREFIX:      "WHITELIST#",
+  LOCATION_ADMIN_PREFIX: "LOCATION_ADMIN#",
 };
 
 /**

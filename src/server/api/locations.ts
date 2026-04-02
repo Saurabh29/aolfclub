@@ -65,7 +65,26 @@ export const checkSlugAvailableQuery = query(async (slug: string, excludeId?: st
 
 export const createLocationAction = action(async (data: CreateLocationRequest) => {
   "use server";
-  return await createLocation(data);
+  const result = await createLocation(data);
+  if (!result.success) return result;
+
+  // Setup completion: grant location-admin + set active location + consume bootstrap flag
+  const { getSessionInfo } = await import("~/lib/auth");
+  const { grantLocationAdmin } = await import("~/server/db/repositories/location-admin.repository");
+  const { consumeBootstrapFlag } = await import("~/server/db/repositories/whitelist.repository");
+  const { usersDataSource } = await import("~/server/data-sources/instances");
+
+  const session = await getSessionInfo();
+  if (session.userId && result.data?.id) {
+    const locationId = result.data.id;
+    await grantLocationAdmin(locationId, session.userId);
+    await usersDataSource.update!(session.userId, { activeLocationId: locationId });
+    if (session.canBootstrap && session.email) {
+      await consumeBootstrapFlag(session.email);
+    }
+  }
+
+  return result;
 }, "create-location");
 
 export const updateLocationAction = action(async (id: string, data: UpdateLocationRequest) => {

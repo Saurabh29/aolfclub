@@ -17,6 +17,13 @@ import type { Lead, LeadField } from "~/lib/schemas/domain";
 import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
 import type { DataSource } from "./data-source.interface";
+import {
+  createLead as repoCreateLead,
+  getLeadByPhone as repoGetLeadByPhone,
+  updateLead as repoUpdateLead,
+  deleteLead as repoDeleteLead,
+} from "~/server/db/repositories/lead.repository";
+import type { CreateLeadInput } from "~/server/db/repositories/lead.repository";
 
 export class LeadsDataSource implements DataSource<Lead, LeadField> {
   // ─── Read operations ──────────────────────────────────────────────────────
@@ -83,6 +90,65 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
       return {
         success: false,
         error: error instanceof Error ? error.message : "getCount failed",
+      };
+    }
+  }
+
+  // ─── Write operations ──────────────────────────────────────────────────
+
+  async create(data: CreateLeadInput): Promise<ApiResult<Lead>> {
+    try {
+      const lead = await repoCreateLead(data);
+      return { success: true, data: lead };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "create failed",
+      };
+    }
+  }
+
+  async update(id: string, data: Partial<Omit<Lead, "id" | "createdAt">>): Promise<ApiResult<Lead>> {
+    try {
+      const lead = await repoUpdateLead(id, data);
+      return { success: true, data: lead };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "update failed",
+      };
+    }
+  }
+
+  async delete(id: string): Promise<ApiResult<void>> {
+    try {
+      await repoDeleteLead(id);
+      return { success: true, data: undefined };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "delete failed",
+      };
+    }
+  }
+
+  // ── Lookup helpers ──────────────────────────────────────────────────────
+
+  /**
+   * Look up lead by phone (sentinel-based).
+   * Usage: getByUniqueField("phone", "+15551234567")
+   */
+  async getByUniqueField(field: string, value: string): Promise<ApiResult<Lead | null>> {
+    if (field !== "phone") {
+      return { success: false, error: `Unsupported lookup field: ${field}` };
+    }
+    try {
+      const lead = await repoGetLeadByPhone(value);
+      return { success: true, data: lead };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "getByUniqueField failed",
       };
     }
   }

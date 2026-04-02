@@ -29,7 +29,6 @@ export interface CreateUserInput {
   displayName: string;
   image?: string;
   phone?: string;
-  isAdmin?: boolean;
   activeLocationId?: string;
 }
 
@@ -69,7 +68,6 @@ export async function createUser(input: CreateUserInput): Promise<User> {
     displayName: input.displayName,
     image: input.image,
     phone: input.phone,
-    isAdmin: input.isAdmin ?? false,
     activeLocationId: input.activeLocationId,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -155,7 +153,6 @@ export async function updateUser(
     Pick<
       User,
       | "displayName"
-      | "isAdmin"
       | "image"
       | "phone"
       | "email"
@@ -220,7 +217,7 @@ export async function updateUser(
   const values: Record<string, unknown> = {};
 
   const fields = [
-    "displayName", "isAdmin", "image", "phone", "activeLocationId",
+    "displayName", "image", "phone", "activeLocationId",
   ] as const;
 
   for (const field of fields) {

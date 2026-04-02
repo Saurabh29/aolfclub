@@ -17,6 +17,13 @@ import type { User, UserField } from "~/lib/schemas/domain";
 import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
 import type { DataSource } from "./data-source.interface";
+import {
+  createUser as repoCreateUser,
+  getUserByEmail as repoGetUserByEmail,
+  updateUser as repoUpdateUser,
+  deleteUser as repoDeleteUser,
+} from "~/server/db/repositories/user.repository";
+import type { CreateUserInput } from "~/server/db/repositories/user.repository";
 
 export class UsersDataSource implements DataSource<User, UserField> {
 
@@ -94,6 +101,68 @@ export class UsersDataSource implements DataSource<User, UserField> {
       return {
         success: false,
         error: error instanceof Error ? error.message : "getCount failed",
+      };
+    }
+  }
+
+  // ─── Write operations ──────────────────────────────────────────────────
+
+  async create(data: CreateUserInput): Promise<ApiResult<User>> {
+    try {
+      const user = await repoCreateUser(data);
+      return { success: true, data: user };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "create failed",
+      };
+    }
+  }
+
+  async update(
+    id: string,
+    data: Partial<Pick<User, "displayName" | "image" | "phone" | "email" | "activeLocationId">>
+  ): Promise<ApiResult<User>> {
+    try {
+      const user = await repoUpdateUser(id, data);
+      return { success: true, data: user };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "update failed",
+      };
+    }
+  }
+
+  async delete(id: string): Promise<ApiResult<void>> {
+    try {
+      await repoDeleteUser(id);
+      return { success: true, data: undefined };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "delete failed",
+      };
+    }
+  }
+
+  // ── Lookup helpers ──────────────────────────────────────────────────────
+
+  /**
+   * Look up user by email (sentinel-based).
+   * Usage: getByUniqueField("email", "user@example.com")
+   */
+  async getByUniqueField(field: string, value: string): Promise<ApiResult<User | null>> {
+    if (field !== "email") {
+      return { success: false, error: `Unsupported lookup field: ${field}` };
+    }
+    try {
+      const user = await repoGetUserByEmail(value);
+      return { success: true, data: user };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "getByUniqueField failed",
       };
     }
   }

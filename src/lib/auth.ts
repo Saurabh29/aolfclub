@@ -47,6 +47,7 @@ export const getUser = query(async () => {
 export type SessionInfo = {
   userId: string | null;
   activeLocationId: string | null;
+  canBootstrap: boolean;
   email: string | null;
   name: string | null;
   image: string | null;
@@ -68,10 +69,12 @@ export async function getSessionInfo(): Promise<SessionInfo> {
   }
 
   const activeLocationId = raw?.user?.activeLocationId ?? null;
+  const canBootstrap = raw?.user?.canBootstrap === true;
 
   return {
     userId,
     activeLocationId,
+    canBootstrap,
     email: raw?.user?.email ?? null,
     name: raw?.user?.name ?? null,
     image: raw?.user?.image ?? null,

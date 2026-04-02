@@ -37,7 +37,6 @@ export function generateDummyUsers(count: number): User[] {
       id: ulid(),
       email,
       displayName: `${firstName} ${lastName}`,
-      isAdmin: i === 0,
       image: i % 3 === 0 ? `https://i.pravatar.cc/150?u=${email}` : undefined,
       phone: i % 2 === 0 ? `+1${String(Math.floor(Math.random() * 10000000000)).padStart(10, "0")}` : undefined,
       createdAt: createdDate.toISOString(),

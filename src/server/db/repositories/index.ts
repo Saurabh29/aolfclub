@@ -4,3 +4,5 @@ export * from "./lead.repository";
 export * from "./user-group.repository";
 export * from "./permission.repository";
 export * from "./access.repository";
+export * from "./whitelist.repository";
+export * from "./location-admin.repository";

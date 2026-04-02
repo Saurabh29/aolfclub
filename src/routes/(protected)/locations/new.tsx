@@ -25,7 +25,8 @@ export default function NewLocationPage() {
         setServerError(result.error ?? "Failed to create location");
         return;
       }
-      navigate("/locations");
+      // Setup complete — navigate to main app dashboard
+      navigate("/app");
     } finally {
       setIsSubmitting(false);
     }

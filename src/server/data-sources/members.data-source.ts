@@ -17,6 +17,13 @@ import type { Member, MemberField } from "~/lib/schemas/domain";
 import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
 import type { DataSource } from "./data-source.interface";
+import {
+  createMember as repoCreateMember,
+  getMemberByPhone as repoGetMemberByPhone,
+  updateMember as repoUpdateMember,
+  deleteMember as repoDeleteMember,
+} from "~/server/db/repositories/member.repository";
+import type { CreateMemberInput } from "~/server/db/repositories/member.repository";
 
 export class MembersDataSource implements DataSource<Member, MemberField> {
   // ─── Read operations ──────────────────────────────────────────────────────
@@ -83,6 +90,65 @@ export class MembersDataSource implements DataSource<Member, MemberField> {
       return {
         success: false,
         error: error instanceof Error ? error.message : "getCount failed",
+      };
+    }
+  }
+
+  // ─── Write operations ──────────────────────────────────────────────────
+
+  async create(data: CreateMemberInput): Promise<ApiResult<Member>> {
+    try {
+      const member = await repoCreateMember(data);
+      return { success: true, data: member };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "create failed",
+      };
+    }
+  }
+
+  async update(id: string, data: Partial<Omit<Member, "id" | "createdAt">>): Promise<ApiResult<Member>> {
+    try {
+      const member = await repoUpdateMember(id, data);
+      return { success: true, data: member };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "update failed",
+      };
+    }
+  }
+
+  async delete(id: string): Promise<ApiResult<void>> {
+    try {
+      await repoDeleteMember(id);
+      return { success: true, data: undefined };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "delete failed",
+      };
+    }
+  }
+
+  // ── Lookup helpers ──────────────────────────────────────────────────────
+
+  /**
+   * Look up member by phone (sentinel-based).
+   * Usage: getByUniqueField("phone", "+15551234567")
+   */
+  async getByUniqueField(field: string, value: string): Promise<ApiResult<Member | null>> {
+    if (field !== "phone") {
+      return { success: false, error: `Unsupported lookup field: ${field}` };
+    }
+    try {
+      const member = await repoGetMemberByPhone(value);
+      return { success: true, data: member };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "getByUniqueField failed",
       };
     }
   }
