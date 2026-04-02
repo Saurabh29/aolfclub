@@ -56,7 +56,7 @@ export interface LeadImportRow extends ImportRow {
 
 /**
  * Import a batch of Lead rows.
- * Each phone is normalized to E.164 before the duplicate check.
+ * Pre-scans existing leads once (via ScanCache) to avoid N+1 duplicate checks.
  */
 export async function importLeads(
   rows: LeadImportRow[],
@@ -65,15 +65,26 @@ export async function importLeads(
   let imported = 0;
   const skipped: ImportSkip[] = [];
 
+  // Pre-fetch all existing leads in one scan (uses ScanCache)
+  const existingPhones = new Set<string>();
+  const allResult = await leadsDataSource.query({
+    filters: [],
+    sorting: [],
+    pagination: { pageSize: 100_000, pageIndex: 0 },
+  });
+  if (allResult.success) {
+    for (const lead of allResult.data.items) existingPhones.add(lead.phone);
+  }
+
   for (const row of rows) {
     const phone = normalizePhone(row.phone);
 
-    // Duplicate check via DataSource lookup
-    const existingResult = await leadsDataSource.getByUniqueField!("phone", phone);
-    if (existingResult.success && existingResult.data) {
+    if (existingPhones.has(phone)) {
       skipped.push({ row: row.row, value: phone, reason: "Phone already exists as a Lead" });
       continue;
     }
+    // Prevent intra-batch duplicates
+    existingPhones.add(phone);
 
     const input: CreateLeadInput = {
       displayName: row.displayName,
@@ -111,6 +122,7 @@ export interface MemberImportRow extends ImportRow {
 
 /**
  * Import a batch of Member rows.
+ * Pre-scans existing members once (via ScanCache) to avoid N+1 duplicate checks.
  */
 export async function importMembers(
   rows: MemberImportRow[],
@@ -119,15 +131,25 @@ export async function importMembers(
   let imported = 0;
   const skipped: ImportSkip[] = [];
 
+  // Pre-fetch all existing members in one scan (uses ScanCache)
+  const existingPhones = new Set<string>();
+  const allResult = await membersDataSource.query({
+    filters: [],
+    sorting: [],
+    pagination: { pageSize: 100_000, pageIndex: 0 },
+  });
+  if (allResult.success) {
+    for (const member of allResult.data.items) existingPhones.add(member.phone);
+  }
+
   for (const row of rows) {
     const phone = normalizePhone(row.phone);
 
-    // Duplicate check via DataSource lookup
-    const existingResult = await membersDataSource.getByUniqueField!("phone", phone);
-    if (existingResult.success && existingResult.data) {
+    if (existingPhones.has(phone)) {
       skipped.push({ row: row.row, value: phone, reason: "Phone already exists as a Member" });
       continue;
     }
+    existingPhones.add(phone);
 
     const input: CreateMemberInput = {
       displayName: row.displayName,
@@ -166,8 +188,7 @@ export interface TeamImportRow extends ImportRow {
 
 /**
  * Import a batch of Team (User) rows.
- * Creates full User + EMAIL# sentinel. No whitelist entry needed — the EMAIL#
- * sentinel grants OAuth access directly.
+ * Pre-scans existing users once (via ScanCache) to avoid N+1 duplicate checks.
  */
 export async function importTeam(
   rows: TeamImportRow[],
@@ -176,15 +197,27 @@ export async function importTeam(
   let imported = 0;
   const skipped: ImportSkip[] = [];
 
+  // Pre-fetch all existing users in one scan (uses ScanCache)
+  const existingEmails = new Set<string>();
+  const allResult = await usersDataSource.query({
+    filters: [],
+    sorting: [],
+    pagination: { pageSize: 100_000, pageIndex: 0 },
+  });
+  if (allResult.success) {
+    for (const user of allResult.data.items) {
+      if (user.email) existingEmails.add(user.email.toLowerCase());
+    }
+  }
+
   for (const row of rows) {
     const email = row.email.toLowerCase().trim();
 
-    // Duplicate check via DataSource lookup
-    const existingResult = await usersDataSource.getByUniqueField!("email", email);
-    if (existingResult.success && existingResult.data) {
+    if (existingEmails.has(email)) {
       skipped.push({ row: row.row, value: email, reason: "Email already exists as a Team member" });
       continue;
     }
+    existingEmails.add(email);
 
     const input: CreateUserInput = {
       email,

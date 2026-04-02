@@ -25,28 +25,26 @@ export const getUserById = service.getById;
 export const getUserCount = service.getCount;
 
 // ── Active location tracking ─────────────────────────────────────────────────
-// Stub: stored per-server-process in memory.
-// Replace with a real DB update (usersDataSource update) once auth is wired.
-const _activeLocationByUser = new Map<string, string>();
 
 /**
- * Get the active location ID for a user.
- * Returns null if the user has not selected one yet.
+ * Get the active location ID for a user from their persisted profile.
  */
 export async function getActiveLocationId(
   userId: string
 ): Promise<ApiResult<string | null>> {
-  return { success: true, data: _activeLocationByUser.get(userId) ?? null };
+  const result = await usersDataSource.getById(userId);
+  if (!result.success) return { success: false, error: result.error };
+  return { success: true, data: result.data?.activeLocationId ?? null };
 }
 
 /**
- * Set the active location ID for a user.
- * When auth is wired, replace the Map with a real DB update on the User record.
+ * Persist the active location ID on the user record.
  */
 export async function setActiveLocation(
   userId: string,
   locationId: string
 ): Promise<ApiResult<void>> {
-  _activeLocationByUser.set(userId, locationId);
+  const result = await usersDataSource.update!(userId, { activeLocationId: locationId });
+  if (!result.success) return { success: false, error: result.error };
   return { success: true, data: undefined };
 }

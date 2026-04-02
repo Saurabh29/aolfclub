@@ -1,4 +1,4 @@
-import type { User } from "~/lib/schemas/domain";
+import type { Lead } from "~/lib/schemas/domain";
 
 /**
  * Lead status types for volunteer workflow
@@ -8,7 +8,7 @@ export type LeadStatus = "not_started" | "scheduled" | "overdue" | "completed";
 /**
  * Determine lead status based on call history and follow-up date
  */
-export function getLeadStatus(lead: User): LeadStatus {
+export function getLeadStatus(lead: Lead): LeadStatus {
   // Marked as not interested = completed
   if (lead.lastInterestLevel === "Not_Interested") {
     return "completed";
@@ -42,7 +42,7 @@ export function getLeadStatus(lead: User): LeadStatus {
 /**
  * Check if lead is overdue
  */
-export function isLeadOverdue(lead: User): boolean {
+export function isLeadOverdue(lead: Lead): boolean {
   if (!lead.nextFollowUpDate) return false;
   return new Date(lead.nextFollowUpDate) < new Date();
 }
@@ -50,7 +50,7 @@ export function isLeadOverdue(lead: User): boolean {
 /**
  * Check if lead is due today
  */
-export function isLeadDueToday(lead: User): boolean {
+export function isLeadDueToday(lead: Lead): boolean {
   if (!lead.nextFollowUpDate) return false;
   
   const followUp = new Date(lead.nextFollowUpDate);

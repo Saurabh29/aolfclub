@@ -1,4 +1,5 @@
 import { query, action } from "@solidjs/router";
+import { execQuery, unwrap } from "./helpers";
 import {
   queryLocations,
   getLocationById,
@@ -9,43 +10,16 @@ import {
   deleteLocation,
 } from "../services/locations.service";
 import type { QuerySpec } from "~/lib/schemas/query";
-import { QuerySpecSchema } from "~/lib/schemas/query";
 import type { LocationField, CreateLocationRequest, UpdateLocationRequest } from "~/lib/schemas/domain";
 
-/**
- * Query locations with filters, sorting, and pagination
- * 
- * Usage in routes:
- * ```tsx
- * const locations = createAsync(() => queryLocationsQuery({
- *   filters: [{ field: "isActive", op: "eq", value: true }],
- *   sorting: [{ field: "name", direction: "asc" }],
- *   pagination: { pageSize: 20, pageIndex: 0 }
- * }));
- * ```
- */
 export const queryLocationsQuery = query(async (spec: QuerySpec<LocationField>) => {
   "use server";
-  // Validate input spec
-  const validatedSpec = QuerySpecSchema.parse(spec);
-  const result = await queryLocations(validatedSpec as QuerySpec<LocationField>);
-  if (!result.success) throw new Error(result.error);
-  return result.data;
+  return execQuery(spec, queryLocations);
 }, "query-locations");
 
-/**
- * Get location by ID
- * 
- * Usage in routes:
- * ```tsx
- * const location = createAsync(() => getLocationByIdQuery(locationId));
- * ```
- */
 export const getLocationByIdQuery = query(async (id: string) => {
   "use server";
-  const result = await getLocationById(id);
-  if (!result.success) throw new Error(result.error);
-  return result.data;
+  return unwrap(await getLocationById(id));
 }, "location-by-id");
 
 export const getLocationBySlugQuery = query(async (slug: string) => {
