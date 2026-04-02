@@ -7,8 +7,8 @@
  *   User item:     PK = "USER#<id>",     SK = "META",  itemType = "User"
  *   Email lookup:  PK = "EMAIL#<email>", SK = "META",  itemType = "EmailLookup"
  *
- * query() drains a full Scan filtered by itemType = "User", then applies
- * remaining QuerySpec predicates (filters, sorting, pagination) in-memory.
+ * query() uses a server-side ScanCache to avoid redundant DynamoDB scans
+ * on sort/page/filter changes. Writes invalidate the cache.
  */
 
 import { GetCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
@@ -17,6 +17,8 @@ import type { User, UserField } from "~/lib/schemas/domain";
 import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
 import type { DataSource } from "./data-source.interface";
+import { ScanCache } from "./scan-cache";
+import { executeQuery, applyFilters } from "./query-executor";
 import {
   createUser as repoCreateUser,
   getUserByEmail as repoGetUserByEmail,
@@ -26,6 +28,7 @@ import {
 import type { CreateUserInput } from "~/server/db/repositories/user.repository";
 
 export class UsersDataSource implements DataSource<User, UserField> {
+  private cache = new ScanCache<User>({ label: "Users" });
 
   async getById(id: string): Promise<ApiResult<User | null>> {
     try {
@@ -45,43 +48,10 @@ export class UsersDataSource implements DataSource<User, UserField> {
     }
   }
 
-  /**
-   * Execute a QuerySpec against the full (or pre-filtered) user set.
-   *
-   * DynamoDB execution steps:
-   *   1. Scan with FilterExpression constraining itemType (and optionally userType)
-   *   2. Apply remaining QuerySpec filters in-memory
-   *   3. Sort in-memory
-   *   4. Paginate in-memory (offset = pageIndex × pageSize)
-   */
   async query(spec: QuerySpec<UserField>): Promise<ApiResult<QueryResult<User>>> {
     try {
-      const allUsers = await this.scanAll();
-
-      // Apply in-memory filters from QuerySpec
-      let results = this.applyFilters(allUsers, spec.filters);
-
-      // Apply sorting
-      if (spec.sorting.length > 0) {
-        results = this.applySort(results, spec.sorting);
-      }
-
-      // Paginate
-      const { pageSize, pageIndex = 0 } = spec.pagination;
-      const offset = pageIndex * pageSize;
-      const items = results.slice(offset, offset + pageSize);
-      const total = results.length;
-
-      return {
-        success: true,
-        data: {
-          items,
-          pageInfo: {
-            hasNextPage: offset + pageSize < total,
-            totalCount: total,
-          },
-        },
-      };
+      const allUsers = await this.cache.getOrScan(() => this.scanAll());
+      return { success: true, data: executeQuery(allUsers, spec) };
     } catch (error) {
       return {
         success: false,
@@ -94,8 +64,8 @@ export class UsersDataSource implements DataSource<User, UserField> {
     filters?: QuerySpec<UserField>["filters"]
   ): Promise<ApiResult<number>> {
     try {
-      const allUsers = await this.scanAll();
-      const filtered = filters ? this.applyFilters(allUsers, filters) : allUsers;
+      const allUsers = await this.cache.getOrScan(() => this.scanAll());
+      const filtered = filters ? applyFilters(allUsers, filters) : allUsers;
       return { success: true, data: filtered.length };
     } catch (error) {
       return {
@@ -105,11 +75,12 @@ export class UsersDataSource implements DataSource<User, UserField> {
     }
   }
 
-  // ─── Write operations ──────────────────────────────────────────────────
+  // ─── Write operations (invalidate cache) ──────────────────────────────
 
   async create(data: CreateUserInput): Promise<ApiResult<User>> {
     try {
       const user = await repoCreateUser(data);
+      this.cache.invalidate();
       return { success: true, data: user };
     } catch (error) {
       return {
@@ -125,6 +96,7 @@ export class UsersDataSource implements DataSource<User, UserField> {
   ): Promise<ApiResult<User>> {
     try {
       const user = await repoUpdateUser(id, data);
+      this.cache.invalidate();
       return { success: true, data: user };
     } catch (error) {
       return {
@@ -137,6 +109,7 @@ export class UsersDataSource implements DataSource<User, UserField> {
   async delete(id: string): Promise<ApiResult<void>> {
     try {
       await repoDeleteUser(id);
+      this.cache.invalidate();
       return { success: true, data: undefined };
     } catch (error) {
       return {
@@ -148,10 +121,6 @@ export class UsersDataSource implements DataSource<User, UserField> {
 
   // ── Lookup helpers ──────────────────────────────────────────────────────
 
-  /**
-   * Look up user by email (sentinel-based).
-   * Usage: getByUniqueField("email", "user@example.com")
-   */
   async getByUniqueField(field: string, value: string): Promise<ApiResult<User | null>> {
     if (field !== "email") {
       return { success: false, error: `Unsupported lookup field: ${field}` };
@@ -194,57 +163,8 @@ export class UsersDataSource implements DataSource<User, UserField> {
     return users;
   }
 
-  /** Strip DynamoDB key fields and return a domain User. */
   private fromItem(item: Record<string, unknown>): User {
     const { PK, SK, itemType, ...rest } = item;
     return rest as unknown as User;
-  }
-
-  private applyFilters(
-    users: User[],
-    filters: QuerySpec<UserField>["filters"]
-  ): User[] {
-    let results = [...users];
-    for (const filter of filters) {
-      results = results.filter((user) => {
-        const value = (user as Record<string, unknown>)[filter.field];
-        switch (filter.op) {
-          case "eq":   return value === filter.value;
-          case "neq":  return value !== filter.value;
-          case "contains":
-            return typeof value === "string" && value.includes(String(filter.value));
-          case "startsWith":
-            return typeof value === "string" && value.startsWith(String(filter.value));
-          case "endsWith":
-            return typeof value === "string" && value.endsWith(String(filter.value));
-          case "gt":   return (value as number) > (filter.value as number);
-          case "lt":   return (value as number) < (filter.value as number);
-          case "gte":  return (value as number) >= (filter.value as number);
-          case "lte":  return (value as number) <= (filter.value as number);
-          case "in":
-            return Array.isArray(filter.value) && filter.value.includes(value);
-          default:     return true;
-        }
-      });
-    }
-    return results;
-  }
-
-  private applySort(
-    users: User[],
-    sorting: QuerySpec<UserField>["sorting"]
-  ): User[] {
-    return [...users].sort((a, b) => {
-      for (const sort of sorting) {
-        const aVal = (a as Record<string, unknown>)[sort.field];
-        const bVal = (b as Record<string, unknown>)[sort.field];
-        if (aVal === bVal) continue;
-        if (aVal === undefined || aVal === null) return 1;
-        if (bVal === undefined || bVal === null) return -1;
-        if (aVal < (bVal as typeof aVal)) return sort.direction === "asc" ? -1 : 1;
-        if (aVal > (bVal as typeof aVal)) return sort.direction === "asc" ? 1 : -1;
-      }
-      return 0;
-    });
   }
 }

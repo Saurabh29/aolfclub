@@ -7,8 +7,8 @@
  *   Lead item:       PK = "LEAD#<id>",          SK = "META", itemType = "Lead"
  *   Mobile sentinel: PK = "LEAD_MOBILE#<phone>", SK = "META", itemType = "LeadMobileLookup"
  *
- * query() drains a full Scan filtered by itemType = "Lead", then applies
- * remaining QuerySpec predicates (filters, sorting, pagination) in-memory.
+ * query() uses a server-side ScanCache to avoid redundant DynamoDB scans
+ * on sort/page/filter changes. Writes invalidate the cache.
  */
 
 import { GetCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
@@ -17,6 +17,8 @@ import type { Lead, LeadField } from "~/lib/schemas/domain";
 import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
 import type { DataSource } from "./data-source.interface";
+import { ScanCache } from "./scan-cache";
+import { executeQuery, applyFilters } from "./query-executor";
 import {
   createLead as repoCreateLead,
   getLeadByPhone as repoGetLeadByPhone,
@@ -26,6 +28,8 @@ import {
 import type { CreateLeadInput } from "~/server/db/repositories/lead.repository";
 
 export class LeadsDataSource implements DataSource<Lead, LeadField> {
+  private cache = new ScanCache<Lead>({ label: "Leads" });
+
   // ─── Read operations ──────────────────────────────────────────────────────
 
   async getById(id: string): Promise<ApiResult<Lead | null>> {
@@ -48,29 +52,8 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
 
   async query(spec: QuerySpec<LeadField>): Promise<ApiResult<QueryResult<Lead>>> {
     try {
-      const allLeads = await this.scanAll();
-
-      let results = this.applyFilters(allLeads, spec.filters);
-
-      if (spec.sorting.length > 0) {
-        results = this.applySort(results, spec.sorting);
-      }
-
-      const { pageSize, pageIndex = 0 } = spec.pagination;
-      const offset = pageIndex * pageSize;
-      const items = results.slice(offset, offset + pageSize);
-      const total = results.length;
-
-      return {
-        success: true,
-        data: {
-          items,
-          pageInfo: {
-            hasNextPage: offset + pageSize < total,
-            totalCount: total,
-          },
-        },
-      };
+      const allLeads = await this.cache.getOrScan(() => this.scanAll());
+      return { success: true, data: executeQuery(allLeads, spec) };
     } catch (error) {
       return {
         success: false,
@@ -83,8 +66,8 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
     filters?: QuerySpec<LeadField>["filters"]
   ): Promise<ApiResult<number>> {
     try {
-      const allLeads = await this.scanAll();
-      const filtered = filters ? this.applyFilters(allLeads, filters) : allLeads;
+      const allLeads = await this.cache.getOrScan(() => this.scanAll());
+      const filtered = filters ? applyFilters(allLeads, filters) : allLeads;
       return { success: true, data: filtered.length };
     } catch (error) {
       return {
@@ -94,11 +77,12 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
     }
   }
 
-  // ─── Write operations ──────────────────────────────────────────────────
+  // ─── Write operations (invalidate cache) ──────────────────────────────
 
   async create(data: CreateLeadInput): Promise<ApiResult<Lead>> {
     try {
       const lead = await repoCreateLead(data);
+      this.cache.invalidate();
       return { success: true, data: lead };
     } catch (error) {
       return {
@@ -111,6 +95,7 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
   async update(id: string, data: Partial<Omit<Lead, "id" | "createdAt">>): Promise<ApiResult<Lead>> {
     try {
       const lead = await repoUpdateLead(id, data);
+      this.cache.invalidate();
       return { success: true, data: lead };
     } catch (error) {
       return {
@@ -123,6 +108,7 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
   async delete(id: string): Promise<ApiResult<void>> {
     try {
       await repoDeleteLead(id);
+      this.cache.invalidate();
       return { success: true, data: undefined };
     } catch (error) {
       return {
@@ -134,10 +120,6 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
 
   // ── Lookup helpers ──────────────────────────────────────────────────────
 
-  /**
-   * Look up lead by phone (sentinel-based).
-   * Usage: getByUniqueField("phone", "+15551234567")
-   */
   async getByUniqueField(field: string, value: string): Promise<ApiResult<Lead | null>> {
     if (field !== "phone") {
       return { success: false, error: `Unsupported lookup field: ${field}` };
@@ -155,7 +137,6 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
 
   // ─── Internals ────────────────────────────────────────────────────────────
 
-  /** Drain the full Scan, filtering by itemType = "Lead". */
   private async scanAll(): Promise<Lead[]> {
     const leads: Lead[] = [];
     let lastKey: Record<string, unknown> | undefined;
@@ -183,53 +164,5 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
   private fromItem(item: Record<string, unknown>): Lead {
     const { PK, SK, itemType, ...rest } = item;
     return rest as unknown as Lead;
-  }
-
-  private applyFilters(
-    leads: Lead[],
-    filters: QuerySpec<LeadField>["filters"]
-  ): Lead[] {
-    let results = [...leads];
-    for (const filter of filters) {
-      results = results.filter((lead) => {
-        const value = (lead as Record<string, unknown>)[filter.field];
-        switch (filter.op) {
-          case "eq":   return value === filter.value;
-          case "neq":  return value !== filter.value;
-          case "contains":
-            return typeof value === "string" && value.includes(String(filter.value));
-          case "startsWith":
-            return typeof value === "string" && value.startsWith(String(filter.value));
-          case "endsWith":
-            return typeof value === "string" && value.endsWith(String(filter.value));
-          case "gt":   return (value as number) > (filter.value as number);
-          case "lt":   return (value as number) < (filter.value as number);
-          case "gte":  return (value as number) >= (filter.value as number);
-          case "lte":  return (value as number) <= (filter.value as number);
-          case "in":
-            return Array.isArray(filter.value) && filter.value.includes(value);
-          default:     return true;
-        }
-      });
-    }
-    return results;
-  }
-
-  private applySort(
-    leads: Lead[],
-    sorting: QuerySpec<LeadField>["sorting"]
-  ): Lead[] {
-    return [...leads].sort((a, b) => {
-      for (const sort of sorting) {
-        const aVal = (a as Record<string, unknown>)[sort.field];
-        const bVal = (b as Record<string, unknown>)[sort.field];
-        if (aVal === bVal) continue;
-        if (aVal === undefined || aVal === null) return 1;
-        if (bVal === undefined || bVal === null) return -1;
-        if (aVal < (bVal as typeof aVal)) return sort.direction === "asc" ? -1 : 1;
-        if (aVal > (bVal as typeof aVal)) return sort.direction === "asc" ? 1 : -1;
-      }
-      return 0;
-    });
   }
 }

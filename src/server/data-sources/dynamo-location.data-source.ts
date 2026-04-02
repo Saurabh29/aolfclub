@@ -30,10 +30,13 @@ import type {
 import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
 import type { DataSource } from "./data-source.interface";
+import { ScanCache } from "./scan-cache";
+import { executeQuery, applyFilters } from "./query-executor";
 
 export class DynamoDBLocationDataSource
   implements DataSource<Location, LocationField>
 {
+  private cache = new ScanCache<Location>({ label: "Locations" });
   // ─── Read operations ──────────────────────────────────────────────────────
 
   async getById(id: string): Promise<ApiResult<Location | null>> {
@@ -96,79 +99,8 @@ export class DynamoDBLocationDataSource
     spec: QuerySpec<LocationField>
   ): Promise<ApiResult<QueryResult<Location>>> {
     try {
-      let results = await this.scanAllLocations();
-
-      // In-memory filter
-      for (const filter of spec.filters) {
-        results = results.filter((loc) => {
-          const value = (loc as any)[filter.field];
-          switch (filter.op) {
-            case "eq":
-              return value === filter.value;
-            case "neq":
-              return value !== filter.value;
-            case "contains":
-              return (
-                typeof value === "string" &&
-                value.toLowerCase().includes(String(filter.value).toLowerCase())
-              );
-            case "startsWith":
-              return (
-                typeof value === "string" &&
-                value.toLowerCase().startsWith(String(filter.value).toLowerCase())
-              );
-            case "endsWith":
-              return (
-                typeof value === "string" &&
-                value.toLowerCase().endsWith(String(filter.value).toLowerCase())
-              );
-            case "gt":
-              return (value as any) > (filter.value as any);
-            case "lt":
-              return (value as any) < (filter.value as any);
-            case "gte":
-              return (value as any) >= (filter.value as any);
-            case "lte":
-              return (value as any) <= (filter.value as any);
-            case "in":
-              return Array.isArray(filter.value) && filter.value.includes(value);
-            default:
-              return true;
-          }
-        });
-      }
-
-      // In-memory sort
-      if (spec.sorting.length > 0) {
-        results.sort((a, b) => {
-          for (const sort of spec.sorting) {
-            const aVal = (a as any)[sort.field];
-            const bVal = (b as any)[sort.field];
-            if (aVal === bVal) continue;
-            if (aVal === undefined) return 1;
-            if (bVal === undefined) return -1;
-            const cmp = aVal < bVal ? -1 : 1;
-            return sort.direction === "asc" ? cmp : -cmp;
-          }
-          return 0;
-        });
-      }
-
-      const totalCount = results.length;
-      const pageIndex = spec.pagination.pageIndex ?? 0;
-      const offset = pageIndex * spec.pagination.pageSize;
-      const items = results.slice(offset, offset + spec.pagination.pageSize);
-
-      return {
-        success: true,
-        data: {
-          items,
-          pageInfo: {
-            totalCount,
-            hasNextPage: offset + spec.pagination.pageSize < totalCount,
-          },
-        },
-      };
+      const allLocations = await this.cache.getOrScan(() => this.scanAllLocations());
+      return { success: true, data: executeQuery(allLocations, spec) };
     } catch (error) {
       return {
         success: false,
@@ -181,18 +113,9 @@ export class DynamoDBLocationDataSource
     filters?: QuerySpec<LocationField>["filters"]
   ): Promise<ApiResult<number>> {
     try {
-      if (!filters || filters.length === 0) {
-        const all = await this.scanAllLocations();
-        return { success: true, data: all.length };
-      }
-      const result = await this.query({
-        filters,
-        sorting: [],
-        pagination: { pageSize: 10000, pageIndex: 0 },
-      });
-      return result.success
-        ? { success: true, data: result.data!.items.length }
-        : result;
+      const allLocations = await this.cache.getOrScan(() => this.scanAllLocations());
+      const filtered = filters ? applyFilters(allLocations, filters) : allLocations;
+      return { success: true, data: filtered.length };
     } catch (error) {
       return {
         success: false,
@@ -248,6 +171,7 @@ export class DynamoDBLocationDataSource
         })
       );
 
+      this.cache.invalidate();
       return { success: true, data: location };
     } catch (error) {
       if (
@@ -352,6 +276,7 @@ export class DynamoDBLocationDataSource
         ...data,
         updatedAt: now(),
       };
+      this.cache.invalidate();
       return { success: true, data: updated };
     } catch (error) {
       if (
@@ -401,6 +326,7 @@ export class DynamoDBLocationDataSource
         })
       );
 
+      this.cache.invalidate();
       return { success: true, data: undefined };
     } catch (error) {
       return {

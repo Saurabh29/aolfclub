@@ -7,8 +7,8 @@
  *   Member item:         PK = "MEMBER#<id>",          SK = "META", itemType = "Member"
  *   Mobile sentinel:     PK = "MEMBER_MOBILE#<phone>", SK = "META", itemType = "MemberMobileLookup"
  *
- * query() drains a full Scan filtered by itemType = "Member", then applies
- * remaining QuerySpec predicates (filters, sorting, pagination) in-memory.
+ * query() uses a server-side ScanCache to avoid redundant DynamoDB scans
+ * on sort/page/filter changes. Writes invalidate the cache.
  */
 
 import { GetCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
@@ -17,6 +17,8 @@ import type { Member, MemberField } from "~/lib/schemas/domain";
 import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
 import type { DataSource } from "./data-source.interface";
+import { ScanCache } from "./scan-cache";
+import { executeQuery, applyFilters } from "./query-executor";
 import {
   createMember as repoCreateMember,
   getMemberByPhone as repoGetMemberByPhone,
@@ -26,6 +28,8 @@ import {
 import type { CreateMemberInput } from "~/server/db/repositories/member.repository";
 
 export class MembersDataSource implements DataSource<Member, MemberField> {
+  private cache = new ScanCache<Member>({ label: "Members" });
+
   // ─── Read operations ──────────────────────────────────────────────────────
 
   async getById(id: string): Promise<ApiResult<Member | null>> {
@@ -48,29 +52,8 @@ export class MembersDataSource implements DataSource<Member, MemberField> {
 
   async query(spec: QuerySpec<MemberField>): Promise<ApiResult<QueryResult<Member>>> {
     try {
-      const allMembers = await this.scanAll();
-
-      let results = this.applyFilters(allMembers, spec.filters);
-
-      if (spec.sorting.length > 0) {
-        results = this.applySort(results, spec.sorting);
-      }
-
-      const { pageSize, pageIndex = 0 } = spec.pagination;
-      const offset = pageIndex * pageSize;
-      const items = results.slice(offset, offset + pageSize);
-      const total = results.length;
-
-      return {
-        success: true,
-        data: {
-          items,
-          pageInfo: {
-            hasNextPage: offset + pageSize < total,
-            totalCount: total,
-          },
-        },
-      };
+      const allMembers = await this.cache.getOrScan(() => this.scanAll());
+      return { success: true, data: executeQuery(allMembers, spec) };
     } catch (error) {
       return {
         success: false,
@@ -83,8 +66,8 @@ export class MembersDataSource implements DataSource<Member, MemberField> {
     filters?: QuerySpec<MemberField>["filters"]
   ): Promise<ApiResult<number>> {
     try {
-      const allMembers = await this.scanAll();
-      const filtered = filters ? this.applyFilters(allMembers, filters) : allMembers;
+      const allMembers = await this.cache.getOrScan(() => this.scanAll());
+      const filtered = filters ? applyFilters(allMembers, filters) : allMembers;
       return { success: true, data: filtered.length };
     } catch (error) {
       return {
@@ -94,11 +77,12 @@ export class MembersDataSource implements DataSource<Member, MemberField> {
     }
   }
 
-  // ─── Write operations ──────────────────────────────────────────────────
+  // ─── Write operations (invalidate cache) ──────────────────────────────
 
   async create(data: CreateMemberInput): Promise<ApiResult<Member>> {
     try {
       const member = await repoCreateMember(data);
+      this.cache.invalidate();
       return { success: true, data: member };
     } catch (error) {
       return {
@@ -111,6 +95,7 @@ export class MembersDataSource implements DataSource<Member, MemberField> {
   async update(id: string, data: Partial<Omit<Member, "id" | "createdAt">>): Promise<ApiResult<Member>> {
     try {
       const member = await repoUpdateMember(id, data);
+      this.cache.invalidate();
       return { success: true, data: member };
     } catch (error) {
       return {
@@ -123,6 +108,7 @@ export class MembersDataSource implements DataSource<Member, MemberField> {
   async delete(id: string): Promise<ApiResult<void>> {
     try {
       await repoDeleteMember(id);
+      this.cache.invalidate();
       return { success: true, data: undefined };
     } catch (error) {
       return {
@@ -134,10 +120,6 @@ export class MembersDataSource implements DataSource<Member, MemberField> {
 
   // ── Lookup helpers ──────────────────────────────────────────────────────
 
-  /**
-   * Look up member by phone (sentinel-based).
-   * Usage: getByUniqueField("phone", "+15551234567")
-   */
   async getByUniqueField(field: string, value: string): Promise<ApiResult<Member | null>> {
     if (field !== "phone") {
       return { success: false, error: `Unsupported lookup field: ${field}` };
@@ -183,53 +165,5 @@ export class MembersDataSource implements DataSource<Member, MemberField> {
   private fromItem(item: Record<string, unknown>): Member {
     const { PK, SK, itemType, ...rest } = item;
     return rest as unknown as Member;
-  }
-
-  private applyFilters(
-    members: Member[],
-    filters: QuerySpec<MemberField>["filters"]
-  ): Member[] {
-    let results = [...members];
-    for (const filter of filters) {
-      results = results.filter((member) => {
-        const value = (member as Record<string, unknown>)[filter.field];
-        switch (filter.op) {
-          case "eq":   return value === filter.value;
-          case "neq":  return value !== filter.value;
-          case "contains":
-            return typeof value === "string" && value.includes(String(filter.value));
-          case "startsWith":
-            return typeof value === "string" && value.startsWith(String(filter.value));
-          case "endsWith":
-            return typeof value === "string" && value.endsWith(String(filter.value));
-          case "gt":   return (value as number) > (filter.value as number);
-          case "lt":   return (value as number) < (filter.value as number);
-          case "gte":  return (value as number) >= (filter.value as number);
-          case "lte":  return (value as number) <= (filter.value as number);
-          case "in":
-            return Array.isArray(filter.value) && filter.value.includes(value);
-          default:     return true;
-        }
-      });
-    }
-    return results;
-  }
-
-  private applySort(
-    members: Member[],
-    sorting: QuerySpec<MemberField>["sorting"]
-  ): Member[] {
-    return [...members].sort((a, b) => {
-      for (const sort of sorting) {
-        const aVal = (a as Record<string, unknown>)[sort.field];
-        const bVal = (b as Record<string, unknown>)[sort.field];
-        if (aVal === bVal) continue;
-        if (aVal === undefined || aVal === null) return 1;
-        if (bVal === undefined || bVal === null) return -1;
-        if (aVal < (bVal as typeof aVal)) return sort.direction === "asc" ? -1 : 1;
-        if (aVal > (bVal as typeof aVal)) return sort.direction === "asc" ? 1 : -1;
-      }
-      return 0;
-    });
   }
 }
