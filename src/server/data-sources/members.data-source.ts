@@ -11,8 +11,9 @@
  * on sort/page/filter changes. Writes invalidate the cache.
  */
 
-import { GetCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { GetCommand } from "@aws-sdk/lib-dynamodb";
 import { docClient, TABLE_NAME, Keys } from "~/server/db/client";
+import { scanByItemType, fromItem } from "./dynamo-helpers";
 import type { Member, MemberField } from "~/lib/schemas/domain";
 import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
@@ -41,7 +42,7 @@ export class MembersDataSource implements DataSource<Member, MemberField> {
         })
       );
       if (!result.Item) return { success: true, data: null };
-      return { success: true, data: this.fromItem(result.Item) };
+      return { success: true, data: fromItem<Member>(result.Item) };
     } catch (error) {
       return {
         success: false,
@@ -137,33 +138,8 @@ export class MembersDataSource implements DataSource<Member, MemberField> {
 
   // ─── Internals ────────────────────────────────────────────────────────────
 
-  /** Drain the full Scan, filtering by itemType = "Member". */
   private async scanAll(): Promise<Member[]> {
-    const members: Member[] = [];
-    let lastKey: Record<string, unknown> | undefined;
-
-    do {
-      const result = await docClient.send(
-        new ScanCommand({
-          TableName: TABLE_NAME,
-          FilterExpression: "itemType = :itemType",
-          ExpressionAttributeValues: { ":itemType": "Member" },
-          ExclusiveStartKey: lastKey,
-        })
-      );
-
-      for (const item of result.Items ?? []) {
-        members.push(this.fromItem(item as Record<string, unknown>));
-      }
-
-      lastKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
-    } while (lastKey);
-
-    return members;
-  }
-
-  private fromItem(item: Record<string, unknown>): Member {
-    const { PK, SK, itemType, ...rest } = item;
-    return rest as unknown as Member;
+    const items = await scanByItemType<Record<string, unknown>>("Member");
+    return items.map((item) => fromItem<Member>(item));
   }
 }

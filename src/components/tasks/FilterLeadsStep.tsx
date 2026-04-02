@@ -3,6 +3,7 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
+import { QuerySpecSchema } from "~/lib/schemas/query";
 import type { QuerySpec } from "~/lib/schemas/query";
 import type { LeadField } from "~/lib/schemas/domain";
 
@@ -31,15 +32,21 @@ export interface FilterLeadsStepProps {
  * The task's targetUserType (LEAD|MEMBER) determines which data source is queried.
  */
 export const FilterLeadsStep: Component<FilterLeadsStepProps> = (props) => {
-  // Parse existing filter or start fresh
+  // Parse and validate existing filter or start fresh
   const initialFilter = (): QuerySpec<LeadField> => {
     try {
-      return props.contactFilterSpec ? JSON.parse(props.contactFilterSpec) : {
-        filters: [],
-        sorting: [],
-        pagination: { pageSize: 20, pageIndex: 0 },
-      };
-    } catch {
+      if (!props.contactFilterSpec) {
+        return {
+          filters: [],
+          sorting: [],
+          pagination: { pageSize: 20, pageIndex: 0 },
+        };
+      }
+      const parsed = JSON.parse(props.contactFilterSpec);
+      const validated = QuerySpecSchema.parse(parsed);
+      return validated as QuerySpec<LeadField>;
+    } catch (error) {
+      console.warn("Invalid contactFilterSpec, using defaults:", error);
       return {
         filters: [],
         sorting: [],

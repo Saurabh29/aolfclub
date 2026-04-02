@@ -11,8 +11,9 @@
  * on sort/page/filter changes. Writes invalidate the cache.
  */
 
-import { GetCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { GetCommand } from "@aws-sdk/lib-dynamodb";
 import { docClient, TABLE_NAME, Keys } from "~/server/db/client";
+import { scanByItemType, fromItem } from "./dynamo-helpers";
 import type { User, UserField } from "~/lib/schemas/domain";
 import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
@@ -39,7 +40,7 @@ export class UsersDataSource implements DataSource<User, UserField> {
         })
       );
       if (!result.Item) return { success: true, data: null };
-      return { success: true, data: this.fromItem(result.Item) };
+      return { success: true, data: fromItem<User>(result.Item) };
     } catch (error) {
       return {
         success: false,
@@ -138,33 +139,8 @@ export class UsersDataSource implements DataSource<User, UserField> {
 
   // ─── Internals ────────────────────────────────────────────────────────────
 
-  /** Drain the full Scan, filtering by itemType = "User". */
   private async scanAll(): Promise<User[]> {
-    const users: User[] = [];
-    let lastKey: Record<string, unknown> | undefined;
-
-    do {
-      const result = await docClient.send(
-        new ScanCommand({
-          TableName: TABLE_NAME,
-          FilterExpression: "itemType = :itemType",
-          ExpressionAttributeValues: { ":itemType": "User" },
-          ExclusiveStartKey: lastKey,
-        })
-      );
-
-      for (const item of result.Items ?? []) {
-        users.push(this.fromItem(item as Record<string, unknown>));
-      }
-
-      lastKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
-    } while (lastKey);
-
-    return users;
-  }
-
-  private fromItem(item: Record<string, unknown>): User {
-    const { PK, SK, itemType, ...rest } = item;
-    return rest as unknown as User;
+    const items = await scanByItemType<Record<string, unknown>>("User");
+    return items.map((item) => fromItem<User>(item));
   }
 }

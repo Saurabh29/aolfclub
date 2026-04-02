@@ -11,8 +11,9 @@
  * on sort/page/filter changes. Writes invalidate the cache.
  */
 
-import { GetCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { GetCommand } from "@aws-sdk/lib-dynamodb";
 import { docClient, TABLE_NAME, Keys } from "~/server/db/client";
+import { scanByItemType, fromItem } from "./dynamo-helpers";
 import type { Lead, LeadField } from "~/lib/schemas/domain";
 import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
@@ -41,7 +42,7 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
         })
       );
       if (!result.Item) return { success: true, data: null };
-      return { success: true, data: this.fromItem(result.Item) };
+      return { success: true, data: fromItem<Lead>(result.Item) };
     } catch (error) {
       return {
         success: false,
@@ -138,31 +139,7 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
   // ─── Internals ────────────────────────────────────────────────────────────
 
   private async scanAll(): Promise<Lead[]> {
-    const leads: Lead[] = [];
-    let lastKey: Record<string, unknown> | undefined;
-
-    do {
-      const result = await docClient.send(
-        new ScanCommand({
-          TableName: TABLE_NAME,
-          FilterExpression: "itemType = :itemType",
-          ExpressionAttributeValues: { ":itemType": "Lead" },
-          ExclusiveStartKey: lastKey,
-        })
-      );
-
-      for (const item of result.Items ?? []) {
-        leads.push(this.fromItem(item as Record<string, unknown>));
-      }
-
-      lastKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
-    } while (lastKey);
-
-    return leads;
-  }
-
-  private fromItem(item: Record<string, unknown>): Lead {
-    const { PK, SK, itemType, ...rest } = item;
-    return rest as unknown as Lead;
+    const items = await scanByItemType<Record<string, unknown>>("Lead");
+    return items.map((item) => fromItem<Lead>(item));
   }
 }

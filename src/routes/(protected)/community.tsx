@@ -20,17 +20,35 @@ import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
 import { ImportSheet } from "~/components/community/ImportSheet";
 import type { ImportEntityType } from "~/components/community/ImportSheet";
 
+// ── Reusable cell renderers (eliminate duplication) ──────────────────────────
+
+function renderDisplayName(name: string) {
+  return <span class="font-medium">{name}</span>;
+}
+
+function renderPhone(phone: string) {
+  return <span class="text-sm text-muted-foreground">{phone}</span>;
+}
+
+function renderDate(isoDate: string | undefined) {
+  return isoDate ? (
+    <span class="text-sm">{new Date(isoDate).toLocaleDateString()}</span>
+  ) : (
+    <span class="text-muted-foreground">—</span>
+  );
+}
+
 // ── Lead columns ──────────────────────────────────────────────────────────────
 
 const leadColHelper = createColumnHelper<Lead>();
 const leadColumns = [
   leadColHelper.accessor("displayName", {
     header: "Name",
-    cell: (info) => <span class="font-medium">{info.getValue()}</span>,
+    cell: (info) => renderDisplayName(info.getValue()),
   }),
   leadColHelper.accessor("phone", {
     header: "Phone",
-    cell: (info) => <span class="text-sm text-muted-foreground">{info.getValue()}</span>,
+    cell: (info) => renderPhone(info.getValue()),
   }),
   leadColHelper.accessor("lastInterestLevel", {
     header: "Interest",
@@ -46,10 +64,7 @@ const leadColumns = [
   }),
   leadColHelper.accessor("nextFollowUpDate", {
     header: "Follow-up",
-    cell: (info) => {
-      const val = info.getValue();
-      return val ? <span class="text-sm">{new Date(val).toLocaleDateString()}</span> : <span class="text-muted-foreground">—</span>;
-    },
+    cell: (info) => renderDate(info.getValue()),
   }),
   leadColHelper.accessor("totalCallCount", {
     header: "Calls",
@@ -63,18 +78,15 @@ const memberColHelper = createColumnHelper<Member>();
 const memberColumns = [
   memberColHelper.accessor("displayName", {
     header: "Name",
-    cell: (info) => <span class="font-medium">{info.getValue()}</span>,
+    cell: (info) => renderDisplayName(info.getValue()),
   }),
   memberColHelper.accessor("phone", {
     header: "Phone",
-    cell: (info) => <span class="text-sm text-muted-foreground">{info.getValue()}</span>,
+    cell: (info) => renderPhone(info.getValue()),
   }),
   memberColHelper.accessor("memberSince", {
     header: "Member Since",
-    cell: (info) => {
-      const val = info.getValue();
-      return val ? <span class="text-sm">{new Date(val).toLocaleDateString()}</span> : <span class="text-muted-foreground">—</span>;
-    },
+    cell: (info) => renderDate(info.getValue()),
   }),
   memberColHelper.accessor("programsDone", {
     header: "Programs",
@@ -97,7 +109,7 @@ const userColumns = [
             class="w-8 h-8 rounded-full"
           />
         </Show>
-        <span class="font-medium">{info.getValue()}</span>
+        {renderDisplayName(info.getValue())}
       </div>
     ),
   }),
@@ -107,7 +119,7 @@ const userColumns = [
   }),
   userColHelper.accessor("createdAt", {
     header: "Joined",
-    cell: (info) => <span class="text-sm">{new Date(info.getValue()).toLocaleDateString()}</span>,
+    cell: (info) => renderDate(info.getValue()),
   }),
 ];
 
