@@ -26,6 +26,11 @@ export interface AvatarMenuProps {
   onSignIn: () => void;
   onSignOut: () => void;
   onSelectLocation: (slug: string) => void;
+  /**
+   * When true the dropdown opens upward and to the right (for sidebar placement).
+   * Default: false (opens downward, right-aligned — for top-bar placement).
+   */
+  openUpward?: boolean;
 }
 
 export const AvatarMenu: Component<AvatarMenuProps> = (props) => {
@@ -80,7 +85,9 @@ export const AvatarMenu: Component<AvatarMenuProps> = (props) => {
       {/* Dropdown panel */}
       <Show when={open()}>
         <div
-          class="absolute right-0 top-11 z-50 min-w-[220px] rounded-xl border border-border bg-background shadow-xl overflow-hidden"
+          class={`absolute z-50 min-w-[220px] rounded-xl border border-border bg-background shadow-xl overflow-hidden ${
+            props.openUpward ? "bottom-full mb-2 left-0" : "top-11 right-0"
+          }`}
           onClick={() => setOpen(false)}
         >
           {/* ── Unauthenticated ── */}

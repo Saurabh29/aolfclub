@@ -103,6 +103,7 @@ export const AppShell: Component<AppShellProps> = (props) => {
               onSignIn={handleSignIn}
               onSignOut={handleSignOut}
               onSelectLocation={handleSelectLocation}
+              openUpward={true}
             />
             <Show when={props.session}>
               <div class="min-w-0">
