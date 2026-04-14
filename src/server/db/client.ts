@@ -32,6 +32,7 @@
  *   Role→Page:              PK = "ROLE#<roleName>",        SK = "PAGE#<pageName>"
  *   Whitelist:               PK = "WHITELIST#<email>",       SK = "META"
  *   Location admin edge:      PK = "LOCATION_ADMIN#<locId>",  SK = "USER#<userId>"
+ *   Task item:              PK = "TASK#<id>",              SK = "META"
  */
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
@@ -80,6 +81,7 @@ export const Keys = {
   memberMobilePK:  (phone: string): string => `MEMBER_MOBILE#${phone}`,
   leadPK:          (id: string): string => `LEAD#${id}`,
   leadMobilePK:        (phone: string): string => `LEAD_MOBILE#${phone}`,
+  taskPK:          (id: string): string => `TASK#${id}`,
   whitelistPK:         (email: string): string => `WHITELIST#${email.toLowerCase()}`,
   locationAdminPK:     (locationId: string): string => `LOCATION_ADMIN#${locationId}`,
   groupPK:             (id: string): string => `GROUP#${id}`,
@@ -104,6 +106,7 @@ export const Keys = {
   PAGE_PREFIX:           "PAGE#",
   WHITELIST_PREFIX:      "WHITELIST#",
   LOCATION_ADMIN_PREFIX: "LOCATION_ADMIN#",
+  TASK_PREFIX:           "TASK#",
 };
 
 /**

@@ -167,10 +167,13 @@ export const SelectTeamStep: Component<SelectTeamStepProps> = (props) => {
               <div class="space-y-2 max-h-64 overflow-y-auto border rounded-md p-2">
                 <For each={filteredAgents()}>
                   {(agent) => (
-                    <label class="flex items-start gap-3 p-2 hover:bg-muted rounded cursor-pointer">
+                    <div
+                      class="flex items-start gap-3 p-2 hover:bg-muted rounded cursor-pointer"
+                      onClick={() => toggleAgent(agent.id)}
+                    >
                       <Checkbox
                         checked={isAgentSelected(agent.id)}
-                        onChange={() => toggleAgent(agent.id)}
+                        onChange={() => {}}
                       />
                       <div class="flex-1 min-w-0">
                         <div class="font-medium text-sm">
@@ -180,7 +183,7 @@ export const SelectTeamStep: Component<SelectTeamStepProps> = (props) => {
                           {agent.email}
                         </div>
                       </div>
-                    </label>
+                    </div>
                   )}
                 </For>
               </div>

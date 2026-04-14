@@ -4,7 +4,7 @@ import type { Task, TaskField, CreateTaskRequest } from "~/lib/schemas/domain";
 
 /**
  * Task Service - Uses generic collection service factory for read ops.
- * Custom createTask / updateTask for write ops.
+ * Custom createTask / updateTask delegate to the data source.
  */
 const service = createCollectionService<Task, TaskField>(tasksDataSource);
 
@@ -19,7 +19,7 @@ export async function createTask(
   request: CreateTaskRequest,
   createdBy: string
 ): Promise<Task> {
-  const result = await tasksDataSource.create({ ...request, createdBy });
+  const result = await tasksDataSource.create!({ ...request, createdBy });
   if (!result.success) {
     throw new Error(result.error);
   }
@@ -30,7 +30,7 @@ export async function createTask(
  * Update an existing task
  */
 export async function updateTask(id: string, updates: Partial<Task>): Promise<Task> {
-  const result = await tasksDataSource.update(id, updates);
+  const result = await tasksDataSource.update!(id, updates);
   if (!result.success) {
     throw new Error(result.error);
   }
