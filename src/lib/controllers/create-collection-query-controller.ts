@@ -60,7 +60,7 @@ export interface CreateCollectionQueryControllerOptions<T, TField extends string
 /**
  * createCollectionQueryController - Client state engine for collections
  * 
- * One controller → many UIs (Table, Cards, Lists)
+ * One controller > many UIs (Table, Cards, Lists)
  * Integrates with TanStack Table for advanced filtering/sorting
  * Orchestrates QuerySpec and server communication
  * 

@@ -31,7 +31,7 @@ import type { CreateLeadInput } from "~/server/db/repositories/lead.repository";
 export class LeadsDataSource implements DataSource<Lead, LeadField> {
   private cache = new ScanCache<Lead>({ label: "Leads" });
 
-  // ─── Read operations ──────────────────────────────────────────────────────
+  // --- Read operations ------------------------------------------------------
 
   async getById(id: string): Promise<ApiResult<Lead | null>> {
     try {
@@ -78,7 +78,7 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
     }
   }
 
-  // ─── Write operations (invalidate cache) ──────────────────────────────
+  // --- Write operations (invalidate cache) ------------------------------
 
   async create(data: CreateLeadInput): Promise<ApiResult<Lead>> {
     try {
@@ -119,7 +119,7 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
     }
   }
 
-  // ── Lookup helpers ──────────────────────────────────────────────────────
+  // -- Lookup helpers ------------------------------------------------------
 
   async getByUniqueField(field: string, value: string): Promise<ApiResult<Lead | null>> {
     if (field !== "phone") {
@@ -136,7 +136,7 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
     }
   }
 
-  // ─── Internals ────────────────────────────────────────────────────────────
+  // --- Internals ------------------------------------------------------------
 
   private async scanAll(): Promise<Lead[]> {
     const items = await scanByItemType<Record<string, unknown>>("Lead");

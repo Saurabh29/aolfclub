@@ -1,14 +1,14 @@
 import { z } from "zod";
 
 /**
- * Member — an enrolled participant of the organization.
+ * Member  -  an enrolled participant of the organization.
  *
  * Uniqueness is enforced by phone (E.164 format) via a MEMBER_MOBILE# sentinel.
- * Members do not log in — no email sentinel.
+ * Members do not log in  -  no email sentinel.
  *
  * DB keys:
- *   MEMBER#<id>               / META  — Member entity
- *   MEMBER_MOBILE#<phone>     / META  — Mobile uniqueness sentinel
+ *   MEMBER#<id>               / META   -  Member entity
+ *   MEMBER_MOBILE#<phone>     / META   -  Mobile uniqueness sentinel
  */
 export const MemberSchema = z.object({
   id: z.ulid(),

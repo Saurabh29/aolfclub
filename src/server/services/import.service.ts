@@ -6,9 +6,9 @@
  * Rules:
  *   - All records are stamped with the caller's activeLocationId.
  *   - Duplicates are skipped (not overwritten) and returned in the error list.
- *   - Leads   → unique by phone (LEAD_MOBILE# sentinel)
- *   - Members → unique by phone (MEMBER_MOBILE# sentinel)
- *   - Team    → unique by email (EMAIL# sentinel); creates full User + EMAIL# sentinel
+ *   - Leads   > unique by phone (LEAD_MOBILE# sentinel)
+ *   - Members > unique by phone (MEMBER_MOBILE# sentinel)
+ *   - Team    > unique by email (EMAIL# sentinel); creates full User + EMAIL# sentinel
  */
 
 import { normalizePhone } from "~/server/db/client";

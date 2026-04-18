@@ -31,7 +31,7 @@ import type { CreateMemberInput } from "~/server/db/repositories/member.reposito
 export class MembersDataSource implements DataSource<Member, MemberField> {
   private cache = new ScanCache<Member>({ label: "Members" });
 
-  // ─── Read operations ──────────────────────────────────────────────────────
+  // --- Read operations ------------------------------------------------------
 
   async getById(id: string): Promise<ApiResult<Member | null>> {
     try {
@@ -78,7 +78,7 @@ export class MembersDataSource implements DataSource<Member, MemberField> {
     }
   }
 
-  // ─── Write operations (invalidate cache) ──────────────────────────────
+  // --- Write operations (invalidate cache) ------------------------------
 
   async create(data: CreateMemberInput): Promise<ApiResult<Member>> {
     try {
@@ -119,7 +119,7 @@ export class MembersDataSource implements DataSource<Member, MemberField> {
     }
   }
 
-  // ── Lookup helpers ──────────────────────────────────────────────────────
+  // -- Lookup helpers ------------------------------------------------------
 
   async getByUniqueField(field: string, value: string): Promise<ApiResult<Member | null>> {
     if (field !== "phone") {
@@ -136,7 +136,7 @@ export class MembersDataSource implements DataSource<Member, MemberField> {
     }
   }
 
-  // ─── Internals ────────────────────────────────────────────────────────────
+  // --- Internals ------------------------------------------------------------
 
   private async scanAll(): Promise<Member[]> {
     const items = await scanByItemType<Record<string, unknown>>("Member");

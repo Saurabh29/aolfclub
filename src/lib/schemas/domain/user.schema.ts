@@ -1,13 +1,13 @@
 import { z } from "zod";
 
 /**
- * User — a volunteer or admin who logs into the system and makes calls.
+ * User  -  a volunteer or admin who logs into the system and makes calls.
  *
  * Uniqueness is enforced by email via an EMAIL# sentinel.
  *
  * DB keys:
- *   USER#<id>       / META  — User entity
- *   EMAIL#<email>  / META  — Email uniqueness sentinel (used for auth lookup)
+ *   USER#<id>       / META   -  User entity
+ *   EMAIL#<email>  / META   -  Email uniqueness sentinel (used for auth lookup)
  */
 export const UserSchema = z.object({
 	id: z.ulid(),

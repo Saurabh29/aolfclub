@@ -7,10 +7,10 @@
  *   PK = "LOCATION_ADMIN#<locationId>"  SK = "USER#<userId>"
  *   { locationId, userId, grantedAt }
  *
- * Queries supported (no GSI — all via PK):
- *   - Is user X an admin of location Y?  → GetItem by PK+SK
- *   - Which locations is user X admin of? → Scan (small dataset, acceptable)
- *   - Who are the admins of location Y?  → Query by PK
+ * Queries supported (no GSI  -  all via PK):
+ *   - Is user X an admin of location Y?  > GetItem by PK+SK
+ *   - Which locations is user X admin of? > Scan (small dataset, acceptable)
+ *   - Who are the admins of location Y?  > Query by PK
  */
 
 import {
@@ -53,7 +53,7 @@ export async function isLocationAdmin(
 
 /**
  * Get all location IDs that a user is admin of.
- * Uses a Scan filtered by userId — acceptable for a small admin population.
+ * Uses a Scan filtered by userId  -  acceptable for a small admin population.
  */
 export async function getAdminLocationIds(userId: string): Promise<string[]> {
   const locationIds: string[] = [];
@@ -108,7 +108,7 @@ export async function getLocationAdminUserIds(
 
 /**
  * Grant a user location-admin rights.
- * Idempotent — granting an existing admin does nothing.
+ * Idempotent  -  granting an existing admin does nothing.
  */
 export async function grantLocationAdmin(
   locationId: string,

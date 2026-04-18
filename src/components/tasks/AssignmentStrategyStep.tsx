@@ -1,4 +1,5 @@
 import { createSignal, createMemo, For, Show, type Component } from "solid-js";
+import { AlertTriangle } from "lucide-solid";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import type { AssignmentMode, LeadAssignment } from "~/lib/schemas/domain";
@@ -266,7 +267,7 @@ export const AssignmentStrategyStep: Component<AssignmentStrategyStepProps> = (p
       <Show when={props.selectedAgentCount === 0}>
         <Card class="p-4 bg-destructive/10 border-destructive/20">
           <p class="text-sm text-destructive">
-            ⚠️ Please select at least one agent in the previous step
+            Warning: <AlertTriangle class="w-3.5 h-3.5 inline ml-1 mr-0.5" /> Please select at least one agent in the previous step
           </p>
         </Card>
       </Show>
@@ -274,7 +275,7 @@ export const AssignmentStrategyStep: Component<AssignmentStrategyStepProps> = (p
       <Show when={props.matchedContactCount === 0}>
         <Card class="p-4 bg-destructive/10 border-destructive/20">
           <p class="text-sm text-destructive">
-            ⚠️ No contacts match your filters. Please adjust filters in step 1.
+            Warning: <AlertTriangle class="w-3.5 h-3.5 inline ml-1 mr-0.5" /> No contacts match your filters. Please adjust filters in step 1.
           </p>
         </Card>
       </Show>

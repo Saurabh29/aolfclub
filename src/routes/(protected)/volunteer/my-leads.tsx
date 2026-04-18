@@ -1,5 +1,6 @@
 import { createSignal, createMemo, createResource, Show, For } from "solid-js";
 import { useSearchParams } from "@solidjs/router";
+import { Home, ClipboardList, AlertCircle, Calendar, CheckCircle2, ArrowRight, PartyPopper } from "lucide-solid";
 import { LeadCard } from "~/components/volunteer/LeadCard";
 import { CallLogSheet, type CallLogData } from "~/components/volunteer/CallLogSheet";
 import { Card } from "~/components/ui/card";
@@ -173,7 +174,7 @@ export default function MyLeadsPage() {
     <main class="container mx-auto p-4 sm:p-8 max-w-4xl">
       {/* Header */}
       <div class="mb-6">
-        <h1 class="text-2xl sm:text-3xl font-bold mb-2">🏠 My Leads</h1>
+        <h1 class="text-2xl sm:text-3xl font-bold mb-2 flex items-center gap-2"><Home class="w-6 h-6" /> My Leads</h1>
         
         {/* Overall Progress */}
         <Show when={filteredLeads().length > 0}>
@@ -205,7 +206,7 @@ export default function MyLeadsPage() {
 
         {/* Campaign Filter */}
         <div class="mt-4">
-          <label class="text-sm font-medium mb-2 block">📋 Campaign:</label>
+          <label class="text-sm font-medium mb-2 block flex items-center gap-1"><ClipboardList class="w-3.5 h-3.5" /> Campaign:</label>
           <select
             value={selectedTaskId() || ""}
             onChange={(e) => handleTaskFilterChange(e.target.value || null)}
@@ -233,8 +234,8 @@ export default function MyLeadsPage() {
       <Show when={overdueLeads().length > 0}>
         <section class="mb-6">
           <div class="flex items-center gap-2 mb-3">
-            <h2 class="text-lg font-semibold text-red-600">
-              🔴 URGENT - Overdue Follow-ups
+            <h2 class="text-lg font-semibold text-red-600 flex items-center gap-1.5">
+               <AlertCircle class="w-4 h-4" /> URGENT - Overdue Follow-ups
             </h2>
             <Badge variant="error">{overdueLeads().length}</Badge>
           </div>
@@ -260,8 +261,8 @@ export default function MyLeadsPage() {
       <Show when={todayLeads().length > 0}>
         <section class="mb-6">
           <div class="flex items-center gap-2 mb-3">
-            <h2 class="text-lg font-semibold text-amber-600">
-              📅 TODAY - Follow-ups Due
+            <h2 class="text-lg font-semibold text-amber-600 flex items-center gap-1.5">
+               <Calendar class="w-4 h-4" /> TODAY - Follow-ups Due
             </h2>
             <Badge variant="default">{todayLeads().length}</Badge>
           </div>
@@ -287,7 +288,7 @@ export default function MyLeadsPage() {
       <Show when={activeLeads().length > 0}>
         <section class="mb-6">
           <div class="flex items-center gap-2 mb-3">
-            <h2 class="text-lg font-semibold">✅ MY ACTIVE LEADS</h2>
+            <h2 class="text-lg font-semibold flex items-center gap-1.5"><CheckCircle2 class="w-4 h-4" /> MY ACTIVE LEADS</h2>
             <Badge variant="secondary">{activeLeads().length}</Badge>
           </div>
           <div class="space-y-3">
@@ -311,7 +312,7 @@ export default function MyLeadsPage() {
       {/* Empty State */}
       <Show when={filteredLeads().length === 0 && !leadsData.loading}>
         <Card class="p-12 text-center">
-          <div class="text-6xl mb-4">🎉</div>
+          <div class="text-6xl mb-4 flex justify-center"><PartyPopper class="w-12 h-12 text-primary" /></div>
           <h3 class="text-xl font-semibold mb-2">All caught up!</h3>
           <p class="text-muted-foreground mb-4">
             You have no pending follow-ups.
@@ -319,7 +320,7 @@ export default function MyLeadsPage() {
           <p class="text-sm text-muted-foreground mb-4">
             Want to help more? Check the Lead Pool for available leads.
           </p>
-          <Button>Browse Lead Pool →</Button>
+          <Button class="flex items-center gap-1">Browse Lead Pool <ArrowRight class="w-3.5 h-3.5" /></Button>
         </Card>
       </Show>
 

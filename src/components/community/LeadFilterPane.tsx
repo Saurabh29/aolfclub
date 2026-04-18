@@ -9,7 +9,7 @@
  *   Table owns:      displayName search (text search), sorting
  *
  * Every change merges semantic filters with any existing table search filter
- * and calls controller.setFilters() — a single round-trip per change.
+ * and calls controller.setFilters()  -  a single round-trip per change.
  */
 import {
   createSignal,
@@ -19,6 +19,7 @@ import {
   batch,
   type Component,
 } from "solid-js";
+import { ChevronUp, ChevronDown } from "lucide-solid";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
@@ -26,7 +27,7 @@ import type { CollectionQueryState } from "~/lib/controllers";
 import type { FilterCondition } from "~/lib/schemas/query";
 import type { Lead, LeadField } from "~/lib/schemas/domain/lead.schema";
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// -- Constants -----------------------------------------------------------------
 
 const INTEREST_LEVELS = ["High", "Medium", "Low", "Not_Interested"] as const;
 type InterestLevel = (typeof INTEREST_LEVELS)[number];
@@ -41,7 +42,7 @@ export const PROGRAMS = [
   "Senior Wellness",
 ] as const;
 
-/** Fields this pane "owns" — table search must never touch these. */
+/** Fields this pane "owns"  -  table search must never touch these. */
 const OWNED_FIELDS: LeadField[] = [
   "lastInterestLevel",
   "interestedPrograms",
@@ -49,7 +50,7 @@ const OWNED_FIELDS: LeadField[] = [
   "nextFollowUpDate",
 ];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// -- Helpers -------------------------------------------------------------------
 
 function interestLabel(level: InterestLevel): string {
   return level === "Not_Interested" ? "Not Interested" : level;
@@ -62,7 +63,7 @@ function interestVariant(level: InterestLevel) {
   return "error" as const;
 }
 
-// ── Props ─────────────────────────────────────────────────────────────────────
+// -- Props ---------------------------------------------------------------------
 
 export interface LeadFilterPaneProps {
   controller: CollectionQueryState<Lead, LeadField>;
@@ -70,7 +71,7 @@ export interface LeadFilterPaneProps {
   compact?: boolean;
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// -- Component -----------------------------------------------------------------
 
 export const LeadFilterPane: Component<LeadFilterPaneProps> = (props) => {
   const [selectedLevels, setSelectedLevels] = createSignal<InterestLevel[]>([]);
@@ -81,7 +82,7 @@ export const LeadFilterPane: Component<LeadFilterPaneProps> = (props) => {
   const [searchText, setSearchText] = createSignal("");
   const [programsOpen, setProgramsOpen] = createSignal(true);
 
-  // ── Active filter count (for badge on collapse) ───────────────────────────
+  // -- Active filter count (for badge on collapse) ---------------------------
 
   const activeCount = () => {
     let n = selectedLevels().length + selectedPrograms().length;
@@ -92,7 +93,7 @@ export const LeadFilterPane: Component<LeadFilterPaneProps> = (props) => {
     return n;
   };
 
-  // ── Build and push filters whenever state changes ─────────────────────────
+  // -- Build and push filters whenever state changes -------------------------
 
   createEffect(() => {
     // Read all signals to establish reactive dependencies
@@ -105,22 +106,22 @@ export const LeadFilterPane: Component<LeadFilterPaneProps> = (props) => {
 
     const filters: FilterCondition<LeadField>[] = [];
 
-    // Interest levels — one "eq" per selected level (OR semantics handled by
+    // Interest levels  -  one "eq" per selected level (OR semantics handled by
     // server-side filter: any match passes). We use multiple `eq` here which
     // the in-memory executor treats as OR within the same field group.
-    // If only one level, a simple eq. Multiple → use "in" operator.
+    // If only one level, a simple eq. Multiple > use "in" operator.
     if (levels.length === 1) {
       filters.push({ field: "lastInterestLevel", op: "eq", value: levels[0] });
     } else if (levels.length > 1) {
       filters.push({ field: "lastInterestLevel", op: "in", value: levels });
     }
 
-    // Programs — each program is an AND (must be interested in ALL selected)
+    // Programs  -  each program is an AND (must be interested in ALL selected)
     for (const p of programs) {
       filters.push({ field: "interestedPrograms", op: "contains", value: p });
     }
 
-    // Never called → totalCallCount eq 0
+    // Never called > totalCallCount eq 0
     if (nc) {
       filters.push({ field: "totalCallCount", op: "eq", value: 0 });
     }
@@ -135,7 +136,7 @@ export const LeadFilterPane: Component<LeadFilterPaneProps> = (props) => {
       filters.push({ field: "nextFollowUpDate", op: "neq", value: null });
     }
 
-    // Name search — this pane also owns the text search for convenience
+    // Name search  -  this pane also owns the text search for convenience
     if (search) {
       filters.push({ field: "displayName", op: "contains", value: search });
     }
@@ -143,7 +144,7 @@ export const LeadFilterPane: Component<LeadFilterPaneProps> = (props) => {
     props.controller.setFilters(filters);
   });
 
-  // ── Actions ───────────────────────────────────────────────────────────────
+  // -- Actions ---------------------------------------------------------------
 
   const clearAll = () => {
     batch(() => {
@@ -168,7 +169,7 @@ export const LeadFilterPane: Component<LeadFilterPaneProps> = (props) => {
     );
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // -- Render ----------------------------------------------------------------
 
   return (
     <div class="flex flex-col h-full bg-background border-r border-border">
@@ -201,7 +202,7 @@ export const LeadFilterPane: Component<LeadFilterPaneProps> = (props) => {
           <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Search</p>
           <input
             type="text"
-            placeholder="Name or phone…"
+            placeholder="Name or phone..."
             value={searchText()}
             onInput={(e) => setSearchText(e.currentTarget.value)}
             class="w-full h-8 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
@@ -285,7 +286,7 @@ export const LeadFilterPane: Component<LeadFilterPaneProps> = (props) => {
                 <span class="ml-1 text-primary">({selectedPrograms().length})</span>
               </Show>
             </p>
-            <span class="text-muted-foreground text-xs">{programsOpen() ? "▲" : "▼"}</span>
+            <span class="text-muted-foreground text-xs">{programsOpen() ? <ChevronUp class="w-3 h-3" /> : <ChevronDown class="w-3 h-3" />}</span>
           </button>
           <Show when={programsOpen()}>
             <div class="space-y-1.5">

@@ -1,14 +1,14 @@
 import { z } from "zod";
 
 /**
- * Lead — a prospect being followed up for program enrollment.
+ * Lead  -  a prospect being followed up for program enrollment.
  *
  * Uniqueness is enforced by phone (E.164 format) via a LEAD_MOBILE# sentinel.
- * Leads do not log in — no email sentinel.
+ * Leads do not log in  -  no email sentinel.
  *
  * DB keys:
- *   LEAD#<id>                 / META  — Lead entity
- *   LEAD_MOBILE#<phone>       / META  — Mobile uniqueness sentinel
+ *   LEAD#<id>                 / META   -  Lead entity
+ *   LEAD_MOBILE#<phone>       / META   -  Mobile uniqueness sentinel
  */
 
 export const InterestLevelEnum = z.enum(["High", "Medium", "Low", "Not_Interested"]);

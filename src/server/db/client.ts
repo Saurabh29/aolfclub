@@ -4,9 +4,9 @@
  * Single source of truth for the DynamoDB DocumentClient and key helpers.
  *
  * Environment Variables:
- *   DYNAMODB_TABLE_NAME  — table name (e.g. "aolfclub-entities")
- *   AWS_REGION           — AWS region (e.g. "us-east-1")
- *   DYNAMODB_ENDPOINT    — set for DynamoDB Local (e.g. "http://localhost:8000")
+ *   DYNAMODB_TABLE_NAME   -  table name (e.g. "aolfclub-entities")
+ *   AWS_REGION            -  AWS region (e.g. "us-east-1")
+ *   DYNAMODB_ENDPOINT     -  set for DynamoDB Local (e.g. "http://localhost:8000")
  *
  * When DYNAMODB_ENDPOINT is set the client uses static local credentials.
  * Otherwise it falls back to the default AWS credential chain (IAM roles, env vars, etc.).
@@ -21,15 +21,15 @@
  *   Lead item:              PK = "LEAD#<id>",              SK = "META"
  *   Lead mobile lookup:     PK = "LEAD_MOBILE#<phone>",    SK = "META"
  *   Group item:             PK = "GROUP#<id>",             SK = "META"
- *   Location→Group:         PK = "LOCATION#<id>",          SK = "GROUP#<groupId>"
- *   User→Group:             PK = "USER#<userId>",          SK = "GROUP#<groupId>"
- *   Group→User:             PK = "GROUP#<groupId>",        SK = "USER#<userId>"
- *   User→Location:          PK = "USER#<userId>",          SK = "LOCATION#<locationId>"
- *   Location→User:          PK = "LOCATION#<id>",          SK = "USER#<userId>"
+ *   Location>Group:         PK = "LOCATION#<id>",          SK = "GROUP#<groupId>"
+ *   User>Group:             PK = "USER#<userId>",          SK = "GROUP#<groupId>"
+ *   Group>User:             PK = "GROUP#<groupId>",        SK = "USER#<userId>"
+ *   User>Location:          PK = "USER#<userId>",          SK = "LOCATION#<locationId>"
+ *   Location>User:          PK = "LOCATION#<id>",          SK = "USER#<userId>"
  *   Role item:              PK = "ROLE#<roleName>",        SK = "META"
  *   Page item:              PK = "PAGE#<pageName>",        SK = "META"
- *   Group→Role:             PK = "GROUP#<groupId>",        SK = "ROLE#<roleName>"
- *   Role→Page:              PK = "ROLE#<roleName>",        SK = "PAGE#<pageName>"
+ *   Group>Role:             PK = "GROUP#<groupId>",        SK = "ROLE#<roleName>"
+ *   Role>Page:              PK = "ROLE#<roleName>",        SK = "PAGE#<pageName>"
  *   Whitelist:               PK = "WHITELIST#<email>",       SK = "META"
  *   Location admin edge:      PK = "LOCATION_ADMIN#<locId>",  SK = "USER#<userId>"
  *   Task item:              PK = "TASK#<id>",              SK = "META"
@@ -69,7 +69,7 @@ export const docClient = DynamoDBDocumentClient.from(createDynamoDBClient(), {
 });
 
 /**
- * Key helpers — centralise PK/SK generation so all operations stay consistent.
+ * Key helpers  -  centralise PK/SK generation so all operations stay consistent.
  */
 export const Keys = {
   // Entity PK helpers
@@ -124,5 +124,5 @@ export function normalizePhone(raw: string): string {
   return `+${digits}`;
 }
 
-/** Current ISO-8601 timestamp — used for createdAt / updatedAt. */
+/** Current ISO-8601 timestamp  -  used for createdAt / updatedAt. */
 export const now = (): string => new Date().toISOString();

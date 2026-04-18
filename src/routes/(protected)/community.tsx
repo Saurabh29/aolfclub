@@ -1,22 +1,23 @@
-﻿/**
- * /community â€” unified people page (authenticated).
+/**
+ * /community  -  unified people page (authenticated).
  *
  * Layout:
- *   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
- *   â”‚  Filter pane â”‚  Tab bar + table/cards         â”‚
- *   â”‚  (left 240px)â”‚  + floating bulk-action toolbarâ”‚
- *   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+ *   +--------------+--------------------------------+
+ *   |  Filter pane |  Tab bar + table/cards         |
+ *   |  (left 240px)|  + floating bulk-action toolbar|
+ *   +--------------+--------------------------------+
  *
- * Three tabs: Leads Â· Members Â· Team
+ * Three tabs: Leads   Members   Team
  *
  * Filter pane ownership:
- *   Lead pane   â†’ lastInterestLevel, interestedPrograms, totalCallCount, nextFollowUpDate
- *   Member pane â†’ memberSince, interestedPrograms, programsDone
+ *   Lead pane   > lastInterestLevel, interestedPrograms, totalCallCount, nextFollowUpDate
+ *   Member pane > memberSince, interestedPrograms, programsDone
  *   (Both also own the displayName search so it round-trips through the server.)
- *   Table       â†’ sorting only (no column-level filtering to avoid field conflicts)
+ *   Table       > sorting only (no column-level filtering to avoid field conflicts)
  */
 import { createColumnHelper } from "@tanstack/solid-table";
 import { createSignal, Show, Switch, Match, For } from "solid-js";
+import { Download, X, Upload, RefreshCw, PanelLeftClose, PanelLeftOpen, Target, GraduationCap, Users } from "lucide-solid";
 import { queryLeadsQuery, queryMembersQuery, queryUsersQuery } from "~/server/api";
 import type { Lead, LeadField } from "~/lib/schemas/domain/lead.schema";
 import type { Member, MemberField } from "~/lib/schemas/domain/member.schema";
@@ -31,7 +32,7 @@ import type { ImportEntityType } from "~/components/community/ImportSheet";
 import { LeadFilterPane } from "~/components/community/LeadFilterPane";
 import { MemberFilterPane } from "~/components/community/MemberFilterPane";
 
-// â”€â”€ Cell renderers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Cell renderers ------------------------------------------------------------
 
 function renderDisplayName(name: string) {
   return <span class="font-medium">{name}</span>;
@@ -43,11 +44,11 @@ function renderDate(isoDate: string | undefined) {
   return isoDate ? (
     <span class="text-sm">{new Date(isoDate).toLocaleDateString()}</span>
   ) : (
-    <span class="text-muted-foreground">â€”</span>
+    <span class="text-muted-foreground"> - </span>
   );
 }
 
-// â”€â”€ Columns â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Columns -------------------------------------------------------------------
 
 const leadColHelper = createColumnHelper<Lead>();
 const leadColumns = [
@@ -63,7 +64,7 @@ const leadColumns = [
     header: "Interest",
     cell: (info) => {
       const level = info.getValue();
-      if (!level) return <span class="text-muted-foreground">â€”</span>;
+      if (!level) return <span class="text-muted-foreground"> - </span>;
       const variant =
         level === "High" ? "default" :
         level === "Medium" ? "secondary" :
@@ -126,7 +127,7 @@ const userColumns = [
 
 type ContactTab = "leads" | "members" | "team";
 
-// â”€â”€ Bulk action toolbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Bulk action toolbar -------------------------------------------------------
 
 interface BulkToolbarProps {
   count: number;
@@ -141,17 +142,17 @@ function BulkToolbar(props: BulkToolbarProps) {
         <span class="text-sm font-medium">{props.count} selected</span>
         <div class="w-px h-4 bg-border" />
         <Button size="sm" variant="outline" onClick={props.onExport}>
-          â¬‡ Export CSV
+          <Download class="w-3.5 h-3.5 mr-1" /> Export CSV
         </Button>
         <Button size="sm" variant="ghost" onClick={props.onClear} class="text-muted-foreground">
-          âœ• Clear
+          <X class="w-3.5 h-3.5 mr-1" /> Clear
         </Button>
       </div>
     </Show>
   );
 }
 
-// â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- Page ----------------------------------------------------------------------
 
 export default function CommunityPage() {
   const [activeTab, setActiveTab] = createSignal<ContactTab>("leads");
@@ -198,10 +199,10 @@ export default function CommunityPage() {
     alert(`Export ${selectedCount()} records (not yet implemented)`);
   };
 
-  const tabs: { id: ContactTab; label: string; icon: string }[] = [
-    { id: "leads", label: "Leads", icon: "ðŸŽ¯" },
-    { id: "members", label: "Members", icon: "ðŸŽ“" },
-    { id: "team", label: "Team", icon: "ðŸ™‹" },
+  const tabs: { id: ContactTab; label: string; Icon: typeof Target }[] = [
+    { id: "leads", label: "Leads", Icon: Target },
+    { id: "members", label: "Members", Icon: GraduationCap },
+    { id: "team", label: "Team", Icon: Users },
   ];
 
   return (
@@ -216,17 +217,19 @@ export default function CommunityPage() {
             onClick={() => setFilterPaneOpen((v) => !v)}
             class="text-muted-foreground"
           >
-            {filterPaneOpen() ? "â—€ Hide Filters" : "â–¶ Show Filters"}
+            {filterPaneOpen()
+              ? <><PanelLeftClose class="w-4 h-4 mr-1" /> Hide Filters</>
+              : <><PanelLeftOpen class="w-4 h-4 mr-1" /> Show Filters</>}
           </Button>
           <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
-            â¬† Import
+            <Upload class="w-3.5 h-3.5 mr-1" /> Import
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => activeController().refresh()}
           >
-            â†º Refresh
+            <RefreshCw class="w-3.5 h-3.5 mr-1" /> Refresh
           </Button>
         </div>
       </div>
@@ -234,7 +237,7 @@ export default function CommunityPage() {
       {/* Body: filter pane + content */}
       <div class="flex flex-1 overflow-hidden">
 
-        {/* â”€â”€ Filter pane â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* -- Filter pane --------------------------------------------------- */}
         <Show when={filterPaneOpen()}>
           <div class="w-56 shrink-0 hidden md:block overflow-hidden">
             <Switch>
@@ -245,12 +248,12 @@ export default function CommunityPage() {
                 <MemberFilterPane controller={membersController} />
               </Match>
               <Match when={activeTab() === "team"}>
-                {/* Team tab has no semantic filter pane â€” just shows a placeholder */}
+                {/* Team tab has no semantic filter pane  -  just shows a placeholder */}
                 <div class="flex flex-col h-full bg-background border-r border-border px-4 py-3">
                   <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Search</p>
                   <input
                     type="text"
-                    placeholder="Name or emailâ€¦"
+                    placeholder="Name or email..."
                     class="mt-2 w-full h-8 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                     onInput={(e) => {
                       const v = e.currentTarget.value.trim();
@@ -265,7 +268,7 @@ export default function CommunityPage() {
           </div>
         </Show>
 
-        {/* â”€â”€ Main content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* -- Main content --------------------------------------------------- */}
         <div class="flex flex-col flex-1 overflow-hidden">
 
           {/* Tab bar */}
@@ -281,7 +284,7 @@ export default function CommunityPage() {
                   }`}
                   onClick={() => setActiveTab(tab.id)}
                 >
-                  <span class="mr-1">{tab.icon}</span>
+                  <tab.Icon class="w-3.5 h-3.5 inline mr-1" />
                   {tab.label}
                 </button>
               )}
@@ -292,12 +295,12 @@ export default function CommunityPage() {
           <div class="flex items-center justify-between px-4 py-2 shrink-0 text-sm text-muted-foreground border-b border-border">
             <Show
               when={activeController().data()?.pageInfo.totalCount !== undefined}
-              fallback={<span>Loading…</span>}
+              fallback={<span>Loading...</span>}
             >
               <span>
                 {activeController().data()!.pageInfo.totalCount} result{activeController().data()!.pageInfo.totalCount !== 1 ? "s" : ""}
                 <Show when={selectedCount() > 0}>
-                  {" · "}<span class="text-foreground font-medium">{selectedCount()} selected</span>
+                  {"   "}<span class="text-foreground font-medium">{selectedCount()} selected</span>
                 </Show>
               </span>
             </Show>
@@ -354,7 +357,7 @@ export default function CommunityPage() {
                             Member since {new Date(member.memberSince!).getFullYear()}
                           </Show>
                           <Show when={member.programsDone.length > 0}>
-                            {" Â· "}{member.programsDone.length} programs
+                            {"   "}{member.programsDone.length} programs
                           </Show>
                         </div>
                       </CardContent>

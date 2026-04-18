@@ -76,7 +76,7 @@ export class UsersDataSource implements DataSource<User, UserField> {
     }
   }
 
-  // ─── Write operations (invalidate cache) ──────────────────────────────
+  // --- Write operations (invalidate cache) ------------------------------
 
   async create(data: CreateUserInput): Promise<ApiResult<User>> {
     try {
@@ -120,7 +120,7 @@ export class UsersDataSource implements DataSource<User, UserField> {
     }
   }
 
-  // ── Lookup helpers ──────────────────────────────────────────────────────
+  // -- Lookup helpers ------------------------------------------------------
 
   async getByUniqueField(field: string, value: string): Promise<ApiResult<User | null>> {
     if (field !== "email") {
@@ -137,7 +137,7 @@ export class UsersDataSource implements DataSource<User, UserField> {
     }
   }
 
-  // ─── Internals ────────────────────────────────────────────────────────────
+  // --- Internals ------------------------------------------------------------
 
   private async scanAll(): Promise<User[]> {
     const items = await scanByItemType<Record<string, unknown>>("User");

@@ -1,5 +1,5 @@
 /**
- * ImportSheet — CSV upload dialog for Leads, Members, or Team.
+ * ImportSheet  -  CSV upload dialog for Leads, Members, or Team.
  *
  * Parses the CSV client-side, sends rows to the appropriate server action,
  * then displays an import result report (imported count + skipped rows).
@@ -14,6 +14,7 @@ import { useAction } from "@solidjs/router";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
+import { X, Download } from "lucide-solid";
 import { importLeadsAction, importMembersAction, importTeamAction } from "~/server/api";
 import type { ImportResult } from "~/server/services/import.service";
 
@@ -45,7 +46,7 @@ const ENTITY_LABELS: Record<ImportEntityType, string> = {
   team: "Team",
 };
 
-/** Minimal CSV parser — handles quoted fields with embedded commas. */
+/** Minimal CSV parser  -  handles quoted fields with embedded commas. */
 function parseCsv(text: string): Record<string, string>[] {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
@@ -140,7 +141,7 @@ export const ImportSheet: Component<ImportSheetProps> = (props) => {
               class="text-muted-foreground hover:text-foreground"
               aria-label="Close"
             >
-              ✕
+              <X class="w-4 h-4" />
             </button>
           </div>
         </CardHeader>
@@ -152,7 +153,7 @@ export const ImportSheet: Component<ImportSheetProps> = (props) => {
               <span class="font-mono text-xs">{template().headers.join(", ")}</span>
             </p>
             <Button variant="outline" size="sm" onClick={downloadTemplate}>
-              ⬇ Download template CSV
+              <Download class="w-3.5 h-3.5 mr-1" /> Download template CSV
             </Button>
           </div>
 
@@ -188,7 +189,7 @@ export const ImportSheet: Component<ImportSheetProps> = (props) => {
                     <ul class="space-y-1">
                       {r().skipped.map((s) => (
                         <li class="text-xs text-muted-foreground">
-                          Row {s.row}: <span class="font-mono">{s.value}</span> — {s.reason}
+                          Row {s.row}: <span class="font-mono">{s.value}</span>  -  {s.reason}
                         </li>
                       ))}
                     </ul>
@@ -208,7 +209,7 @@ export const ImportSheet: Component<ImportSheetProps> = (props) => {
                 onClick={handleImport}
                 disabled={!file() || isImporting()}
               >
-                {isImporting() ? "Importing…" : `Import ${label()}`}
+                {isImporting() ? "Importing..." : `Import ${label()}`}
               </Button>
             </Show>
           </div>

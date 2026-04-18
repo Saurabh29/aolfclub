@@ -1,5 +1,5 @@
 /**
- * /members — members list page (authenticated).
+ * /members  -  members list page (authenticated).
  * Moved from routes/users.tsx.
  */
 import { createColumnHelper } from "@tanstack/solid-table";

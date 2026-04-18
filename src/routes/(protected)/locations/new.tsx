@@ -1,5 +1,6 @@
 import { createSignal } from "solid-js";
 import { useNavigate, useAction, type RouteDefinition } from "@solidjs/router";
+import { ArrowLeft, MapPin } from "lucide-solid";
 import { LocationForm } from "~/components/locations/LocationForm";
 import { createLocationAction } from "~/server/api";
 import type { CreateLocationRequest } from "~/lib/schemas/domain";
@@ -25,7 +26,7 @@ export default function NewLocationPage() {
         setServerError(result.error ?? "Failed to create location");
         return;
       }
-      // Setup complete — navigate to community page
+      // Setup complete  -  navigate to community page
       navigate("/");
     } finally {
       setIsSubmitting(false);
@@ -35,8 +36,8 @@ export default function NewLocationPage() {
   return (
     <main class="container mx-auto p-4 sm:p-8 max-w-2xl">
       <div class="mb-6">
-        <a href="/locations" class="text-sm text-muted-foreground hover:text-foreground">← Back to Locations</a>
-        <h1 class="text-2xl font-bold mt-2">📍 Add New Location</h1>
+        <a href="/locations" class="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"><ArrowLeft class="w-3.5 h-3.5" /> Back to Locations</a>
+        <h1 class="text-2xl font-bold mt-2 flex items-center gap-2"><MapPin class="w-5 h-5" /> Add New Location</h1>
         <p class="text-muted-foreground text-sm mt-1">Create a new NGO centre or chapter</p>
       </div>
 

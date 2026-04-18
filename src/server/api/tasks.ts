@@ -16,7 +16,7 @@ export const getTaskByIdQuery = query(async (id: string) => {
 }, "task-by-id");
 
 /**
- * Create new task — locationId resolved from DB, never trusted from client.
+ * Create new task  -  locationId resolved from DB, never trusted from client.
  */
 export const createTaskMutation = action(
   async (request: Omit<CreateTaskRequest, "locationId">): Promise<Task> => {

@@ -10,10 +10,10 @@ import type { Member, MemberField } from "~/lib/schemas/domain";
 /**
  * Export explicit data source instances.
  *
- * usersDataSource   — volunteer/agent Users (log in via email)
- * membersDataSource — enrolled Members (mobile-unique, no auth)
- * leadsDataSource   — prospect Leads (mobile-unique, no auth)
- * tasksDataSource   — call campaign Tasks (DynamoDB-backed)
+ * usersDataSource    -  volunteer/agent Users (log in via email)
+ * membersDataSource  -  enrolled Members (mobile-unique, no auth)
+ * leadsDataSource    -  prospect Leads (mobile-unique, no auth)
+ * tasksDataSource    -  call campaign Tasks (DynamoDB-backed)
  * 
  * All configured to use the DynamoDB-backed data sources for development.
  */

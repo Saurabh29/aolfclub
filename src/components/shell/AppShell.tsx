@@ -1,13 +1,14 @@
 /**
- * AppShell — authenticated layout wrapper.
+ * AppShell  -  authenticated layout wrapper.
  *
  * Mobile:  top bar + page content + bottom nav
  * Desktop: left sidebar + page content  (md breakpoint)
  *
- * Navigation items are role-aware (stubbed for now — wire real roles later).
+ * Navigation items are role-aware (stubbed for now  -  wire real roles later).
  */
 import { createSignal, Show, type Component, type JSX } from "solid-js";
 import { useLocation, useNavigate, A } from "@solidjs/router";
+import { Home, ClipboardList, Users, MapPin, Leaf } from "lucide-solid";
 import { AvatarMenu, type StubSession } from "./AvatarMenu";
 import type { Location } from "~/lib/schemas/domain";
 
@@ -23,15 +24,15 @@ export interface AppShellProps {
 interface NavItem {
   href: string;
   label: string;
-  icon: string;
+  Icon: Component;
 }
 
 function buildNav(): NavItem[] {
   return [
-    { href: "/leads", label: "My Leads", icon: "🏠" },
-    { href: "/tasks", label: "Tasks", icon: "📋" },
-    { href: "/community", label: "Community", icon: "👥" },
-    { href: "/locations", label: "Locations", icon: "📍" },
+    { href: "/leads", label: "My Leads", Icon: Home },
+    { href: "/tasks", label: "Tasks", Icon: ClipboardList },
+    { href: "/community", label: "Community", Icon: Users },
+    { href: "/locations", label: "Locations", Icon: MapPin },
   ];
 }
 
@@ -59,11 +60,11 @@ export const AppShell: Component<AppShellProps> = (props) => {
 
   return (
     <div class="flex h-svh overflow-hidden bg-background">
-      {/* ── Desktop sidebar (md+) ── */}
+      {/* -- Desktop sidebar (md+) -- */}
       <aside class="hidden md:flex flex-col w-56 border-r border-border bg-background flex-shrink-0">
         {/* Logo */}
         <div class="flex items-center gap-2 px-5 py-4 border-b border-border">
-          <span class="text-xl">🌿</span>
+          <Leaf class="w-5 h-5 text-green-600" />
           <span class="font-semibold text-sm">AOLF Club</span>
         </div>
 
@@ -86,7 +87,7 @@ export const AppShell: Component<AppShellProps> = (props) => {
                     : "text-foreground hover:bg-muted"
                 }`}
               >
-                <span class="text-base">{item.icon}</span>
+                <item.Icon class="w-4 h-4 shrink-0" />
                 <span>{item.label}</span>
               </A>
             ))}
@@ -119,12 +120,12 @@ export const AppShell: Component<AppShellProps> = (props) => {
         </div>
       </aside>
 
-      {/* ── Main content area ── */}
+      {/* -- Main content area -- */}
       <div class="flex flex-col flex-1 min-w-0">
-        {/* Top bar (mobile only — hidden on md+) */}
+        {/* Top bar (mobile only  -  hidden on md+) */}
         <header class="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-background flex-shrink-0">
           <div class="flex items-center gap-2">
-            <span class="text-lg">🌿</span>
+            <Leaf class="w-4 h-4 text-green-600" />
             <span class="font-semibold text-sm">
               <Show when={props.activeLocation} fallback="AOLF Club">
                 {props.activeLocation!.name}
@@ -141,12 +142,12 @@ export const AppShell: Component<AppShellProps> = (props) => {
           />
         </header>
 
-        {/* Page content — scrollable */}
+        {/* Page content  -  scrollable */}
         <main class="flex-1 overflow-y-auto pb-20 md:pb-0">
           {props.children}
         </main>
 
-        {/* ── Mobile bottom nav ── */}
+        {/* -- Mobile bottom nav -- */}
         <Show when={navItems().length > 0}>
           <nav class="md:hidden fixed bottom-0 left-0 right-0 flex border-t border-border bg-background z-40">
             {navItems().map((item) => (
@@ -158,7 +159,7 @@ export const AppShell: Component<AppShellProps> = (props) => {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <span class="text-xl leading-none">{item.icon}</span>
+                <item.Icon class="w-5 h-5" />
                 <span>{item.label}</span>
               </A>
             ))}

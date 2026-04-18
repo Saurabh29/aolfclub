@@ -1,5 +1,5 @@
 /**
- * Protected layout — wraps all authenticated routes.
+ * Protected layout  -  wraps all authenticated routes.
  *
  * Any route file placed inside (protected)/ is covered by this layout.
  * SolidStart strips the "(protected)" prefix from URLs, so children get
@@ -22,14 +22,14 @@ import type { QuerySpec } from "~/lib/schemas/query";
 import type { StubSession } from "~/components/shell/AvatarMenu";
 
 const ProtectedLayout: Component<RouteSectionProps> = (props) => {
-  // Enforce authentication — throws redirect("/") if not signed in.
+  // Enforce authentication  -  throws redirect("/") if not signed in.
   // deferStream: true blocks SSR streaming until auth is confirmed.
   const user = createAsync(() => getUser(), { deferStream: true });
 
   // Full session for display (name, email, image)
   const session = createAsync(() => getAuthSession());
 
-  // All active locations — for the location switcher in AvatarMenu
+  // All active locations  -  for the location switcher in AvatarMenu
   const locationsData = createAsync(async () => {
     const spec: QuerySpec<LocationField> = {
       filters: [{ field: "isActive", op: "eq", value: true }],
@@ -42,7 +42,7 @@ const ProtectedLayout: Component<RouteSectionProps> = (props) => {
   // Active location ID from DB (keyed to session userId server-side)
   const storedActiveId = createAsync(() => getActiveLocationIdQuery());
 
-  // Local signal — updated optimistically on switch; initialised from DB
+  // Local signal  -  updated optimistically on switch; initialised from DB
   const [activeLocId, setActiveLocId] = createSignal<string | null>(null);
 
   createEffect(() => {
@@ -86,7 +86,7 @@ const ProtectedLayout: Component<RouteSectionProps> = (props) => {
       when={user()}
       fallback={
         <div class="flex items-center justify-center h-svh text-muted-foreground text-sm">
-          Loading…
+          Loading...
         </div>
       }
     >

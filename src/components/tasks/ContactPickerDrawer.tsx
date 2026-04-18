@@ -3,20 +3,20 @@
  *
  * Full-screen drawer used inside the Task Creation wizard (Step 1).
  * Reuses LeadFilterPane / MemberFilterPane and the same collection table
- * from the Community page — without duplicating any logic.
+ * from the Community page  -  without duplicating any logic.
  *
  * Layout:
- *   ┌──────────────┬────────────────────────────────────┐
- *   │ Filter pane  │  Selectable table (sortable)       │
- *   │  (left 240px)│                                    │
- *   │              │  ┌─ floating confirm bar ────────┐ │
- *   │              │  │  N selected  [Done →]  [Clear]│ │
- *   │              │  └───────────────────────────────┘ │
- *   └──────────────┴────────────────────────────────────┘
+ *   +--------------+------------------------------------+
+ *   | Filter pane  |  Selectable table (sortable)       |
+ *   |  (left 240px)|                                    |
+ *   |              |  +- floating confirm bar --------+ |
+ *   |              |  |  N selected  [Done >]  [Clear]| |
+ *   |              |  +-------------------------------+ |
+ *   +--------------+------------------------------------+
  *
  * The drawer is opened by the wizard; on "Done" it returns:
- *   - selectedIds: string[]   — the final checked row IDs
- *   - filterSpec: string      — JSON.stringify(QuerySpec) for audit / re-display
+ *   - selectedIds: string[]    -  the final checked row IDs
+ *   - filterSpec: string       -  JSON.stringify(QuerySpec) for audit / re-display
  */
 import {
   createMemo,
@@ -31,6 +31,7 @@ import {
   type Component,
 } from "solid-js";
 import { createColumnHelper } from "@tanstack/solid-table";
+import { X, ChevronDown, ArrowRight } from "lucide-solid";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
@@ -43,7 +44,7 @@ import type { Lead, LeadField } from "~/lib/schemas/domain/lead.schema";
 import type { Member, MemberField } from "~/lib/schemas/domain/member.schema";
 import type { User } from "~/lib/schemas/domain/user.schema";
 
-// ── Column definitions ────────────────────────────────────────────────────────
+// -- Column definitions --------------------------------------------------------
 
 const leadColHelper = createColumnHelper<Lead>();
 const leadColumns = [
@@ -59,7 +60,7 @@ const leadColumns = [
     header: "Interest",
     cell: (info) => {
       const level = info.getValue();
-      if (!level) return <span class="text-muted-foreground">—</span>;
+      if (!level) return <span class="text-muted-foreground"> - </span>;
       const variant =
         level === "High" ? "default" :
         level === "Medium" ? "secondary" :
@@ -78,7 +79,7 @@ const leadColumns = [
       return v ? (
         <span class="text-sm">{new Date(v).toLocaleDateString()}</span>
       ) : (
-        <span class="text-muted-foreground">—</span>
+        <span class="text-muted-foreground"> - </span>
       );
     },
   }),
@@ -98,7 +99,7 @@ const memberColumns = [
     header: "Member Since",
     cell: (info) => {
       const v = info.getValue();
-      return v ? <span class="text-sm">{new Date(v).toLocaleDateString()}</span> : <span class="text-muted-foreground">—</span>;
+      return v ? <span class="text-sm">{new Date(v).toLocaleDateString()}</span> : <span class="text-muted-foreground"> - </span>;
     },
   }),
   memberColHelper.accessor("programsDone", {
@@ -107,23 +108,23 @@ const memberColumns = [
   }),
 ];
 
-// ── Props ─────────────────────────────────────────────────────────────────────
+// -- Props ---------------------------------------------------------------------
 
 export interface ContactPickerResult {
   /** IDs of all contacts included in the task (pre-assigned + pool) */
   selectedIds: string[];
-  /** JSON-stringified QuerySpec used when the user clicked Done — for audit */
+  /** JSON-stringified QuerySpec used when the user clicked Done  -  for audit */
   filterSpec: string;
   /** Contacts directly assigned to a specific agent inside the drawer */
   inlineAssignments: Array<{ agentId: string; contactIds: string[] }>;
 }
 
 export interface ContactPickerDrawerProps {
-  /** "LEAD" or "MEMBER" — determines which data source and filter pane to use */
+  /** "LEAD" or "MEMBER"  -  determines which data source and filter pane to use */
   targetType: "LEAD" | "MEMBER";
   /** Pre-selected IDs to restore when drawer re-opens */
   initialSelectedIds?: string[];
-  /** Agent IDs from the team selection step — enables inline assignment toolbar */
+  /** Agent IDs from the team selection step  -  enables inline assignment toolbar */
   selectedAgentIds?: string[];
   /** Called when user confirms selection */
   onDone: (result: ContactPickerResult) => void;
@@ -131,10 +132,10 @@ export interface ContactPickerDrawerProps {
   onCancel: () => void;
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// -- Component -----------------------------------------------------------------
 
 export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) => {
-  // ── Controllers — created once per drawer instance ────────────────────────
+  // -- Controllers  -  created once per drawer instance ------------------------
   const leadsController = createCollectionQueryController<Lead, LeadField>({
     queryFn: (spec) => queryLeadsQuery(spec),
     initialQuery: {
@@ -170,7 +171,7 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
   onMount(() => document.addEventListener("keydown", handleKeyDown));
   onCleanup(() => document.removeEventListener("keydown", handleKeyDown));
 
-  // ── Agent resolution + inline assignment ─────────────────────────────────
+  // -- Agent resolution + inline assignment ---------------------------------
 
   // Fetch display names for the agents selected in the team step
   const [agentsData] = createResource(async () => {
@@ -186,7 +187,7 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
 
   const agents = () => agentsData() ?? [];
 
-  // contactId → agentId map; built incrementally as user assigns batches
+  // contactId > agentId map; built incrementally as user assigns batches
   const [inlineAssignmentMap, setInlineAssignmentMap] = createSignal(
     new Map<string, string>()
   );
@@ -207,7 +208,7 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
     setShowAgentDropdown(false);
   };
 
-  // ── Derived ───────────────────────────────────────────────────────────────
+  // -- Derived ---------------------------------------------------------------
 
   const selectedCount = () => controller().selectedIds().size;
   const totalCount = () => controller().data()?.pageInfo.totalCount ?? 0;
@@ -215,7 +216,7 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
   /** Contacts that have been assigned to an agent (across all batches) */
   const assignedCount = () => inlineAssignmentMap().size;
 
-  /** Contacts checked in the table but NOT yet assigned — will go to pool */
+  /** Contacts checked in the table but NOT yet assigned  -  will go to pool */
   const poolCount = () => {
     let n = 0;
     controller().selectedIds().forEach((id) => {
@@ -224,7 +225,7 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
     return n;
   };
 
-  /** Total contacts in the task = assigned IDs ∪ currently-checked rows */
+  /** Total contacts in the task = assigned IDs union currently-checked rows */
   const totalForTask = () => {
     const all = new Set([
       ...Array.from(inlineAssignmentMap().keys()),
@@ -255,7 +256,7 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
     });
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // -- Render ----------------------------------------------------------------
 
   return (
     /* Backdrop */
@@ -276,10 +277,10 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
           <button
             type="button"
             onClick={props.onCancel}
-            class="text-muted-foreground hover:text-foreground text-xl leading-none"
+            class="text-muted-foreground hover:text-foreground"
             aria-label="Close"
           >
-            ✕
+            <X class="w-5 h-5" />
           </button>
         </div>
 
@@ -303,10 +304,10 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
             {/* Result count + clear */}
             <div class="flex items-center justify-between px-4 py-2 border-b border-border shrink-0 text-sm text-muted-foreground">
               <span>
-                <Show when={!controller().isLoading()} fallback="Loading…">
+                <Show when={!controller().isLoading()} fallback="Loading...">
                   {totalCount()} result{totalCount() !== 1 ? "s" : ""}
                   <Show when={selectedCount() > 0}>
-                    {" · "}
+                    {"   "}
                     <span class="text-foreground font-medium">{selectedCount()} selected</span>
                   </Show>
                 </Show>
@@ -322,7 +323,7 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
               </Show>
             </div>
 
-            {/* Bulk assign toolbar — appears when rows are checked AND agents exist */}
+            {/* Bulk assign toolbar  -  appears when rows are checked AND agents exist */}
             <Show when={selectedCount() > 0 && agents().length > 0}>
               <div class="flex items-center gap-3 px-4 py-2 bg-primary/5 border-b border-primary/20 shrink-0 text-sm">
                 <span class="font-medium text-foreground">{selectedCount()} selected</span>
@@ -332,7 +333,7 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
                     onClick={() => setShowAgentDropdown((v) => !v)}
                     class="flex items-center gap-1 rounded border border-primary/30 bg-background px-2 py-1 text-xs font-medium hover:bg-muted transition-colors"
                   >
-                    Assign to ▾
+                    Assign to <ChevronDown class="w-3 h-3" />
                   </button>
                   <Show when={showAgentDropdown()}>
                     {/* Click-outside overlay */}
@@ -427,10 +428,10 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
               <span class="font-semibold text-foreground">{totalForTask()}</span>
               {" "}contact{totalForTask() !== 1 ? "s" : ""}
               <Show when={assignedCount() > 0}>
-                {" · "}<span class="text-xs font-medium text-primary">{assignedCount()} pre-assigned</span>
+                {"   "}<span class="text-xs font-medium text-primary">{assignedCount()} pre-assigned</span>
               </Show>
               <Show when={poolCount() > 0}>
-                {" · "}<span class="text-xs">{poolCount()} in pool</span>
+                {"   "}<span class="text-xs">{poolCount()} in pool</span>
               </Show>
             </Show>
           </span>
@@ -439,7 +440,7 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
               Cancel
             </Button>
             <Button onClick={handleDone} disabled={totalForTask() === 0}>
-              Confirm {totalForTask() > 0 ? `(${totalForTask()})` : ""} →
+              Confirm {totalForTask() > 0 ? `(${totalForTask()})` : ""} <ArrowRight class="w-3.5 h-3.5 ml-1" />
             </Button>
           </div>
         </div>

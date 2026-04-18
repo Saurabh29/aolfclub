@@ -1,9 +1,9 @@
 /**
- * Auth Service — user lookup and creation on OAuth sign-in.
+ * Auth Service  -  user lookup and creation on OAuth sign-in.
  *
  * Flow:
- *   1. Check WHITELIST#<email> — deny if absent.
- *   2. If User already exists (email lookup via DataSource) → return existing user.
+ *   1. Check WHITELIST#<email>  -  deny if absent.
+ *   2. If User already exists (email lookup via DataSource) > return existing user.
  *   3. Otherwise create User via DataSource.
  *   4. Surface canBootstrap from the whitelist entry in the returned result.
  */
@@ -27,7 +27,7 @@ export async function findUserByEmail(email: string): Promise<User | null> {
 
 /**
  * Gate OAuth sign-in against the whitelist, then create or return the User.
- * Throws if the email is not whitelisted (caller maps this to signIn → false).
+ * Throws if the email is not whitelisted (caller maps this to signIn > false).
  */
 export async function createOrGetOAuthUser(
   email: string,

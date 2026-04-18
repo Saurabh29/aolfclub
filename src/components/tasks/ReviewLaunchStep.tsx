@@ -1,4 +1,5 @@
 import { createMemo, For, Show, type Component } from "solid-js";
+import { AlertTriangle, XCircle } from "lucide-solid";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -88,7 +89,7 @@ export const ReviewLaunchStep: Component<ReviewLaunchStepProps> = (props) => {
           "bg-yellow-500/10 border-yellow-500/20": hasRequiredFields(),
         }}>
           <div class="font-medium text-sm">
-            {hasRequiredFields() ? "⚠️ Recommendations" : "❌ Missing Required Fields"}
+            {hasRequiredFields() ? <><AlertTriangle class="w-3.5 h-3.5 inline mr-1" /> Recommendations</> : <><XCircle class="w-3.5 h-3.5 inline mr-1" /> Missing Required Fields</>}
           </div>
           <ul class="text-sm space-y-1 ml-4">
             <For each={warnings()}>
@@ -116,7 +117,7 @@ export const ReviewLaunchStep: Component<ReviewLaunchStepProps> = (props) => {
           <dl class="space-y-2 text-sm">
             <div class="flex justify-between">
               <dt class="text-muted-foreground">Name:</dt>
-              <dd class="font-medium">{props.taskData.name || "—"}</dd>
+              <dd class="font-medium">{props.taskData.name || " - "}</dd>
             </div>
             <div class="flex justify-between">
               <dt class="text-muted-foreground">Deadline:</dt>
@@ -124,7 +125,7 @@ export const ReviewLaunchStep: Component<ReviewLaunchStepProps> = (props) => {
             </div>
             <div class="flex justify-between">
               <dt class="text-muted-foreground">Target Calls/Agent:</dt>
-              <dd class="font-medium">{props.taskData.targetCallsPerAgent || "—"}</dd>
+              <dd class="font-medium">{props.taskData.targetCallsPerAgent || " - "}</dd>
             </div>
             <Show when={props.taskData.objective}>
               <div class="pt-2 border-t">
@@ -217,7 +218,7 @@ export const ReviewLaunchStep: Component<ReviewLaunchStepProps> = (props) => {
                 <dd class="font-medium">
                   {props.selectedAgentCount > 0
                     ? `~${Math.floor(props.matchedContactCount / props.selectedAgentCount)} contacts/agent`
-                    : "—"}
+                    : " - "}
                 </dd>
               </div>
             </Show>

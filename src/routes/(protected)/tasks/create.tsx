@@ -1,5 +1,6 @@
-﻿import { createSignal, Show } from "solid-js";
+import { createSignal, Show } from "solid-js";
 import { useNavigate, useAction } from "@solidjs/router";
+import { Pencil, ArrowRight } from "lucide-solid";
 import { Stepper, type Step } from "~/components/ui/stepper";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
@@ -11,7 +12,7 @@ import { ContactPickerDrawer, type ContactPickerResult } from "~/components/task
 import type { CreateTaskRequest, LeadAssignment } from "~/lib/schemas/domain";
 import { createTaskMutation } from "~/server/api";
 
-// The client never provides locationId â€” resolved server-side from the active location.
+// The client never provides locationId -- resolved server-side from the active location.
 type TaskFormData = Omit<CreateTaskRequest, "locationId">;
 
 const STEPS: Step[] = [
@@ -115,7 +116,7 @@ export default function CreateTaskPage() {
       <Card>
         <CardContent class="pt-6">
 
-          {/* â”€â”€ Step 0: Task Definition â”€â”€ */}
+          {/* -- Step 0: Task Definition -- */}
           <Show when={currentStep() === 0}>
             <div class="space-y-5">
               <div>
@@ -129,7 +130,7 @@ export default function CreateTaskPage() {
                   type="text"
                   value={taskData().name || ""}
                   onInput={(e) => updateTaskData({ name: e.currentTarget.value })}
-                  placeholder="e.g., April Follow-ups â€” Delhi Region"
+                  placeholder="e.g., April Follow-ups  -  Delhi Region"
                   class="w-full mt-1 p-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
@@ -192,7 +193,7 @@ export default function CreateTaskPage() {
                           : "border-border hover:bg-muted"
                       }`}
                     >
-                      {type === "LEAD" ? "ðŸŽ¯ Leads" : "ðŸŽ“ Members"}
+                      {type === "LEAD" ? " Leads" : " Members"}
                     </button>
                   ))}
                 </div>
@@ -200,7 +201,7 @@ export default function CreateTaskPage() {
             </div>
           </Show>
 
-                    {/* ── Step 1: Select Team ── */}
+                    {/* Step 1: Select Team */}
           <Show when={currentStep() === 1}>
             <SelectTeamStep
               selectedAgentIds={taskData().selectedAgentIds || []}
@@ -208,7 +209,7 @@ export default function CreateTaskPage() {
             />
           </Show>
 
-          {/* ── Step 2: Select Contacts ── */}
+          {/* Step 2: Select Contacts */}
           <Show when={currentStep() === 2}>
             <div class="space-y-5">
               <div>
@@ -234,14 +235,14 @@ export default function CreateTaskPage() {
                       <span class="text-sm font-medium">{targetLabel()} selected</span>
                       <Show when={(taskData().assignments?.length ?? 0) > 0}>
                         <span class="text-xs text-primary">
-                          {" · "}{taskData().assignments!.reduce((s, a) => s + a.contactIds.length, 0)} pre-assigned
+                          {"   "}{taskData().assignments!.reduce((s, a) => s + a.contactIds.length, 0)} pre-assigned
                         </span>
                       </Show>
                     </div>
                   </Show>
                 </div>
                 <Button onClick={() => setPickerOpen(true)}>
-                  {contactCount() > 0 ? "✏ Edit Selection" : `Browse ${targetLabel()} →`}
+                  {contactCount() > 0 ? <><Pencil class="w-3.5 h-3.5 mr-1" /> Edit Selection</> : <>{`Browse ${targetLabel()}`} <ArrowRight class="w-3.5 h-3.5 ml-1" /></>}
                 </Button>
               </div>
               <Show when={contactCount() === 0}>
@@ -252,7 +253,7 @@ export default function CreateTaskPage() {
               </Show>
             </div>
           </Show>
-{/* â”€â”€ Step 3: Assignment Strategy â”€â”€ */}
+{/* -- Step 3: Assignment Strategy -- */}
           <Show when={currentStep() === 3}>
             <AssignmentStrategyStep
               assignmentMode={taskData().assignmentMode || "PreAssigned"}
@@ -269,7 +270,7 @@ export default function CreateTaskPage() {
             />
           </Show>
 
-          {/* â”€â”€ Step 4: Review & Launch â”€â”€ */}
+          {/* -- Step 4: Review & Launch -- */}
           <Show when={currentStep() === 4}>
             <ReviewLaunchStep
               taskData={taskData()}
@@ -303,14 +304,14 @@ export default function CreateTaskPage() {
               }
             >
               <Button onClick={handleSubmit} disabled={isSubmitting()}>
-                {isSubmitting() ? "Creatingâ€¦" : "Create Task"}
+                {isSubmitting() ? "Creating..." : "Create Task"}
               </Button>
             </Show>
           </div>
         </CardFooter>
       </Card>
 
-      {/* Contact picker drawer â€” rendered at root level so it overlays correctly */}
+      {/* Contact picker drawer  -  rendered at root level so it overlays correctly */}
       <Show when={pickerOpen()}>
         <ContactPickerDrawer
           targetType={taskData().targetUserType ?? "LEAD"}

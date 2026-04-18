@@ -10,8 +10,8 @@ import { z } from "zod";
  *   Post-fetch operators (contains, startsWith, endsWith, neq) applied after retrieval
  * - DataSources MAY reject unsupported operators in strict mode
  * 
- * ❌ Do NOT remove operators from this list
- * ✅ Document execution capabilities per DataSource implementation
+ *  Do NOT remove operators from this list
+ *  Document execution capabilities per DataSource implementation
  * 
  * Keep minimal and universal (works for in-memory AND databases)
  * Rule: Only add operators that ALL data sources can support
@@ -71,7 +71,7 @@ export const SortSpecSchema = z.object({
  * 
  * CANONICAL SHAPE:
  * - pageSize: Required number of items per page
- * - pageIndex: Zero-based page number (offset = pageIndex × pageSize)
+ * - pageIndex: Zero-based page number (offset = pageIndex x pageSize)
  * - cursor: Opaque cursor string for cursor-based pagination
  * 
  * Rule: Use pageSize + pageIndex (not limit / offset)

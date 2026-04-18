@@ -1,5 +1,5 @@
 /**
- * DynamoDB Helpers — Shared utilities for scan operations and data transformation.
+ * DynamoDB Helpers  -  Shared utilities for scan operations and data transformation.
  *
  * Extracted from duplicated code across leads/members/users data sources.
  */

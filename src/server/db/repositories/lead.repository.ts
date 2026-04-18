@@ -3,11 +3,11 @@
  *
  * Data access layer for Lead entities.
  * Uniqueness enforced by phone (E.164) via a LEAD_MOBILE# sentinel.
- * Leads do not log in — no email sentinel.
+ * Leads do not log in  -  no email sentinel.
  *
  * Item shapes:
- *   LEAD#<id>                / META  — Lead entity
- *   LEAD_MOBILE#<phone>      / META  — Mobile uniqueness sentinel
+ *   LEAD#<id>                / META   -  Lead entity
+ *   LEAD_MOBILE#<phone>      / META   -  Mobile uniqueness sentinel
  */
 
 import {
@@ -51,8 +51,8 @@ function toLead(item: Record<string, unknown>): Lead {
  * Create a new lead.
  *
  * Atomically writes:
- *   - LEAD#<id>/META             — the lead entity
- *   - LEAD_MOBILE#<phone>/META   — uniqueness sentinel
+ *   - LEAD#<id>/META              -  the lead entity
+ *   - LEAD_MOBILE#<phone>/META    -  uniqueness sentinel
  *
  * Throws if the phone number is already registered as a lead.
  */
@@ -131,7 +131,7 @@ export async function getLeadById(id: string): Promise<Lead | null> {
 }
 
 /**
- * Get lead by phone (two-step: sentinel → lead item).
+ * Get lead by phone (two-step: sentinel > lead item).
  */
 export async function getLeadByPhone(rawPhone: string): Promise<Lead | null> {
   const phone = normalizePhone(rawPhone);

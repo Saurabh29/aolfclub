@@ -1,13 +1,13 @@
 /**
  * User-Group Repository
  *
- * Manages UserGroup entities and user↔group memberships.
+ * Manages UserGroup entities and user<->group memberships.
  *
  * Item shapes:
- *   GROUP#<id>            / META              — Group entity
- *   LOCATION#<locationId> / GROUP#<groupId>   — Location→Group edge (list groups in location)
- *   USER#<userId>         / GROUP#<groupId>   — User→Group edge
- *   GROUP#<groupId>       / USER#<userId>     — Group→User edge (list users in group)
+ *   GROUP#<id>            / META               -  Group entity
+ *   LOCATION#<locationId> / GROUP#<groupId>    -  Location>Group edge (list groups in location)
+ *   USER#<userId>         / GROUP#<groupId>    -  User>Group edge
+ *   GROUP#<groupId>       / USER#<userId>      -  Group>User edge (list users in group)
  */
 
 import {
@@ -46,7 +46,7 @@ export interface CreateUserGroupInput {
 // ---------------------------------------------------------------------------
 
 /**
- * Create a new group and its Location→Group edge atomically.
+ * Create a new group and its Location>Group edge atomically.
  */
 export async function createUserGroup(input: CreateUserGroupInput): Promise<UserGroup> {
   const groupId = ulid();
@@ -125,7 +125,7 @@ export async function getUserGroupById(groupId: string): Promise<UserGroup | nul
 }
 
 /**
- * List all groups for a location using LOCATION→GROUP edges.
+ * List all groups for a location using LOCATION>GROUP edges.
  * Optionally filter by groupType.
  */
 export async function getGroupsForLocation(
@@ -158,7 +158,7 @@ export async function getGroupsForLocation(
 
 /**
  * Add a user to a group (bidirectional edges).
- * Idempotent — uses attribute_not_exists guard.
+ * Idempotent  -  uses attribute_not_exists guard.
  */
 export async function addUserToGroup(
   userId: string,
@@ -282,7 +282,7 @@ export async function getGroupsForUser(
 }
 
 /**
- * List all users in a group using GROUP→USER edges.
+ * List all users in a group using GROUP>USER edges.
  */
 export async function getUsersInGroup(
   groupId: string

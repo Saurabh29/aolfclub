@@ -38,7 +38,7 @@ export type LeadAssignment = z.infer<typeof LeadAssignmentSchema>;
 /**
  * Call Task entity
  * Represents a call campaign with filtered contacts (leads OR members) and assigned agents.
- * A task exclusively targets one userType — never a mix.
+ * A task exclusively targets one userType  -  never a mix.
  */
 export const TaskSchema = z.object({
 	id: z.ulid(),
@@ -49,7 +49,7 @@ export const TaskSchema = z.object({
 	deadline: z.iso.datetime().optional(),
 	targetCallsPerAgent: z.number().int().positive().optional(),
 	
-	// Who is being called (Step 0 — set once, never mixed)
+	// Who is being called (Step 0  -  set once, never mixed)
 	targetUserType: z.enum(["LEAD", "MEMBER"]),
 
 	// Contact filtering (Step 1)

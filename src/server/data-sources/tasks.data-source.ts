@@ -30,7 +30,7 @@ import {
 export class TasksDataSource implements DataSource<Task, TaskField> {
   private cache = new ScanCache<Task>({ label: "Tasks" });
 
-  // ─── Read operations ──────────────────────────────────────────────────────
+  // --- Read operations ------------------------------------------------------
 
   async getById(id: string): Promise<ApiResult<Task | null>> {
     try {
@@ -71,7 +71,7 @@ export class TasksDataSource implements DataSource<Task, TaskField> {
     }
   }
 
-  // ─── Write operations (invalidate cache) ──────────────────────────────────
+  // --- Write operations (invalidate cache) ----------------------------------
 
   async create(
     data: CreateTaskRequest & { createdBy: string }
@@ -118,7 +118,7 @@ export class TasksDataSource implements DataSource<Task, TaskField> {
     }
   }
 
-  // ─── Internals ────────────────────────────────────────────────────────────
+  // --- Internals ------------------------------------------------------------
 
   private async scanAll(): Promise<Task[]> {
     const items = await scanByItemType<Record<string, unknown>>("Task");

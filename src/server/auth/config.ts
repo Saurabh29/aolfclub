@@ -66,7 +66,7 @@ export const authConfig: StartAuthJSConfig = {
     },
 
     session: async ({ session, token }) => {
-      // Promote token fields to session.user — no extra DB call here
+      // Promote token fields to session.user  -  no extra DB call here
       if (token.userId) (session as any).user.id = token.userId;
       if (token.activeLocationId)
         (session as any).user.activeLocationId = token.activeLocationId;

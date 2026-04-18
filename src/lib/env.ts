@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Client-side environment variables (VITE_ prefix — exposed to the browser).
+ * Client-side environment variables (VITE_ prefix  -  exposed to the browser).
  *
  * Add new variables here as the app grows.
  * Validation runs once at module load; a missing required variable throws
@@ -13,7 +13,7 @@ const ClientEnvSchema = z.object({
 });
 
 /**
- * Server-side / build-time environment variables (no VITE_ prefix — never sent to the browser).
+ * Server-side / build-time environment variables (no VITE_ prefix  -  never sent to the browser).
  * Extend this as you add DB credentials, secrets, etc.
  *
  * Example:
@@ -30,7 +30,7 @@ function parseClientEnv() {
   });
 
   if (!result.success) {
-    const messages = result.error.issues.map((i) => `  • ${i.path.join(".")}: ${i.message}`).join("\n");
+    const messages = result.error.issues.map((i) => `  * ${i.path.join(".")}: ${i.message}`).join("\n");
     throw new Error(`\n[env] Missing or invalid environment variables:\n${messages}\n`);
   }
 
@@ -43,15 +43,15 @@ function parseServerEnv() {
   });
 
   if (!result.success) {
-    const messages = result.error.issues.map((i) => `  • ${i.path.join(".")}: ${i.message}`).join("\n");
+    const messages = result.error.issues.map((i) => `  * ${i.path.join(".")}: ${i.message}`).join("\n");
     throw new Error(`\n[env] Invalid server environment variables:\n${messages}\n`);
   }
 
   return result.data;
 }
 
-/** Validated, typed client env — use this instead of raw import.meta.env */
+/** Validated, typed client env  -  use this instead of raw import.meta.env */
 export const clientEnv = parseClientEnv();
 
-/** Validated, typed server env — use this instead of raw process.env */
+/** Validated, typed server env  -  use this instead of raw process.env */
 export const serverEnv = parseServerEnv();

@@ -5,8 +5,8 @@
  * Users are identified by ULID and looked up via email through an email sentinel item.
  *
  * Item shapes:
- *   USER#<id>     / META   — User entity
- *   EMAIL#<email> / META   — Email→userId lookup (uniqueness sentinel)
+ *   USER#<id>     / META    -  User entity
+ *   EMAIL#<email> / META    -  Email>userId lookup (uniqueness sentinel)
  */
 
 import {
@@ -50,8 +50,8 @@ function toUser(item: Record<string, unknown>): User {
  * Create a new user.
  *
  * Atomically writes:
- *   - USER#<id>/META  — the user entity
- *   - EMAIL#<email>/META — uniqueness sentinel
+ *   - USER#<id>/META   -  the user entity
+ *   - EMAIL#<email>/META  -  uniqueness sentinel
  *
  * Throws if the email is already taken.
  */
@@ -127,7 +127,7 @@ export async function getUserById(id: string): Promise<User | null> {
 }
 
 /**
- * Get user by email (two-step: sentinel → user item).
+ * Get user by email (two-step: sentinel > user item).
  */
 export async function getUserByEmail(email: string): Promise<User | null> {
   const sentinel = await docClient.send(

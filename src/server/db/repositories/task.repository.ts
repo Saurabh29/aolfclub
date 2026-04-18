@@ -2,10 +2,10 @@
  * Task Repository
  *
  * Data access layer for Task entities.
- * Tasks have no uniqueness sentinel — they are identified by ULID only.
+ * Tasks have no uniqueness sentinel  -  they are identified by ULID only.
  *
  * Item shape:
- *   TASK#<id> / META  — Task entity
+ *   TASK#<id> / META   -  Task entity
  */
 
 import {

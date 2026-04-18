@@ -1,6 +1,7 @@
 import { createSignal, Show, For, type Component } from "solid-js";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
+import { Phone, FileText, Star, ClipboardList, Clock, CheckCircle, AlertTriangle } from "lucide-solid";
 import type { Lead, Task, InterestLevel } from "~/lib/schemas/domain";
 
 export interface CallLogData {
@@ -107,13 +108,13 @@ export const CallLogSheet: Component<CallLogSheetProps> = (props) => {
             <div>
               <h3 class="text-lg font-semibold">Log Call: {props.lead.displayName}</h3>
               <Show when={props.task}>
-                <p class="text-sm text-muted-foreground">📋 Task: {props.task!.name}</p>
+                <p class="text-sm text-muted-foreground flex items-center gap-1"><ClipboardList class="w-3.5 h-3.5" /> Task: {props.task!.name}</p>
               </Show>
             </div>
 
             {/* Call Outcome */}
             <div class="space-y-2">
-              <label class="text-sm font-medium">📞 Call Outcome:</label>
+              <label class="flex items-center gap-1 text-sm font-medium"><Phone class="w-3.5 h-3.5" /> Call Outcome:</label>
               <div class="space-y-2">
                 <For each={[
                   { value: "answered", label: "Answered" },
@@ -142,7 +143,7 @@ export const CallLogSheet: Component<CallLogSheetProps> = (props) => {
             {/* Interest Level (only if answered) */}
             <Show when={outcome() === "answered"}>
               <div class="space-y-2">
-                <label class="text-sm font-medium">⭐ Interest Level:</label>
+                <label class="flex items-center gap-1 text-sm font-medium"><Star class="w-3.5 h-3.5" /> Interest Level:</label>
                 <div class="flex gap-1">
                   <For each={[1, 2, 3, 4, 5]}>
                     {(star) => (
@@ -152,7 +153,7 @@ export const CallLogSheet: Component<CallLogSheetProps> = (props) => {
                         class="text-3xl transition-transform hover:scale-110"
                         aria-label={`${star} stars`}
                       >
-                        {star <= interestLevel() ? "⭐" : "☆"}
+                        <Star class={`w-6 h-6 ${star <= interestLevel() ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
                       </button>
                     )}
                   </For>
@@ -163,7 +164,7 @@ export const CallLogSheet: Component<CallLogSheetProps> = (props) => {
 
             {/* Notes */}
             <div class="space-y-2">
-              <label class="text-sm font-medium">📝 Notes:</label>
+              <label class="flex items-center gap-1 text-sm font-medium"><FileText class="w-3.5 h-3.5" /> Notes:</label>
               <textarea
                 value={notes()}
                 onInput={(e) => setNotes(e.target.value)}
@@ -192,7 +193,7 @@ export const CallLogSheet: Component<CallLogSheetProps> = (props) => {
             {/* Schedule Follow-up */}
             <Show when={outcome() !== "skip" && outcome() !== "invalid"}>
               <div class="space-y-2">
-                <label class="text-sm font-medium">⏰ Schedule Follow-up:</label>
+                <label class="flex items-center gap-1 text-sm font-medium"><Clock class="w-3.5 h-3.5" /> Schedule Follow-up:</label>
                 
                 {/* Preset Buttons */}
                 <div class="flex flex-wrap gap-2">
@@ -215,7 +216,7 @@ export const CallLogSheet: Component<CallLogSheetProps> = (props) => {
                     onClick={() => setMarkComplete(!markComplete())}
                     class={markComplete() ? "bg-green-100 border-green-500" : ""}
                   >
-                    ✅ Mark Complete
+                    <CheckCircle class="w-3.5 h-3.5 mr-1" /> Mark Complete
                   </Button>
                 </div>
 
@@ -233,8 +234,9 @@ export const CallLogSheet: Component<CallLogSheetProps> = (props) => {
 
             {/* Auto-complete message for invalid number */}
             <Show when={outcome() === "invalid"}>
-              <div class="p-3 bg-yellow-100 border border-yellow-500 rounded-md text-sm">
-                ⚠️ Invalid number will automatically mark this lead as complete.
+              <div class="p-3 bg-yellow-100 border border-yellow-500 rounded-md text-sm flex items-start gap-2">
+                <AlertTriangle class="w-4 h-4 text-yellow-700 shrink-0 mt-0.5" />
+                Invalid number will automatically mark this lead as complete.
               </div>
             </Show>
 

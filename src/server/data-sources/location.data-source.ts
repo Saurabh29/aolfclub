@@ -8,7 +8,7 @@ import { executeQuery, applyFilters } from "./query-executor";
 
 /**
  * In-memory writable data source for Location entities.
- * Mirrors DummyTaskDataSource pattern — swap for DynamoDB by changing instances.ts only.
+ * Mirrors DummyTaskDataSource pattern  -  swap for DynamoDB by changing instances.ts only.
  */
 export class DummyLocationDataSource implements DataSource<Location, LocationField> {
   private locations: Location[];

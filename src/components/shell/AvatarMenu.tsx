@@ -1,13 +1,14 @@
 /**
- * AvatarMenu — contextual dropdown off the top-right avatar icon.
+ * AvatarMenu  -  contextual dropdown off the top-right avatar icon.
  *
  * Unauthenticated:  Sign in
  * Authenticated:    My centres (switchable) + Sign out
  *
- * Auth is stubbed — swap the `session` prop for real auth later.
+ * Auth is stubbed  -  swap the `session` prop for real auth later.
  */
 import { createSignal, Show, For, onCleanup, onMount, type Component } from "solid-js";
 import { A, useNavigate } from "@solidjs/router";
+import { Globe, User, Check, LogOut } from "lucide-solid";
 import type { Location } from "~/lib/schemas/domain";
 
 export interface StubSession {
@@ -28,7 +29,7 @@ export interface AvatarMenuProps {
   onSelectLocation: (slug: string) => void;
   /**
    * When true the dropdown opens upward and to the right (for sidebar placement).
-   * Default: false (opens downward, right-aligned — for top-bar placement).
+   * Default: false (opens downward, right-aligned  -  for top-bar placement).
    */
   openUpward?: boolean;
 }
@@ -36,7 +37,7 @@ export interface AvatarMenuProps {
 export const AvatarMenu: Component<AvatarMenuProps> = (props) => {
   const [open, setOpen] = createSignal(false);
 
-  // Close on outside click — registered in onMount so it never runs on the server
+  // Close on outside click  -  registered in onMount so it never runs on the server
   onMount(() => {
     const handleOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -69,7 +70,7 @@ export const AvatarMenu: Component<AvatarMenuProps> = (props) => {
         <Show
           when={props.session?.image}
           fallback={
-            <Show when={props.session} fallback={<span class="text-lg">🌐</span>}>
+            <Show when={props.session} fallback={<Globe class="w-5 h-5" />}>
               <span>{initials()}</span>
             </Show>
           }
@@ -90,19 +91,19 @@ export const AvatarMenu: Component<AvatarMenuProps> = (props) => {
           }`}
           onClick={() => setOpen(false)}
         >
-          {/* ── Unauthenticated ── */}
+          {/* -- Unauthenticated -- */}
           <Show when={!props.session}>
             <button
               type="button"
               class="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors"
               onClick={props.onSignIn}
             >
-              <span class="text-base">👤</span>
+              <User class="w-4 h-4" />
               <span class="font-medium">Sign in</span>
             </button>
           </Show>
 
-          {/* ── Authenticated ── */}
+          {/* -- Authenticated -- */}
           <Show when={props.session}>
             {/* User info */}
             <div class="px-4 py-3 border-b border-border">
@@ -124,8 +125,8 @@ export const AvatarMenu: Component<AvatarMenuProps> = (props) => {
                     class="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted transition-colors"
                     onClick={() => props.onSelectLocation(loc.slug)}
                   >
-                    <span class="text-base">
-                      {loc.slug === props.activeSlug ? "✓" : "  "}
+                    <span class="text-base w-4 flex justify-center">
+                      {loc.slug === props.activeSlug ? <Check class="w-3 h-3" /> : null}
                     </span>
                     <span class={loc.slug === props.activeSlug ? "font-semibold" : ""}>
                       {loc.name}
@@ -142,7 +143,7 @@ export const AvatarMenu: Component<AvatarMenuProps> = (props) => {
                 class="w-full flex items-center gap-3 px-4 py-3 text-sm text-destructive hover:bg-muted transition-colors"
                 onClick={props.onSignOut}
               >
-                <span class="text-base">→</span>
+                <LogOut class="w-4 h-4" />
                 <span>Sign out</span>
               </button>
             </div>

@@ -35,7 +35,7 @@ export const checkSlugAvailableQuery = query(async (slug: string, excludeId?: st
   return !taken;
 }, "location-slug-available");
 
-// ── Actions (mutations) — use action(), NOT query() ─────────────────────────
+// -- Actions (mutations)  -  use action(), NOT query() -------------------------
 
 export const createLocationAction = action(async (data: CreateLocationRequest) => {
   "use server";

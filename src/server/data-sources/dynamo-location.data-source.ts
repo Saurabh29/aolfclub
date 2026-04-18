@@ -2,7 +2,7 @@
  * DynamoDB Location Data Source
  *
  * Implements DataSource<Location, LocationField> backed by DynamoDB.
- * Drop-in replacement for DummyLocationDataSource — swap in instances.ts only.
+ * Drop-in replacement for DummyLocationDataSource  -  swap in instances.ts only.
  *
  * Table design (single-table, PK + SK, no GSI):
  *   Location item:  PK = "LOCATION#<id>",  SK = "META",  itemType = "Location"
@@ -10,7 +10,7 @@
  *
  * Slug uniqueness is enforced atomically via TransactWriteCommand.
  * List/query operations drain a full Scan filtered by itemType = "Location"
- * then apply filter / sort / paginate in-memory — suitable for small tables.
+ * then apply filter / sort / paginate in-memory  -  suitable for small tables.
  */
 
 import {
@@ -37,7 +37,7 @@ export class DynamoDBLocationDataSource
   implements DataSource<Location, LocationField>
 {
   private cache = new ScanCache<Location>({ label: "Locations" });
-  // ─── Read operations ──────────────────────────────────────────────────────
+  // --- Read operations ------------------------------------------------------
 
   async getById(id: string): Promise<ApiResult<Location | null>> {
     try {
@@ -124,7 +124,7 @@ export class DynamoDBLocationDataSource
     }
   }
 
-  // ─── Write operations ─────────────────────────────────────────────────────
+  // --- Write operations -----------------------------------------------------
 
   async create(data: CreateLocationRequest): Promise<ApiResult<Location>> {
     try {
@@ -155,7 +155,7 @@ export class DynamoDBLocationDataSource
               },
             },
             {
-              // Slug lookup — enforces uniqueness
+              // Slug lookup  -  enforces uniqueness
               Put: {
                 TableName: TABLE_NAME,
                 Item: {
@@ -203,7 +203,7 @@ export class DynamoDBLocationDataSource
       const slugChanging =
         data.slug !== undefined && data.slug !== current.data.slug;
 
-      // Build SET expression dynamically — use #f placeholders to avoid reserved words
+      // Build SET expression dynamically  -  use #f placeholders to avoid reserved words
       const updates: string[] = [];
       const names: Record<string, string> = {};
       const values: Record<string, unknown> = {};
@@ -258,7 +258,7 @@ export class DynamoDBLocationDataSource
           })
         );
       } else {
-        // Simple update — no slug change
+        // Simple update  -  no slug change
         await docClient.send(
           new UpdateCommand({
             TableName: TABLE_NAME,
@@ -336,7 +336,7 @@ export class DynamoDBLocationDataSource
     }
   }
 
-  // ─── Private helpers ──────────────────────────────────────────────────────
+  // --- Private helpers ------------------------------------------------------
 
   /** Drain the full table scan, returning only Location items. */
   private async scanAllLocations(): Promise<Location[]> {

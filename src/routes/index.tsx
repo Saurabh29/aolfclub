@@ -1,26 +1,29 @@
 import { For } from "solid-js";
+import { Wind, Flame, GraduationCap, Leaf, Sparkles, MapPin } from "lucide-solid";
 import { PublicTopBar } from "~/components/shell/PublicTopBar";
 
-const PROGRAMS = [
+type ProgramIcon = typeof Wind;
+
+const PROGRAMS: { Icon: ProgramIcon; title: string; desc: string }[] = [
   {
-    icon: "🧘",
+    Icon: Wind,
     title: "The Happiness Program",
-    desc: "Learn Sudarshan Kriya — a powerful rhythmic breathing technique that can help eliminate stress and bring mind and body into harmony.",
+    desc: "Learn Sudarshan Kriya  -  a powerful rhythmic breathing technique that can help eliminate stress and bring mind and body into harmony.",
   },
   {
-    icon: "🌬️",
+    Icon: Flame,
     title: "Pranayama & Meditation",
     desc: "Deepen your practice with ancient breathing techniques and guided meditation for clarity, calm, and inner balance.",
   },
   {
-    icon: "📚",
+    Icon: GraduationCap,
     title: "Teacher Training",
     desc: "Become a certified Art of Living instructor and share the gift of breath, yoga, and meditation with others.",
   },
   {
-    icon: "🌿",
+    Icon: Leaf,
     title: "Ayurveda & Wellness",
-    desc: "Explore holistic wellness through Ayurvedic principles — diet, lifestyle, and daily routines for vibrant health.",
+    desc: "Explore holistic wellness through Ayurvedic principles  -  diet, lifestyle, and daily routines for vibrant health.",
   },
 ];
 
@@ -44,26 +47,26 @@ export default function LandingPage() {
     <div class="min-h-svh bg-background text-foreground">
       <PublicTopBar />
 
-      {/* ── Hero ── */}
+      {/* -- Hero -- */}
       <section class="px-6 py-16 text-center max-w-2xl mx-auto">
-        <div class="text-5xl mb-4">🌿</div>
+        <div class="mb-4 flex justify-center"><Sparkles class="w-12 h-12 text-primary" /></div>
         <h1 class="text-3xl sm:text-4xl font-bold leading-tight mb-4">
           Breathe. Connect. Transform.
         </h1>
         <p class="text-muted-foreground text-base sm:text-lg leading-relaxed mb-8">
           The Art of Living Foundation offers evidence-based programs in
-          breathwork, yoga, and meditation — reaching millions across 180
+          breathwork, yoga, and meditation  -  reaching millions across 180
           countries.
         </p>
         <a
           href="/locations"
           class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium text-sm hover:opacity-90 transition-opacity"
         >
-          📍 Find a centre near you
+           <MapPin class="w-4 h-4" /> Find a centre near you
         </a>
       </section>
 
-      {/* ── Programs ── */}
+      {/* -- Programs -- */}
       <section class="px-4 py-12 bg-muted/40">
         <div class="max-w-3xl mx-auto">
           <h2 class="text-xl font-semibold text-center mb-8">Our Programs</h2>
@@ -71,7 +74,7 @@ export default function LandingPage() {
             <For each={PROGRAMS}>
               {(p) => (
                 <div class="bg-background rounded-xl p-5 border border-border">
-                  <div class="text-3xl mb-3">{p.icon}</div>
+                  <div class="mb-3"><p.Icon class="w-8 h-8 text-primary" /></div>
                   <h3 class="font-semibold text-base mb-1">{p.title}</h3>
                   <p class="text-sm text-muted-foreground leading-relaxed">{p.desc}</p>
                 </div>
@@ -81,7 +84,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Stats ── */}
+      {/* -- Stats -- */}
       <section class="px-4 py-12">
         <div class="max-w-3xl mx-auto grid grid-cols-3 gap-6 text-center">
           <div>
@@ -99,7 +102,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Testimonials ── */}
+      {/* -- Testimonials -- */}
       <section class="px-4 py-12 bg-muted/40">
         <div class="max-w-3xl mx-auto">
           <h2 class="text-xl font-semibold text-center mb-8">What People Say</h2>
@@ -110,7 +113,7 @@ export default function LandingPage() {
                   <p class="text-sm text-muted-foreground leading-relaxed mb-3">
                     "{t.quote}"
                   </p>
-                  <footer class="text-xs font-medium">— {t.name}</footer>
+                  <footer class="text-xs font-medium"> -  {t.name}</footer>
                 </blockquote>
               )}
             </For>
@@ -118,7 +121,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Footer CTA ── */}
+      {/* -- Footer CTA -- */}
       <section class="px-6 py-16 text-center max-w-xl mx-auto">
         <h2 class="text-xl font-semibold mb-3">Ready to begin your journey?</h2>
         <p class="text-muted-foreground text-sm mb-6">
@@ -129,13 +132,13 @@ export default function LandingPage() {
           href="/locations"
           class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium text-sm hover:opacity-90 transition-opacity"
         >
-          📍 Explore centres
+           Explore centres
         </a>
       </section>
 
-      {/* ── Footer ── */}
+      {/* -- Footer -- */}
       <footer class="border-t border-border px-6 py-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Art of Living Foundation. All rights reserved.
+        (c) {new Date().getFullYear()} Art of Living Foundation. All rights reserved.
       </footer>
     </div>
   );

@@ -1,5 +1,6 @@
 import { createSignal, Show, For, Suspense } from "solid-js";
 import { A, createAsync, useAction, type RouteDefinition } from "@solidjs/router";
+import { MapPin, Phone, Mail, Users, Pencil, Trash2 } from "lucide-solid";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -40,7 +41,7 @@ export default function LocationsPage() {
       {/* Header */}
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h1 class="text-2xl sm:text-3xl font-bold">📍 Locations</h1>
+          <h1 class="text-2xl sm:text-3xl font-bold flex items-center gap-2"><MapPin class="w-6 h-6" /> Locations</h1>
           <p class="text-muted-foreground mt-1 text-sm">
             Manage NGO centres and chapters
           </p>
@@ -50,11 +51,11 @@ export default function LocationsPage() {
         </A>
       </div>
 
-      <Suspense fallback={<div class="text-muted-foreground text-sm">Loading locations…</div>}>
+      <Suspense fallback={<div class="text-muted-foreground text-sm">Loading locations...</div>}>
         {/* Empty */}
         <Show when={locations().length === 0}>
           <Card class="p-12 text-center">
-            <div class="text-5xl mb-4">📍</div>
+            <div class="text-5xl mb-4"></div>
             <h3 class="text-xl font-semibold mb-2">No locations yet</h3>
             <p class="text-muted-foreground mb-4">
               Create your first NGO centre to get started.
@@ -94,7 +95,7 @@ export default function LocationsPage() {
                   {/* Address */}
                   <Show when={loc.formattedAddress || loc.city}>
                     <div class="flex items-start gap-1.5 text-sm">
-                      <span class="flex-shrink-0">📌</span>
+                      <span class="flex-shrink-0"><MapPin class="w-3.5 h-3.5" /></span>
                       <span class="text-muted-foreground">
                         {loc.formattedAddress ?? [loc.address, loc.city, loc.state].filter(Boolean).join(", ")}
                       </span>
@@ -105,17 +106,17 @@ export default function LocationsPage() {
                   <div class="flex flex-wrap gap-3 text-sm">
                     <Show when={loc.phone}>
                       <a href={`tel:${loc.phone}`} class="flex items-center gap-1 text-muted-foreground hover:text-foreground">
-                        📞 {loc.phone}
+                         <Phone class="w-3.5 h-3.5" /> {loc.phone}
                       </a>
                     </Show>
                     <Show when={loc.email}>
                       <a href={`mailto:${loc.email}`} class="flex items-center gap-1 text-muted-foreground hover:text-foreground truncate">
-                        ✉️ {loc.email}
+                         <Mail class="w-3.5 h-3.5" /> {loc.email}
                       </a>
                     </Show>
                     <Show when={loc.capacity}>
                       <span class="flex items-center gap-1 text-muted-foreground">
-                        👥 Cap: {loc.capacity}
+                         <Users class="w-3.5 h-3.5" /> Cap: {loc.capacity}
                       </span>
                     </Show>
                   </div>
@@ -123,7 +124,7 @@ export default function LocationsPage() {
                   {/* Actions */}
                   <div class="flex gap-2 pt-1">
                     <A href={`/locations/${loc.id}/edit`} class="flex-1">
-                      <Button variant="outline" size="sm" class="w-full">✏️ Edit</Button>
+                      <Button variant="outline" size="sm" class="w-full"><Pencil class="w-3.5 h-3.5 mr-1" /> Edit</Button>
                     </A>
                     <Button
                       variant="outline"
@@ -132,7 +133,7 @@ export default function LocationsPage() {
                       disabled={deletingId() === loc.id}
                       onClick={() => handleDelete(loc.id, loc.name)}
                     >
-                      {deletingId() === loc.id ? "…" : "🗑️"}
+                      {deletingId() === loc.id ? "..." : <Trash2 class="w-3.5 h-3.5" />}
                     </Button>
                   </div>
                 </Card>

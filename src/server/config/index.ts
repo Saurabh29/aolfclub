@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * Server-side environment variables.
- * Validated at startup — app crashes immediately if any required var is missing.
+ * Validated at startup  -  app crashes immediately if any required var is missing.
  * Matches the pattern from the reference aolf-club project.
  */
 export const EnvSchema = z.object({

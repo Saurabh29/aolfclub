@@ -1,8 +1,9 @@
 /**
- * LocationForm — shared form for Create and Edit location.
+ * LocationForm  -  shared form for Create and Edit location.
  * Handles slug auto-generation, Google Place population, and validation.
  */
 import { createSignal, Show, type Component } from "solid-js";
+import { Tag, MapPin, Phone, CheckCircle2, PauseCircle } from "lucide-solid";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
@@ -159,9 +160,9 @@ export const LocationForm: Component<LocationFormProps> = (props) => {
         </div>
       )}
 
-      {/* ── Section 1: Identity ── */}
+      {/* -- Section 1: Identity -- */}
       <Card class="p-5 space-y-4">
-        <h2 class="font-semibold text-base border-b pb-2">🏷️ Identity</h2>
+        <h2 class="font-semibold text-base border-b pb-2 flex items-center gap-1.5"><Tag class="w-4 h-4" /> Identity</h2>
 
         {/* Name */}
         <div>
@@ -201,7 +202,7 @@ export const LocationForm: Component<LocationFormProps> = (props) => {
           <textarea
             value={form().description}
             onInput={(e) => set("description", e.currentTarget.value)}
-            placeholder="Briefly describe this centre and the programs it runs…"
+            placeholder="Briefly describe this centre and the programs it runs..."
             rows={2}
             class={`${inputClass("description")} resize-y`}
           />
@@ -219,14 +220,14 @@ export const LocationForm: Component<LocationFormProps> = (props) => {
                 : "bg-muted text-muted-foreground border-input"
             }`}
           >
-            {form().isActive ? "✅ Active" : "⏸ Inactive"}
+            {form().isActive ? <><CheckCircle2 class="w-4 h-4 mr-1" /> Active</> : <><PauseCircle class="w-4 h-4 mr-1" /> Inactive</>}
           </button>
         </div>
       </Card>
 
-      {/* ── Section 2: Location ── */}
+      {/* -- Section 2: Location -- */}
       <Card class="p-5 space-y-4">
-        <h2 class="font-semibold text-base border-b pb-2">📍 Location</h2>
+        <h2 class="font-semibold text-base border-b pb-2 flex items-center gap-1.5"><MapPin class="w-4 h-4" /> Location</h2>
 
         {/* Google Place Search */}
         <div>
@@ -242,12 +243,12 @@ export const LocationForm: Component<LocationFormProps> = (props) => {
                 lng: "",
               }))
             }
-            placeholder="Search for the centre address…"
+            placeholder="Search for the centre address..."
             initialValue={form().formattedAddress}
           />
           <Show when={form().formattedAddress}>
             <div class="mt-2 flex items-start gap-2 bg-muted/50 p-2 rounded-md text-sm">
-              <span>📌</span>
+              <span></span>
               <span class="text-muted-foreground">{form().formattedAddress}</span>
               <Show when={form().lat && form().lng}>
                 <Badge variant="outline" class="ml-auto text-xs flex-shrink-0">
@@ -293,9 +294,9 @@ export const LocationForm: Component<LocationFormProps> = (props) => {
         </div>
       </Card>
 
-      {/* ── Section 3: Contact & Operations ── */}
+      {/* -- Section 3: Contact & Operations -- */}
       <Card class="p-5 space-y-4">
-        <h2 class="font-semibold text-base border-b pb-2">📞 Contact &amp; Operations</h2>
+        <h2 class="font-semibold text-base border-b pb-2 flex items-center gap-1.5"><Phone class="w-4 h-4" /> Contact &amp; Operations</h2>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -341,7 +342,7 @@ export const LocationForm: Component<LocationFormProps> = (props) => {
           Cancel
         </Button>
         <Button type="submit" disabled={props.isSubmitting}>
-          {props.isSubmitting ? "Saving…" : (props.submitLabel ?? "Save Location")}
+          {props.isSubmitting ? "Saving..." : (props.submitLabel ?? "Save Location")}
         </Button>
       </div>
     </form>

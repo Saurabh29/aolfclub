@@ -1,11 +1,11 @@
 /**
- * ScanCache — server-side TTL cache for DynamoDB full-table scans.
+ * ScanCache  -  server-side TTL cache for DynamoDB full-table scans.
  *
  * Eliminates redundant scans when users sort, paginate, or filter
  * without data having changed. Write-through invalidation ensures
  * freshness after create/update/delete.
  *
- * Memory lives in the Node.js process only — never sent to the browser.
+ * Memory lives in the Node.js process only  -  never sent to the browser.
  * Each entity type gets its own cache instance (leads, members, users, locations).
  */
 
@@ -31,7 +31,7 @@ export class ScanCache<T> {
 
   /**
    * Get cached items if fresh, otherwise execute the scan function.
-   * Deduplicates concurrent calls — if two requests arrive while the cache
+   * Deduplicates concurrent calls  -  if two requests arrive while the cache
    * is stale, only one DynamoDB scan is performed.
    */
   async getOrScan(scanFn: () => Promise<T[]>): Promise<T[]> {

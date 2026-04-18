@@ -16,7 +16,7 @@ export const getUserByIdQuery = query(async (id: string) => {
 
 /**
  * Get the active location ID for the currently authenticated user.
- * userId is read from the session server-side — never trusted from the client.
+ * userId is read from the session server-side  -  never trusted from the client.
  */
 export const getActiveLocationIdQuery = query(async () => {
   "use server";
@@ -29,7 +29,7 @@ export const getActiveLocationIdQuery = query(async () => {
 
 /**
  * Set the active location for the currently authenticated user.
- * userId is read from the session — not accepted from the client.
+ * userId is read from the session  -  not accepted from the client.
  */
 export const setActiveLocationMutation = query(
   async (locationId: string) => {

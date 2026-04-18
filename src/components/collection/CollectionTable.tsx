@@ -8,6 +8,7 @@ import {
   type SortingState,
   type PaginationState,
 } from "@tanstack/solid-table";
+import { ArrowUp, ArrowDown } from "lucide-solid";
 import type { CollectionQueryState } from "~/lib/controllers";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "~/components/ui/table";
 import { Checkbox } from "~/components/ui/checkbox";
@@ -54,7 +55,7 @@ export function CollectionTable<T, TField extends string = string>(
   const state = useCollectionState(props.controller);
   const pagination = useCollectionPagination(props.controller);
 
-  // Derive TanStack-compatible state FROM QuerySpec (one-way: QuerySpec → Table UI)
+  // Derive TanStack-compatible state FROM QuerySpec (one-way: QuerySpec > Table UI)
   const tableState = createMemo(() => {
     const spec = props.controller.querySpec();
     return {
@@ -182,7 +183,9 @@ export function CollectionTable<T, TField extends string = string>(
                             {/* Sort indicator */}
                             <Show when={header.column.getIsSorted()}>
                               <span class="text-xs">
-                                {header.column.getIsSorted() === "asc" ? "↑" : "↓"}
+                                {header.column.getIsSorted() === "asc"
+                                  ? <ArrowUp class="w-3 h-3" />
+                                  : <ArrowDown class="w-3 h-3" />}
                               </span>
                             </Show>
                           </div>

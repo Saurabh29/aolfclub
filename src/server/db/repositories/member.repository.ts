@@ -3,11 +3,11 @@
  *
  * Data access layer for Member entities.
  * Uniqueness enforced by phone (E.164) via a MEMBER_MOBILE# sentinel.
- * Members do not log in — no email sentinel.
+ * Members do not log in  -  no email sentinel.
  *
  * Item shapes:
- *   MEMBER#<id>              / META  — Member entity
- *   MEMBER_MOBILE#<phone>    / META  — Mobile uniqueness sentinel
+ *   MEMBER#<id>              / META   -  Member entity
+ *   MEMBER_MOBILE#<phone>    / META   -  Mobile uniqueness sentinel
  */
 
 import {
@@ -53,8 +53,8 @@ function toMember(item: Record<string, unknown>): Member {
  * Create a new member.
  *
  * Atomically writes:
- *   - MEMBER#<id>/META              — the member entity
- *   - MEMBER_MOBILE#<phone>/META    — uniqueness sentinel
+ *   - MEMBER#<id>/META               -  the member entity
+ *   - MEMBER_MOBILE#<phone>/META     -  uniqueness sentinel
  *
  * Throws if the phone number is already registered as a member.
  */
@@ -134,7 +134,7 @@ export async function getMemberById(id: string): Promise<Member | null> {
 }
 
 /**
- * Get member by phone (two-step: sentinel → member item).
+ * Get member by phone (two-step: sentinel > member item).
  */
 export async function getMemberByPhone(rawPhone: string): Promise<Member | null> {
   const phone = normalizePhone(rawPhone);

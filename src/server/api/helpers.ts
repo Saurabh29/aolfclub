@@ -4,7 +4,7 @@ import type { ApiResult } from "~/lib/types";
 
 /**
  * Validate a QuerySpec and execute a service query, unwrapping the ApiResult.
- * Call from inside a "use server" function — NOT as a wrapper around query().
+ * Call from inside a "use server" function  -  NOT as a wrapper around query().
  */
 export async function execQuery<T, TField extends string>(
   spec: QuerySpec<TField>,

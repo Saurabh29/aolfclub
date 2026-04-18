@@ -15,6 +15,7 @@ import {
   batch,
   type Component,
 } from "solid-js";
+import { ChevronUp, ChevronDown } from "lucide-solid";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
@@ -23,7 +24,7 @@ import type { FilterCondition } from "~/lib/schemas/query";
 import type { Member, MemberField } from "~/lib/schemas/domain/member.schema";
 import { PROGRAMS } from "./LeadFilterPane";
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// -- Component -----------------------------------------------------------------
 
 export interface MemberFilterPaneProps {
   controller: CollectionQueryState<Member, MemberField>;
@@ -65,7 +66,7 @@ export const MemberFilterPane: Component<MemberFilterPaneProps> = (props) => {
       filters.push({ field: "programsDone", op: "contains", value: p });
     }
 
-    // Member since year — memberSince is ISO datetime, so gte year-01-01
+    // Member since year  -  memberSince is ISO datetime, so gte year-01-01
     if (since !== null) {
       filters.push({
         field: "memberSince",
@@ -140,7 +141,7 @@ export const MemberFilterPane: Component<MemberFilterPaneProps> = (props) => {
           <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Search</p>
           <input
             type="text"
-            placeholder="Name or phone…"
+            placeholder="Name or phone..."
             value={searchText()}
             onInput={(e) => setSearchText(e.currentTarget.value)}
             class="w-full h-8 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
@@ -178,7 +179,7 @@ export const MemberFilterPane: Component<MemberFilterPaneProps> = (props) => {
                 <span class="ml-1 text-primary">({selectedPrograms().length})</span>
               </Show>
             </p>
-            <span class="text-muted-foreground text-xs">{interestedOpen() ? "▲" : "▼"}</span>
+            <span class="text-muted-foreground text-xs">{interestedOpen() ? <ChevronUp class="w-3 h-3" /> : <ChevronDown class="w-3 h-3" />}</span>
           </button>
           <Show when={interestedOpen()}>
             <div class="space-y-1.5">
@@ -210,7 +211,7 @@ export const MemberFilterPane: Component<MemberFilterPaneProps> = (props) => {
                 <span class="ml-1 text-primary">({selectedDonePrograms().length})</span>
               </Show>
             </p>
-            <span class="text-muted-foreground text-xs">{doneOpen() ? "▲" : "▼"}</span>
+            <span class="text-muted-foreground text-xs">{doneOpen() ? <ChevronUp class="w-3 h-3" /> : <ChevronDown class="w-3 h-3" />}</span>
           </button>
           <Show when={doneOpen()}>
             <div class="space-y-1.5">

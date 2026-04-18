@@ -24,7 +24,7 @@ export const getUserById = service.getById;
  */
 export const getUserCount = service.getCount;
 
-// ── Active location tracking ─────────────────────────────────────────────────
+// -- Active location tracking -------------------------------------------------
 
 /**
  * Get the active location ID for a user from their persisted profile.

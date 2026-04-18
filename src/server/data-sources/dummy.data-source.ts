@@ -43,7 +43,7 @@ export class DummyDataSource<
     return { success: true, data: applyFilters(this.data, filters).length };
   }
 
-  // ── Write operations (in-memory mutations) ────────────────────────────
+  // -- Write operations (in-memory mutations) ----------------------------
 
   async create(data: unknown): Promise<ApiResult<T>> {
     try {

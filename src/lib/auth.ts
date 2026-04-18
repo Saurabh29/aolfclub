@@ -2,7 +2,7 @@ import { isServer } from "solid-js/web";
 import { query, redirect } from "@solidjs/router";
 
 /**
- * Unified session query — works on both server and client.
+ * Unified session query  -  works on both server and client.
  *
  * Server: reads the JWT session from the incoming request via start-authjs.
  * Client: fetches /api/auth/session (cookie-based).
@@ -56,7 +56,7 @@ export type SessionInfo = {
 
 /**
  * Returns structured session info for use inside server functions.
- * Reads userId from session.user.id (set by the jwt → session callback).
+ * Reads userId from session.user.id (set by the jwt > session callback).
  */
 export async function getSessionInfo(): Promise<SessionInfo> {
   const session = await getAuthSession();

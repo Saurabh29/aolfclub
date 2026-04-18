@@ -5,10 +5,10 @@
  * Backend is kept ready; page-level enforcement is not yet wired into routes.
  *
  * Item shapes:
- *   ROLE#<roleName>   / META              — Role entity
- *   PAGE#<pageName>   / META              — Page entity
- *   GROUP#<groupId>   / ROLE#<roleName>   — Group→Role assignment edge
- *   ROLE#<roleName>   / PAGE#<pageName>   — Role→Page permission edge (ALLOW | DENY)
+ *   ROLE#<roleName>   / META               -  Role entity
+ *   PAGE#<pageName>   / META               -  Page entity
+ *   GROUP#<groupId>   / ROLE#<roleName>    -  Group>Role assignment edge
+ *   ROLE#<roleName>   / PAGE#<pageName>    -  Role>Page permission edge (ALLOW | DENY)
  */
 
 import { GetCommand, PutCommand, QueryCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
@@ -81,7 +81,7 @@ export async function getRoleByName(roleName: string): Promise<Role | null> {
 // ---------------------------------------------------------------------------
 
 /**
- * Register a page. Idempotent — uses attribute_not_exists guard.
+ * Register a page. Idempotent  -  uses attribute_not_exists guard.
  * Pages represent route slugs like "/leads", "/members", "/tasks", "/locations".
  */
 export async function createPage(pageName: string, description?: string): Promise<Page> {
@@ -120,7 +120,7 @@ export async function getPageByName(pageName: string): Promise<Page | null> {
 }
 
 // ---------------------------------------------------------------------------
-// Group → Role assignments
+// Group > Role assignments
 // ---------------------------------------------------------------------------
 
 /**
@@ -175,7 +175,7 @@ export async function getRolesForGroup(groupId: string): Promise<string[]> {
 }
 
 // ---------------------------------------------------------------------------
-// Role → Page permissions
+// Role > Page permissions
 // ---------------------------------------------------------------------------
 
 /**
@@ -208,7 +208,7 @@ export async function setRolePagePermission(
 /**
  * Check if a role allows access to a page.
  * Returns true only if the permission is explicitly ALLOW.
- * No edge or DENY → false (fail-closed).
+ * No edge or DENY > false (fail-closed).
  */
 export async function canRoleAccessPage(roleName: string, pageName: string): Promise<boolean> {
   const result = await docClient.send(

@@ -18,7 +18,7 @@ const INTEREST_LEVELS: InterestLevel[] = ["High", "Medium", "Low", "Not_Interest
 
 /**
  * Generate realistic dummy volunteers (Users) for testing.
- * Users are app users who log in — they have email, no program or call-tracking fields.
+ * Users are app users who log in  -  they have email, no program or call-tracking fields.
  */
 export function generateDummyUsers(count: number): User[] {
   const users: User[] = [];

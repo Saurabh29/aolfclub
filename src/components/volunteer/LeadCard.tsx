@@ -2,6 +2,7 @@ import { Show, createSignal, type Component } from "solid-js";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
+import { Phone, MessageCircle, GraduationCap, Clock, BookOpen, Calendar, FileText, Target, MapPin, Star, X } from "lucide-solid";
 import type { Lead, Task } from "~/lib/schemas/domain";
 import { formatFollowUpDate, formatRelativeTime } from "~/lib/utils/lead-status";
 
@@ -52,10 +53,13 @@ export const LeadCard: Component<LeadCardProps> = (props) => {
 
   const displayStars = () => {
     const count = interestStars();
-    return Array(5)
-      .fill(0)
-      .map((_, i) => (i < count ? "⭐" : "☆"))
-      .join("");
+    return (
+      <span class="flex gap-0.5">
+        {Array(5).fill(0).map((_, i) => (
+          <Star class={`w-3.5 h-3.5 ${i < count ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+        ))}
+      </span>
+    );
   };
 
   const displayPrograms = () => {
@@ -92,21 +96,21 @@ export const LeadCard: Component<LeadCardProps> = (props) => {
           {/* Task Badge (if shown) */}
           <Show when={props.showTaskBadge && props.task}>
             <div class="flex items-center gap-1 text-sm text-muted-foreground">
-              <span>📋</span>
+              <Target class="w-3.5 h-3.5 shrink-0" />
               <span>{props.task!.name}</span>
             </div>
           </Show>
 
           {/* Programs */}
           <div class="flex items-start gap-1 text-sm">
-            <span class="flex-shrink-0">🎓</span>
+            <GraduationCap class="w-3.5 h-3.5 shrink-0 mt-0.5" />
             <span class="text-muted-foreground">{displayPrograms()}</span>
           </div>
 
           {/* Follow-up Time */}
           <Show when={props.lead.nextFollowUpDate}>
             <div class="flex items-center gap-1 text-sm">
-              <span>⏰</span>
+              <Clock class="w-3.5 h-3.5 shrink-0" />
               <span class="text-muted-foreground">
                 {formatFollowUpDate(props.lead.nextFollowUpDate!)}
               </span>
@@ -116,7 +120,7 @@ export const LeadCard: Component<LeadCardProps> = (props) => {
           {/* Last Notes */}
           <Show when={props.lead.lastNotes}>
             <div class="flex items-start gap-1 text-sm">
-              <span class="flex-shrink-0">💬</span>
+              <MessageCircle class="w-3.5 h-3.5 shrink-0 mt-0.5" />
               <span class="text-muted-foreground line-clamp-1">
                 "{props.lead.lastNotes}"
               </span>
@@ -130,7 +134,7 @@ export const LeadCard: Component<LeadCardProps> = (props) => {
               onClick={() => props.onCall(props.lead)}
               class="flex-1"
             >
-              📞 Call
+              <Phone class="w-3.5 h-3.5 mr-1" /> Call
             </Button>
             <Button
               size="sm"
@@ -138,7 +142,7 @@ export const LeadCard: Component<LeadCardProps> = (props) => {
               onClick={() => props.onWhatsApp(props.lead)}
               class="flex-1"
             >
-              💬 WhatsApp
+              <MessageCircle class="w-3.5 h-3.5 mr-1" /> WhatsApp
             </Button>
           </div>
         </div>
@@ -160,14 +164,16 @@ export const LeadCard: Component<LeadCardProps> = (props) => {
                 class="text-muted-foreground hover:text-foreground"
                 aria-label="Close"
               >
-                ✕
+                <X class="w-4 h-4" />
               </button>
             </div>
           </div>
 
           {/* Interested Programs */}
           <div>
-            <div class="text-sm font-medium mb-1">🎓 Interested Programs:</div>
+            <div class="flex items-center gap-1 text-sm font-medium mb-1">
+              <GraduationCap class="w-3.5 h-3.5" /> Interested Programs:
+            </div>
             <Show
               when={props.lead.interestedPrograms.length > 0}
               fallback={<div class="text-sm text-muted-foreground ml-4">None listed</div>}
@@ -183,7 +189,9 @@ export const LeadCard: Component<LeadCardProps> = (props) => {
           {/* Completed Programs */}
           <Show when={props.lead.programsDone.length > 0}>
             <div>
-              <div class="text-sm font-medium mb-1">📚 Completed Programs:</div>
+              <div class="flex items-center gap-1 text-sm font-medium mb-1">
+                <BookOpen class="w-3.5 h-3.5" /> Completed Programs:
+              </div>
               <ul class="text-sm text-muted-foreground ml-4 list-disc space-y-1">
                 {props.lead.programsDone.map((program) => (
                   <li>{program}</li>
@@ -195,7 +203,7 @@ export const LeadCard: Component<LeadCardProps> = (props) => {
           {/* Member Since */}
           <Show when={props.lead.memberSince}>
             <div class="text-sm">
-              <span class="font-medium">📅 Member Since:</span>{" "}
+              <span class="font-medium flex items-center gap-1"><Calendar class="w-3.5 h-3.5" /> Member Since:</span>{" "}
               <span class="text-muted-foreground">
                 {new Date(props.lead.memberSince!).toLocaleDateString()}
               </span>
@@ -205,7 +213,7 @@ export const LeadCard: Component<LeadCardProps> = (props) => {
           {/* Last Called */}
           <Show when={props.lead.lastCallDate}>
             <div class="text-sm">
-              <span class="font-medium">📞 Last Called:</span>{" "}
+              <span class="font-medium flex items-center gap-1"><Phone class="w-3.5 h-3.5" /> Last Called:</span>{" "}
               <span class="text-muted-foreground">
                 {formatRelativeTime(props.lead.lastCallDate!)}
               </span>
@@ -215,7 +223,9 @@ export const LeadCard: Component<LeadCardProps> = (props) => {
           {/* Last Notes */}
           <Show when={props.lead.lastNotes}>
             <div>
-              <div class="text-sm font-medium mb-1">📝 Last Notes:</div>
+              <div class="flex items-center gap-1 text-sm font-medium mb-1">
+                <FileText class="w-3.5 h-3.5" /> Last Notes:
+              </div>
               <div class="text-sm text-muted-foreground bg-muted p-3 rounded-md">
                 {props.lead.lastNotes}
               </div>
@@ -224,7 +234,9 @@ export const LeadCard: Component<LeadCardProps> = (props) => {
 
           {/* Editable Notes */}
           <div>
-            <div class="text-sm font-medium mb-1">📝 Notes:</div>
+            <div class="flex items-center gap-1 text-sm font-medium mb-1">
+              <FileText class="w-3.5 h-3.5" /> Notes:
+            </div>
             <textarea
               value={notes()}
               onInput={(e) => setNotes(e.currentTarget.value)}
@@ -241,7 +253,9 @@ export const LeadCard: Component<LeadCardProps> = (props) => {
 
           {/* Next Follow-up Reschedule */}
           <div>
-            <label class="text-sm font-medium mb-1 block">⏰ Next Follow-up:</label>
+            <label class="flex items-center gap-1 text-sm font-medium mb-1 block">
+              <Clock class="w-3.5 h-3.5" /> Next Follow-up:
+            </label>
             <input
               type="date"
               value={followUpDate()}
@@ -263,12 +277,12 @@ export const LeadCard: Component<LeadCardProps> = (props) => {
           <Show when={props.task}>
             <div class="border-t pt-3 space-y-2">
               <div class="text-sm">
-                <span class="font-medium">🎯 Task:</span>{" "}
+                <span class="font-medium flex items-center gap-1"><Target class="w-3.5 h-3.5" /> Task:</span>{" "}
                 <span class="text-muted-foreground">{props.task!.name}</span>
               </div>
               <Show when={props.task!.objective}>
                 <div class="text-sm">
-                  <span class="font-medium">📌 Objective:</span>{" "}
+                  <span class="font-medium flex items-center gap-1"><MapPin class="w-3.5 h-3.5" /> Objective:</span>{" "}
                   <div class="text-muted-foreground bg-muted p-2 rounded-md mt-1">
                     {props.task!.objective}
                   </div>
@@ -280,14 +294,14 @@ export const LeadCard: Component<LeadCardProps> = (props) => {
           {/* Action Buttons */}
           <div class="grid grid-cols-2 gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
             <Button onClick={() => props.onCall(props.lead)} class="w-full">
-              📞 Call Now
+              <Phone class="w-3.5 h-3.5 mr-1" /> Call Now
             </Button>
             <Button
               variant="outline"
               onClick={() => props.onWhatsApp(props.lead)}
               class="w-full"
             >
-              💬 Send WhatsApp
+              <MessageCircle class="w-3.5 h-3.5 mr-1" /> Send WhatsApp
             </Button>
           </div>
         </div>

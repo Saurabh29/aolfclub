@@ -43,7 +43,7 @@ export async function getWhitelistEntry(
 
 /**
  * Add an email to the whitelist.
- * Idempotent — re-adding an existing email does nothing (condition check).
+ * Idempotent  -  re-adding an existing email does nothing (condition check).
  * Set canBootstrap=true for the first system administrator.
  */
 export async function addToWhitelist(

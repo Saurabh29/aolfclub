@@ -1,5 +1,5 @@
 /**
- * QueryExecutor — shared in-memory filter, sort, and paginate logic.
+ * QueryExecutor  -  shared in-memory filter, sort, and paginate logic.
  *
  * Extracted from 7 near-identical implementations across DataSources.
  * Every DynamoDB and Dummy DataSource delegates here after loading items.
@@ -106,7 +106,7 @@ export function applyPagination<T>(
 
 /**
  * Execute a full QuerySpec against an in-memory array.
- * Convenience wrapper that chains filter → sort → paginate.
+ * Convenience wrapper that chains filter > sort > paginate.
  */
 export function executeQuery<T>(
   items: readonly T[],
