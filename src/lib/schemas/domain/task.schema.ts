@@ -42,6 +42,8 @@ export type LeadAssignment = z.infer<typeof LeadAssignmentSchema>;
  */
 export const TaskSchema = z.object({
 	id: z.ulid(),
+	/** Location this task belongs to. Required — tasks are scoped per-location. */
+	locationId: z.ulid(),
 	
 	// Task definition (Step 0)
 	name: z.string().min(1),
@@ -84,6 +86,8 @@ export type TaskField = keyof Task;
  * Create task request (from wizard)
  */
 export const CreateTaskRequestSchema = z.object({
+	/** Location this task belongs to. Resolved server-side from the active session. */
+	locationId: z.ulid(),
 	name: z.string().min(1),
 	objective: z.string().optional(),
 	deadline: z.iso.datetime().optional(),
