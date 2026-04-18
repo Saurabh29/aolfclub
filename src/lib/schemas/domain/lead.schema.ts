@@ -16,11 +16,12 @@ export type InterestLevel = z.infer<typeof InterestLevelEnum>;
 
 export const LeadSchema = z.object({
   id: z.ulid(),
+  /** Location this lead belongs to. Required — leads are scoped per-location. */
+  locationId: z.ulid(),
   displayName: z.string().min(1),
   phone: z.string().min(1),         // E.164 (normalized at write time)
   email: z.email().optional(),
   image: z.url().optional(),
-  activeLocationId: z.ulid().optional(),
 
   // Program interest
   interestedPrograms: z.array(z.string()).default([]),

@@ -2,10 +2,11 @@
  * Task Repository
  *
  * Data access layer for Task entities.
- * Tasks have no uniqueness sentinel  -  they are identified by ULID only.
+ * Tasks are identified by ULID and scoped to a location via an index item.
  *
- * Item shape:
- *   TASK#<id> / META   -  Task entity
+ * Item shapes:
+ *   TASK#<id>             / META          -  Task entity
+ *   LOCATION#<locId>      / TASK#<id>     -  Location-scoped index item
  */
 
 import {
@@ -13,6 +14,9 @@ import {
   PutCommand,
   UpdateCommand,
   DeleteCommand,
+  TransactWriteCommand,
+  BatchGetCommand,
+  QueryCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { ulid } from "ulid";
 import { docClient, TABLE_NAME, Keys, now } from "~/server/db/client";
@@ -33,7 +37,9 @@ function toTask(item: Record<string, unknown>): Task {
 
 /**
  * Create a new task.
- * Writes a single TASK#<id>/META item.
+ * Atomically writes:
+ *   - TASK#<id>/META
+ *   - LOCATION#<locId>/TASK#<id>  (location-scoped index item)
  */
 export async function createTask(
   input: CreateTaskRequest,
@@ -56,11 +62,33 @@ export async function createTask(
     updatedAt: timestamp,
   };
 
+  const locationIndexItem = {
+    PK: Keys.locationPK(input.locationId),
+    SK: Keys.taskSK(id),
+    itemType: "LocationTaskIndex",
+    locationId: input.locationId,
+    taskId: id,
+    createdAt: timestamp,
+  };
+
   await docClient.send(
-    new PutCommand({
-      TableName: TABLE_NAME,
-      Item: taskItem,
-      ConditionExpression: "attribute_not_exists(PK)",
+    new TransactWriteCommand({
+      TransactItems: [
+        {
+          Put: {
+            TableName: TABLE_NAME,
+            Item: taskItem,
+            ConditionExpression: "attribute_not_exists(PK)",
+          },
+        },
+        {
+          Put: {
+            TableName: TABLE_NAME,
+            Item: locationIndexItem,
+            ConditionExpression: "attribute_not_exists(PK) AND attribute_not_exists(SK)",
+          },
+        },
+      ],
     })
   );
 
@@ -126,12 +154,79 @@ export async function updateTask(
 
 /**
  * Delete a task by ULID.
+ * Also removes the LOCATION#<locId>/TASK#<id> index item.
  */
 export async function deleteTask(id: string): Promise<void> {
+  const existing = await getTaskById(id);
+  if (!existing) return;
+
   await docClient.send(
-    new DeleteCommand({
-      TableName: TABLE_NAME,
-      Key: { PK: Keys.taskPK(id), SK: Keys.metaSK() },
+    new TransactWriteCommand({
+      TransactItems: [
+        {
+          Delete: {
+            TableName: TABLE_NAME,
+            Key: { PK: Keys.taskPK(id), SK: Keys.metaSK() },
+          },
+        },
+        {
+          Delete: {
+            TableName: TABLE_NAME,
+            Key: {
+              PK: Keys.locationPK(existing.locationId),
+              SK: Keys.taskSK(id),
+            },
+          },
+        },
+      ],
     })
   );
+}
+
+/**
+ * Get all tasks for a location.
+ * Step 1: Query LOCATION#<locId> / TASK#* index items to get task IDs.
+ * Step 2: BatchGetItem to fetch each task entity.
+ */
+export async function getTasksByLocation(locationId: string): Promise<Task[]> {
+  const taskIds: string[] = [];
+  let lastKey: Record<string, unknown> | undefined;
+
+  do {
+    const result = await docClient.send(
+      new QueryCommand({
+        TableName: TABLE_NAME,
+        KeyConditionExpression: "PK = :pk AND begins_with(SK, :skPrefix)",
+        ExpressionAttributeValues: {
+          ":pk": Keys.locationPK(locationId),
+          ":skPrefix": Keys.TASK_PREFIX,
+        },
+        ExclusiveStartKey: lastKey,
+      })
+    );
+    for (const item of result.Items ?? []) {
+      taskIds.push(item.taskId as string);
+    }
+    lastKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
+  } while (lastKey);
+
+  if (taskIds.length === 0) return [];
+
+  const tasks: Task[] = [];
+  for (let i = 0; i < taskIds.length; i += 100) {
+    const chunk = taskIds.slice(i, i + 100);
+    const keys = chunk.map((tid) => ({ PK: Keys.taskPK(tid), SK: Keys.metaSK() }));
+
+    const response = await docClient.send(
+      new BatchGetCommand({
+        RequestItems: { [TABLE_NAME]: { Keys: keys } },
+      })
+    );
+
+    for (const item of response.Responses?.[TABLE_NAME] ?? []) {
+      tasks.push(toTask(item as Record<string, unknown>));
+    }
+  }
+
+  return tasks;
 }

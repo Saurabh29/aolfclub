@@ -65,11 +65,26 @@ export async function getSessionInfo(): Promise<SessionInfo> {
     raw?.user?.id ?? raw?.user?.userId ?? raw?.user?.sub ?? null;
 
   if (!userId) {
-    return { userId: null, activeLocationId: null, email: null, name: null, image: null, raw };
+    return { userId: null, activeLocationId: null, canBootstrap: false, email: null, name: null, image: null, raw };
   }
 
-  const activeLocationId = raw?.user?.activeLocationId ?? null;
+  let activeLocationId = raw?.user?.activeLocationId ?? null;
   const canBootstrap = raw?.user?.canBootstrap === true;
+
+  // Server-side DB fallback: the JWT is issued at sign-in time, so it won't
+  // contain activeLocationId if the user set it after their last login
+  // (e.g. they just created their first location). Re-read from DB once.
+  if (!activeLocationId && typeof window === "undefined") {
+    try {
+      const { getActiveLocationId } = await import("~/server/services/users.service");
+      const result = await getActiveLocationId(userId);
+      if (result.success && result.data) {
+        activeLocationId = result.data;
+      }
+    } catch {
+      // Ignore DB errors — activeLocationId remains null, middleware will redirect
+    }
+  }
 
   return {
     userId,

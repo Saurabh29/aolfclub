@@ -52,8 +52,21 @@ async function createTable() {
     console.log(`✅ Table "${TABLE_NAME}" created successfully!`);
     console.log("");
     console.log("Key patterns:");
-    console.log("  Location:   PK=LOCATION#<id>,  SK=META");
-    console.log("  SlugLookup: PK=SLUG#<slug>,     SK=META");
+    console.log("  Location:          PK=LOCATION#<id>,                  SK=META");
+    console.log("  SlugLookup:        PK=SLUG#<slug>,                    SK=META");
+    console.log("  User:              PK=USER#<id>,                      SK=META");
+    console.log("  Lead:              PK=LEAD#<id>,                      SK=META");
+    console.log("  Member:            PK=MEMBER#<id>,                    SK=META");
+    console.log("  Task:              PK=TASK#<id>,                      SK=META");
+    console.log("");
+    console.log("Location-scoped index items (per-location reads, no GSI):");
+    console.log("  Location>Lead:     PK=LOCATION#<locId>,               SK=LEAD#<id>");
+    console.log("  Location>Member:   PK=LOCATION#<locId>,               SK=MEMBER#<id>");
+    console.log("  Location>Task:     PK=LOCATION#<locId>,               SK=TASK#<id>");
+    console.log("");
+    console.log("Per-location mobile sentinels (phone unique within location):");
+    console.log("  LeadMobile:        PK=LEAD_MOBILE#<locId>#<phone>,    SK=META");
+    console.log("  MemberMobile:      PK=MEMBER_MOBILE#<locId>#<phone>,  SK=META");
   } catch (error) {
     if (error instanceof ResourceInUseException) {
       console.log(`ℹ️  Table "${TABLE_NAME}" already exists — nothing to do.`);

@@ -1,13 +1,16 @@
 import { query, action } from "@solidjs/router";
 import { execQuery, unwrap } from "./helpers";
-import { queryTasks, getTaskById, createTask, updateTask } from "../services";
+import { queryTasksByLocation, getTaskById, createTask, updateTask } from "../services";
 import { getActiveLocationId } from "../services/users.service";
 import type { QuerySpec } from "~/lib/schemas/query";
 import type { Task, TaskField, CreateTaskRequest } from "~/lib/schemas/domain";
 
 export const queryTasksQuery = query(async (spec: QuerySpec<TaskField>) => {
   "use server";
-  return execQuery(spec, queryTasks);
+  const { getSessionInfo } = await import("~/lib/auth");
+  const session = await getSessionInfo();
+  if (!session.activeLocationId) throw new Error("No active location selected.");
+  return execQuery(spec, (s) => queryTasksByLocation(session.activeLocationId!, s));
 }, "query-tasks");
 
 export const getTaskByIdQuery = query(async (id: string) => {

@@ -2,12 +2,13 @@
  * Lead Repository
  *
  * Data access layer for Lead entities.
- * Uniqueness enforced by phone (E.164) via a LEAD_MOBILE# sentinel.
+ * Per-location uniqueness: phone is unique within a location (Option B).
  * Leads do not log in  -  no email sentinel.
  *
  * Item shapes:
- *   LEAD#<id>                / META   -  Lead entity
- *   LEAD_MOBILE#<phone>      / META   -  Mobile uniqueness sentinel
+ *   LEAD#<id>                          / META  -  Lead entity
+ *   LOCATION#<locId>                   / LEAD#<id>  -  Location-scoped index item
+ *   LEAD_MOBILE#<locId>#<phone>        / META  -  Per-location mobile uniqueness sentinel
  */
 
 import {
@@ -16,6 +17,8 @@ import {
   UpdateCommand,
   DeleteCommand,
   TransactWriteCommand,
+  BatchGetCommand,
+  QueryCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { ulid } from "ulid";
 import { docClient, TABLE_NAME, Keys, normalizePhone, now } from "~/server/db/client";
@@ -26,11 +29,11 @@ import type { Lead } from "~/lib/schemas/domain";
 // ---------------------------------------------------------------------------
 
 export interface CreateLeadInput {
+  locationId: string;
   displayName: string;
   phone: string;
   email?: string;
   image?: string;
-  activeLocationId?: string;
   interestedPrograms?: string[];
 }
 
@@ -51,37 +54,51 @@ function toLead(item: Record<string, unknown>): Lead {
  * Create a new lead.
  *
  * Atomically writes:
- *   - LEAD#<id>/META              -  the lead entity
- *   - LEAD_MOBILE#<phone>/META    -  uniqueness sentinel
+ *   - LEAD#<id>/META                          -  the lead entity
+ *   - LOCATION#<locId>/LEAD#<id>              -  location-scoped index item
+ *   - LEAD_MOBILE#<locId>#<phone>/META        -  per-location uniqueness sentinel
  *
- * Throws if the phone number is already registered as a lead.
+ * Throws if the phone number is already registered as a lead in this location.
  */
 export async function createLead(input: CreateLeadInput): Promise<Lead> {
   const id = ulid();
   const timestamp = now();
   const phone = normalizePhone(input.phone);
+  const { locationId } = input;
 
   const leadItem = {
     PK: Keys.leadPK(id),
     SK: Keys.metaSK(),
     itemType: "Lead",
     id,
+    locationId,
     displayName: input.displayName,
     phone,
     email: input.email,
     image: input.image,
-    activeLocationId: input.activeLocationId,
     interestedPrograms: input.interestedPrograms ?? [],
     totalCallCount: 0,
     createdAt: timestamp,
     updatedAt: timestamp,
   };
 
+  // Location→Lead index item (PK=LOCATION#<locId>, SK=LEAD#<id>)
+  const locationIndexItem = {
+    PK: Keys.locationPK(locationId),
+    SK: Keys.leadSK(id),
+    itemType: "LocationLeadIndex",
+    locationId,
+    leadId: id,
+    createdAt: timestamp,
+  };
+
+  // Per-location mobile sentinel
   const mobileSentinel = {
-    PK: Keys.leadMobilePK(phone),
+    PK: Keys.leadMobilePerLocationPK(locationId, phone),
     SK: Keys.metaSK(),
     itemType: "LeadMobileLookup",
     leadId: id,
+    locationId,
     phone,
     createdAt: timestamp,
   };
@@ -100,6 +117,13 @@ export async function createLead(input: CreateLeadInput): Promise<Lead> {
           {
             Put: {
               TableName: TABLE_NAME,
+              Item: locationIndexItem,
+              ConditionExpression: "attribute_not_exists(PK) AND attribute_not_exists(SK)",
+            },
+          },
+          {
+            Put: {
+              TableName: TABLE_NAME,
               Item: mobileSentinel,
               ConditionExpression: "attribute_not_exists(PK)",
             },
@@ -109,7 +133,7 @@ export async function createLead(input: CreateLeadInput): Promise<Lead> {
     );
   } catch (error) {
     if (error instanceof Error && error.name === "TransactionCanceledException") {
-      throw new Error(`Phone "${phone}" is already registered as a lead.`);
+      throw new Error(`Phone "${phone}" is already registered as a lead in this location.`);
     }
     throw error;
   }
@@ -131,14 +155,18 @@ export async function getLeadById(id: string): Promise<Lead | null> {
 }
 
 /**
- * Get lead by phone (two-step: sentinel > lead item).
+ * Get lead by phone within a specific location (per-location uniqueness).
+ * Two-step: per-location sentinel → lead entity.
  */
-export async function getLeadByPhone(rawPhone: string): Promise<Lead | null> {
+export async function getLeadByPhoneInLocation(
+  locationId: string,
+  rawPhone: string
+): Promise<Lead | null> {
   const phone = normalizePhone(rawPhone);
   const sentinel = await docClient.send(
     new GetCommand({
       TableName: TABLE_NAME,
-      Key: { PK: Keys.leadMobilePK(phone), SK: Keys.metaSK() },
+      Key: { PK: Keys.leadMobilePerLocationPK(locationId, phone), SK: Keys.metaSK() },
     })
   );
   if (!sentinel.Item) return null;
@@ -146,8 +174,60 @@ export async function getLeadByPhone(rawPhone: string): Promise<Lead | null> {
 }
 
 /**
+ * Get all leads for a location.
+ * Step 1: Query LOCATION#<locId> / LEAD#* index items to get lead IDs.
+ * Step 2: BatchGetItem to fetch each lead entity.
+ */
+export async function getLeadsByLocation(locationId: string): Promise<Lead[]> {
+  // Step 1: collect lead IDs from the location partition
+  const leadIds: string[] = [];
+  let lastKey: Record<string, unknown> | undefined;
+
+  do {
+    const result = await docClient.send(
+      new QueryCommand({
+        TableName: TABLE_NAME,
+        KeyConditionExpression: "PK = :pk AND begins_with(SK, :skPrefix)",
+        ExpressionAttributeValues: {
+          ":pk": Keys.locationPK(locationId),
+          ":skPrefix": Keys.LEAD_PREFIX,
+        },
+        ExclusiveStartKey: lastKey,
+      })
+    );
+    for (const item of result.Items ?? []) {
+      leadIds.push(item.leadId as string);
+    }
+    lastKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
+  } while (lastKey);
+
+  if (leadIds.length === 0) return [];
+
+  // Step 2: BatchGetItem in chunks of 100 (DynamoDB limit)
+  const leads: Lead[] = [];
+  for (let i = 0; i < leadIds.length; i += 100) {
+    const chunk = leadIds.slice(i, i + 100);
+    const keys = chunk.map((id) => ({ PK: Keys.leadPK(id), SK: Keys.metaSK() }));
+
+    const response = await docClient.send(
+      new BatchGetCommand({
+        RequestItems: {
+          [TABLE_NAME]: { Keys: keys },
+        },
+      })
+    );
+
+    for (const item of response.Responses?.[TABLE_NAME] ?? []) {
+      leads.push(toLead(item as Record<string, unknown>));
+    }
+  }
+
+  return leads;
+}
+
+/**
  * Update lead fields.
- * If phone changes, atomically replaces old sentinel with new one.
+ * If phone changes, atomically replaces old per-location sentinel with new one.
  */
 export async function updateLead(
   id: string,
@@ -171,10 +251,11 @@ export async function updateLead(
         itemType: "Lead",
       };
       const newSentinel = {
-        PK: Keys.leadMobilePK(newPhone),
+        PK: Keys.leadMobilePerLocationPK(existing.locationId, newPhone),
         SK: Keys.metaSK(),
         itemType: "LeadMobileLookup",
         leadId: id,
+        locationId: existing.locationId,
         phone: newPhone,
         createdAt: timestamp,
       };
@@ -193,7 +274,10 @@ export async function updateLead(
             {
               Delete: {
                 TableName: TABLE_NAME,
-                Key: { PK: Keys.leadMobilePK(existing.phone), SK: Keys.metaSK() },
+                Key: {
+                  PK: Keys.leadMobilePerLocationPK(existing.locationId, existing.phone),
+                  SK: Keys.metaSK(),
+                },
               },
             },
           ],
@@ -209,7 +293,7 @@ export async function updateLead(
   const values: Record<string, unknown> = {};
 
   const fields = [
-    "displayName", "phone", "email", "image", "activeLocationId",
+    "displayName", "phone", "email", "image", "locationId",
     "interestedPrograms", "lastCallDate", "lastInterestLevel",
     "nextFollowUpDate", "lastNotes", "totalCallCount",
   ] as const;
@@ -241,7 +325,10 @@ export async function updateLead(
 }
 
 /**
- * Delete a lead and their mobile sentinel atomically.
+ * Delete a lead and all associated items atomically:
+ *   - LEAD#<id>/META
+ *   - LOCATION#<locId>/LEAD#<id>  (location index)
+ *   - LEAD_MOBILE#<locId>#<phone>/META  (per-location sentinel)
  */
 export async function deleteLead(id: string): Promise<void> {
   const existing = await getLeadById(id);
@@ -259,7 +346,19 @@ export async function deleteLead(id: string): Promise<void> {
         {
           Delete: {
             TableName: TABLE_NAME,
-            Key: { PK: Keys.leadMobilePK(existing.phone), SK: Keys.metaSK() },
+            Key: {
+              PK: Keys.locationPK(existing.locationId),
+              SK: Keys.leadSK(id),
+            },
+          },
+        },
+        {
+          Delete: {
+            TableName: TABLE_NAME,
+            Key: {
+              PK: Keys.leadMobilePerLocationPK(existing.locationId, existing.phone),
+              SK: Keys.metaSK(),
+            },
           },
         },
       ],

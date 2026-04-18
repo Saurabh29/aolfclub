@@ -4,32 +4,59 @@
  * Implements DataSource<Lead, LeadField> for prospect Lead entities.
  *
  * Table design (single-table, PK + SK, no GSI):
- *   Lead item:       PK = "LEAD#<id>",          SK = "META", itemType = "Lead"
- *   Mobile sentinel: PK = "LEAD_MOBILE#<phone>", SK = "META", itemType = "LeadMobileLookup"
+ *   Lead item:              PK = "LEAD#<id>",                       SK = "META"
+ *   Location index:         PK = "LOCATION#<locId>",                SK = "LEAD#<id>"
+ *   Per-location sentinel:  PK = "LEAD_MOBILE#<locId>#<phone>",     SK = "META"
  *
- * query() uses a server-side ScanCache to avoid redundant DynamoDB scans
- * on sort/page/filter changes. Writes invalidate the cache.
+ * query() is NOT location-scoped — use queryLeadsByLocation() in the service layer
+ * for authenticated, location-scoped reads.
  */
 
 import { GetCommand } from "@aws-sdk/lib-dynamodb";
 import { docClient, TABLE_NAME, Keys } from "~/server/db/client";
-import { scanByItemType, fromItem } from "./dynamo-helpers";
+import { fromItem } from "./dynamo-helpers";
 import type { Lead, LeadField } from "~/lib/schemas/domain";
 import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
 import type { DataSource } from "./data-source.interface";
-import { ScanCache } from "./scan-cache";
-import { executeQuery, applyFilters } from "./query-executor";
+import { executeQuery } from "./query-executor";
 import {
   createLead as repoCreateLead,
-  getLeadByPhone as repoGetLeadByPhone,
+  getLeadByPhoneInLocation as repoGetLeadByPhoneInLocation,
   updateLead as repoUpdateLead,
   deleteLead as repoDeleteLead,
+  getLeadsByLocation as repoGetLeadsByLocation,
 } from "~/server/db/repositories/lead.repository";
 import type { CreateLeadInput } from "~/server/db/repositories/lead.repository";
 
 export class LeadsDataSource implements DataSource<Lead, LeadField> {
-  private cache = new ScanCache<Lead>({ label: "Leads" });
+
+  // --- Location-scoped read (primary read path) ----------------------------
+
+  /**
+   * Query leads scoped to a specific location.
+   * Uses the LOCATION#<locId>/LEAD#* index — no full table scan.
+   */
+  async queryByLocation(
+    locationId: string,
+    spec: QuerySpec<LeadField>
+  ): Promise<ApiResult<QueryResult<Lead>>> {
+    try {
+      const leads = await repoGetLeadsByLocation(locationId);
+      return { success: true, data: executeQuery(leads, spec) };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "queryByLocation failed",
+      };
+    }
+  }
+
+  // --- Interface: query() (unscoped — not used in production read path) ----
+
+  async query(_spec: QuerySpec<LeadField>): Promise<ApiResult<QueryResult<Lead>>> {
+    return { success: false, error: "Use queryByLocation() for location-scoped reads." };
+  }
 
   // --- Read operations ------------------------------------------------------
 
@@ -51,39 +78,17 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
     }
   }
 
-  async query(spec: QuerySpec<LeadField>): Promise<ApiResult<QueryResult<Lead>>> {
-    try {
-      const allLeads = await this.cache.getOrScan(() => this.scanAll());
-      return { success: true, data: executeQuery(allLeads, spec) };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "query failed",
-      };
-    }
-  }
-
   async getCount(
-    filters?: QuerySpec<LeadField>["filters"]
+    _filters?: QuerySpec<LeadField>["filters"]
   ): Promise<ApiResult<number>> {
-    try {
-      const allLeads = await this.cache.getOrScan(() => this.scanAll());
-      const filtered = filters ? applyFilters(allLeads, filters) : allLeads;
-      return { success: true, data: filtered.length };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "getCount failed",
-      };
-    }
+    return { success: false, error: "Use queryByLocation() for count." };
   }
 
-  // --- Write operations (invalidate cache) ------------------------------
+  // --- Write operations (invalidate cache) ----------------------------------
 
   async create(data: CreateLeadInput): Promise<ApiResult<Lead>> {
     try {
       const lead = await repoCreateLead(data);
-      this.cache.invalidate();
       return { success: true, data: lead };
     } catch (error) {
       return {
@@ -96,7 +101,6 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
   async update(id: string, data: Partial<Omit<Lead, "id" | "createdAt">>): Promise<ApiResult<Lead>> {
     try {
       const lead = await repoUpdateLead(id, data);
-      this.cache.invalidate();
       return { success: true, data: lead };
     } catch (error) {
       return {
@@ -109,7 +113,6 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
   async delete(id: string): Promise<ApiResult<void>> {
     try {
       await repoDeleteLead(id);
-      this.cache.invalidate();
       return { success: true, data: undefined };
     } catch (error) {
       return {
@@ -119,14 +122,19 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
     }
   }
 
-  // -- Lookup helpers ------------------------------------------------------
+  // -- Lookup helpers -------------------------------------------------------
 
+  /**
+   * Look up a lead by phone within a specific location.
+   * field must be "phone", value must be a JSON string: '{"locationId":"...","phone":"..."}'
+   */
   async getByUniqueField(field: string, value: string): Promise<ApiResult<Lead | null>> {
     if (field !== "phone") {
       return { success: false, error: `Unsupported lookup field: ${field}` };
     }
     try {
-      const lead = await repoGetLeadByPhone(value);
+      const { locationId, phone } = JSON.parse(value) as { locationId: string; phone: string };
+      const lead = await repoGetLeadByPhoneInLocation(locationId, phone);
       return { success: true, data: lead };
     } catch (error) {
       return {
@@ -134,12 +142,5 @@ export class LeadsDataSource implements DataSource<Lead, LeadField> {
         error: error instanceof Error ? error.message : "getByUniqueField failed",
       };
     }
-  }
-
-  // --- Internals ------------------------------------------------------------
-
-  private async scanAll(): Promise<Lead[]> {
-    const items = await scanByItemType<Record<string, unknown>>("Lead");
-    return items.map((item) => fromItem<Lead>(item));
   }
 }

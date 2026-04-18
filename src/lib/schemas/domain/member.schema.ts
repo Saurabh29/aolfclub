@@ -12,11 +12,12 @@ import { z } from "zod";
  */
 export const MemberSchema = z.object({
   id: z.ulid(),
+  /** Location this member belongs to. Required — members are scoped per-location. */
+  locationId: z.ulid(),
   displayName: z.string().min(1),
   phone: z.string().min(1),         // E.164 (normalized at write time)
   email: z.email().optional(),
   image: z.url().optional(),
-  activeLocationId: z.ulid().optional(),
 
   // Program tracking
   memberSince: z.iso.datetime().optional(),

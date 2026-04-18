@@ -33,6 +33,15 @@
  *   Whitelist:               PK = "WHITELIST#<email>",       SK = "META"
  *   Location admin edge:      PK = "LOCATION_ADMIN#<locId>",  SK = "USER#<userId>"
  *   Task item:              PK = "TASK#<id>",              SK = "META"
+ *
+ * Location-scoped index items (per-location uniqueness):
+ *   Location>Lead:          PK = "LOCATION#<locId>",          SK = "LEAD#<leadId>"
+ *   Location>Member:        PK = "LOCATION#<locId>",          SK = "MEMBER#<memberId>"
+ *   Location>Task:          PK = "LOCATION#<locId>",          SK = "TASK#<taskId>"
+ *
+ * Per-location mobile sentinels (phone unique within a location, not globally):
+ *   Lead mobile (local):    PK = "LEAD_MOBILE#<locId>#<phone>",   SK = "META"
+ *   Member mobile (local):  PK = "MEMBER_MOBILE#<locId>#<phone>", SK = "META"
  */
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
@@ -80,8 +89,10 @@ export const Keys = {
   memberPK:        (id: string): string => `MEMBER#${id}`,
   memberMobilePK:  (phone: string): string => `MEMBER_MOBILE#${phone}`,
   leadPK:          (id: string): string => `LEAD#${id}`,
-  leadMobilePK:        (phone: string): string => `LEAD_MOBILE#${phone}`,
+  /** Per-location mobile sentinel — phone is unique within a location, not globally. */
+  leadMobilePerLocationPK: (locationId: string, phone: string): string => `LEAD_MOBILE#${locationId}#${phone}`,
   taskPK:          (id: string): string => `TASK#${id}`,
+  memberMobilePerLocationPK: (locationId: string, phone: string): string => `MEMBER_MOBILE#${locationId}#${phone}`,
   whitelistPK:         (email: string): string => `WHITELIST#${email.toLowerCase()}`,
   locationAdminPK:     (locationId: string): string => `LOCATION_ADMIN#${locationId}`,
   groupPK:             (id: string): string => `GROUP#${id}`,
@@ -95,6 +106,14 @@ export const Keys = {
   groupSK:      (id: string): string => `GROUP#${id}`,
   roleSK:       (name: string): string => `ROLE#${name}`,
   pageSK:       (name: string): string => `PAGE#${name}`,
+  /** SK for LOCATION#<locId> / LEAD#<leadId> index items */
+  leadSK:       (id: string): string => `LEAD#${id}`,
+  /** SK for LOCATION#<locId> / MEMBER#<memberId> index items */
+  memberSK:     (id: string): string => `MEMBER#${id}`,
+  /** SK for LOCATION#<locId> / TASK#<taskId> index items */
+  taskSK:       (id: string): string => `TASK#${id}`,
+  /** SK for LOCATION#<locId> / USER#<userId> edge items */
+  userTaskAssignmentSK: (taskId: string): string => `TASKASSIGNMENT#${taskId}`,
 
   // Prefix constants for begins_with KeyConditionExpressions
   LOCATION_PREFIX:       "LOCATION#",
