@@ -14,6 +14,7 @@
 import {
   createSignal,
   createEffect,
+  onCleanup,
   For,
   Show,
   batch,
@@ -94,6 +95,11 @@ export const LeadFilterPane: Component<LeadFilterPaneProps> = (props) => {
   };
 
   // -- Build and push filters whenever state changes -------------------------
+  // Defer the setFilters call by one event-loop tick so DOM mutations triggered
+  // by the new fetch don't fire while an input event is still being processed
+  // (which would cause the search input to lose focus on first keystroke).
+  let filterTimer: ReturnType<typeof setTimeout> | undefined;
+  onCleanup(() => clearTimeout(filterTimer));
 
   createEffect(() => {
     // Read all signals to establish reactive dependencies
@@ -141,7 +147,8 @@ export const LeadFilterPane: Component<LeadFilterPaneProps> = (props) => {
       filters.push({ field: "displayName", op: "contains", value: search });
     }
 
-    props.controller.setFilters(filters);
+    clearTimeout(filterTimer);
+    filterTimer = setTimeout(() => props.controller.setFilters(filters), 0);
   });
 
   // -- Actions ---------------------------------------------------------------

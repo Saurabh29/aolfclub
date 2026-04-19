@@ -223,17 +223,19 @@ export function CollectionTable<T, TField extends string = string>(
                 <For each={table.getRowModel().rows}>
                   {(row) => {
                     const id = props.getId(row.original);
-                    const isSelected = props.controller.selectedIds().has(id);
+                    // NOTE: access selectedIds() directly in JSX — do NOT cache it
+                    // in a variable. A cached boolean is not reactive; SolidJS only
+                    // tracks signal reads that occur inside JSX expressions.
 
                     return (
                       <TableRow
                         onClick={() => handleRowClick(row.original)}
-                        class={isSelected ? "bg-muted/50" : "hover:bg-muted/50 cursor-pointer"}
+                        class={props.controller.selectedIds().has(id) ? "bg-muted/50" : "hover:bg-muted/50 cursor-pointer"}
                       >
                         <Show when={props.selectable}>
                           <TableCell>
                             <Checkbox
-                              checked={isSelected}
+                              checked={props.controller.selectedIds().has(id)}
                               onChange={() => props.controller.toggleItem(id)}
                             />
                           </TableCell>

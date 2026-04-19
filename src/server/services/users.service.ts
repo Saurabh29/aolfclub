@@ -209,7 +209,26 @@ export async function getTeamForLocation(
     }
 
     if (userRoleMap.size === 0) {
-      return { success: true, data: [] };
+      // No DynamoDB groups exist (e.g. dummy/dev mode). Fall back to
+      // querying usersDataSource directly, filtered by activeLocationId.
+      const fallback = await usersDataSource.query({
+        filters: [{ field: "activeLocationId" as any, op: "eq", value: locationId }],
+        sorting: [{ field: "displayName" as any, direction: "asc" }],
+        pagination: { pageSize: 100, pageIndex: 0 },
+      });
+      if (!fallback.success) return { success: true, data: [] };
+      return {
+        success: true,
+        data: fallback.data.items.map((u) => ({
+          id: u.id,
+          email: u.email,
+          displayName: u.displayName,
+          image: u.image,
+          activeRole: u.activeRole ?? null,
+          isAdmin: u.isAdmin ?? false,
+          createdAt: u.createdAt,
+        })),
+      };
     }
 
     // Batch-get all user records (DynamoDB BatchGet supports up to 100 keys)
