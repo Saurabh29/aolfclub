@@ -1,4 +1,4 @@
-import { createSignal, createResource, type Accessor, type Setter } from "solid-js";
+import { createSignal, createResource, startTransition, type Accessor, type Setter } from "solid-js";
 import type { QuerySpec, QueryResult, SortSpec, FilterCondition } from "~/lib/schemas/query";
 
 /**
@@ -102,15 +102,15 @@ export function createCollectionQueryController<T, TField extends string = strin
   const refresh = () => refetch();
 
   const setFilters = (filters: FilterCondition<TField>[]) => {
-    setQuerySpec((prev) => ({ ...prev, filters }));
+    startTransition(() => setQuerySpec((prev) => ({ ...prev, filters })));
   };
 
   const setSorting = (sorting: SortSpec<TField>[]) => {
-    setQuerySpec((prev) => ({ ...prev, sorting }));
+    startTransition(() => setQuerySpec((prev) => ({ ...prev, sorting })));
   };
 
   const setPagination = (pagination: QuerySpec<TField>["pagination"]) => {
-    setQuerySpec((prev) => ({ ...prev, pagination }));
+    startTransition(() => setQuerySpec((prev) => ({ ...prev, pagination })));
   };
 
   const selectItem = (id: string) => {

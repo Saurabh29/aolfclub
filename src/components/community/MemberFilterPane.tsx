@@ -10,7 +10,6 @@
 import {
   createSignal,
   createEffect,
-  onCleanup,
   For,
   Show,
   batch,
@@ -49,9 +48,6 @@ export const MemberFilterPane: Component<MemberFilterPaneProps> = (props) => {
     return n;
   };
 
-  let filterTimer: ReturnType<typeof setTimeout> | undefined;
-  onCleanup(() => clearTimeout(filterTimer));
-
   createEffect(() => {
     const programs = selectedPrograms();
     const donePrograms = selectedDonePrograms();
@@ -84,8 +80,7 @@ export const MemberFilterPane: Component<MemberFilterPaneProps> = (props) => {
       filters.push({ field: "displayName", op: "contains", value: search });
     }
 
-    clearTimeout(filterTimer);
-    filterTimer = setTimeout(() => props.controller.setFilters(filters), 0);
+    props.controller.setFilters(filters);
   });
 
   const clearAll = () => {
