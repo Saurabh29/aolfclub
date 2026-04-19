@@ -93,7 +93,7 @@ export class UsersDataSource implements DataSource<User, UserField> {
 
   async update(
     id: string,
-    data: Partial<Pick<User, "displayName" | "image" | "phone" | "email" | "activeLocationId">>
+    data: Partial<Pick<User, "displayName" | "image" | "phone" | "email" | "activeLocationId" | "activeRole" | "isAdmin">>
   ): Promise<ApiResult<User>> {
     try {
       const user = await repoUpdateUser(id, data);

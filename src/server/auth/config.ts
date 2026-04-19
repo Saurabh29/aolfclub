@@ -56,6 +56,7 @@ export const authConfig: StartAuthJSConfig = {
           if (dbUser.activeLocationId) {
             token.activeLocationId = dbUser.activeLocationId;
           }
+          token.isAdmin = dbUser.isAdmin ?? false;
         }
         // Carry canBootstrap into the token (only true before setup completes)
         if ((user as any)._canBootstrap) {
@@ -72,6 +73,8 @@ export const authConfig: StartAuthJSConfig = {
         (session as any).user.activeLocationId = token.activeLocationId;
       if (token.canBootstrap)
         (session as any).user.canBootstrap = token.canBootstrap;
+      if (token.isAdmin !== undefined)
+        (session as any).user.isAdmin = token.isAdmin;
       return session;
     },
   },

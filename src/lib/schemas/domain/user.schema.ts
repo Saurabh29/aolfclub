@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+/** Role a team member holds at a location. */
+export const GroupTypeEnum = z.enum(["ADMIN", "TEACHER", "VOLUNTEER"]);
+export type GroupType = z.infer<typeof GroupTypeEnum>;
+
 /**
  * User  -  a volunteer or admin who logs into the system and makes calls.
  *
@@ -16,6 +20,10 @@ export const UserSchema = z.object({
 	phone: z.string().optional(),
 	image: z.url().optional(),
 	activeLocationId: z.ulid().optional(),
+	/** Cached role at activeLocationId — updated whenever activeLocationId changes. */
+	activeRole: GroupTypeEnum.nullable().optional(),
+	/** Super-admin flag — bypasses all role-based page checks when true. */
+	isAdmin: z.boolean().default(false),
 	createdAt: z.iso.datetime(),
 	updatedAt: z.iso.datetime(),
 });

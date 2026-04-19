@@ -157,6 +157,8 @@ export async function updateUser(
       | "phone"
       | "email"
       | "activeLocationId"
+      | "activeRole"
+      | "isAdmin"
     >
   >
 ): Promise<User> {
@@ -217,7 +219,7 @@ export async function updateUser(
   const values: Record<string, unknown> = {};
 
   const fields = [
-    "displayName", "image", "phone", "activeLocationId",
+    "displayName", "image", "phone", "activeLocationId", "activeRole", "isAdmin",
   ] as const;
 
   for (const field of fields) {

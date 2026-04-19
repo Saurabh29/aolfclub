@@ -47,6 +47,8 @@ export const getUser = query(async () => {
 export type SessionInfo = {
   userId: string | null;
   activeLocationId: string | null;
+  activeRole: import("~/lib/schemas/domain/user.schema").GroupType | null;
+  isAdmin: boolean;
   canBootstrap: boolean;
   email: string | null;
   name: string | null;
@@ -65,30 +67,38 @@ export async function getSessionInfo(): Promise<SessionInfo> {
     raw?.user?.id ?? raw?.user?.userId ?? raw?.user?.sub ?? null;
 
   if (!userId) {
-    return { userId: null, activeLocationId: null, canBootstrap: false, email: null, name: null, image: null, raw };
+    return { userId: null, activeLocationId: null, activeRole: null, isAdmin: false, canBootstrap: false, email: null, name: null, image: null, raw };
   }
 
   let activeLocationId = raw?.user?.activeLocationId ?? null;
   const canBootstrap = raw?.user?.canBootstrap === true;
+  let activeRole: import("~/lib/schemas/domain/user.schema").GroupType | null = null;
+  let isAdmin = false;
 
-  // Server-side DB fallback: the JWT is issued at sign-in time, so it won't
-  // contain activeLocationId if the user set it after their last login
-  // (e.g. they just created their first location). Re-read from DB once.
-  if (!activeLocationId && typeof window === "undefined") {
+  // Read fresh activeRole and isAdmin from DB (always authoritative)
+  if (typeof window === "undefined") {
     try {
       const { getActiveLocationId } = await import("~/server/services/users.service");
-      const result = await getActiveLocationId(userId);
-      if (result.success && result.data) {
-        activeLocationId = result.data;
+      const { usersDataSource } = await import("~/server/data-sources/instances");
+      const userResult = await usersDataSource.getById(userId);
+      if (userResult.success && userResult.data) {
+        if (!activeLocationId) activeLocationId = userResult.data.activeLocationId ?? null;
+        activeRole = userResult.data.activeRole ?? null;
+        isAdmin = userResult.data.isAdmin ?? false;
+      } else if (!activeLocationId) {
+        const result = await getActiveLocationId(userId);
+        if (result.success && result.data) activeLocationId = result.data;
       }
     } catch {
-      // Ignore DB errors — activeLocationId remains null, middleware will redirect
+      // Ignore DB errors
     }
   }
 
   return {
     userId,
     activeLocationId,
+    activeRole,
+    isAdmin,
     canBootstrap,
     email: raw?.user?.email ?? null,
     name: raw?.user?.name ?? null,

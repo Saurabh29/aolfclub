@@ -304,3 +304,18 @@ export async function getUsersInGroup(
     joinedAt: item.joinedAt as string,
   }));
 }
+
+/**
+ * Remove a user from ALL groups at a specific location.
+ * Call this before assigning a new role to enforce one-role-per-location.
+ */
+export async function removeUserFromAllGroupsAtLocation(
+  userId: string,
+  locationId: string
+): Promise<void> {
+  const groups = await getGroupsForUser(userId, locationId);
+  for (const group of groups) {
+    await removeUserFromGroup(userId, group.groupId);
+  }
+}
+

@@ -46,13 +46,31 @@ export const createLocationAction = action(async (data: CreateLocationRequest) =
   const { getSessionInfo } = await import("~/lib/auth");
   const { grantLocationAdmin } = await import("~/server/db/repositories/location-admin.repository");
   const { consumeBootstrapFlag } = await import("~/server/db/repositories/whitelist.repository");
-  const { usersDataSource } = await import("~/server/data-sources/instances");
 
   const session = await getSessionInfo();
   if (session.userId && result.data?.id) {
     const locationId = result.data.id;
     await grantLocationAdmin(locationId, session.userId);
-    await usersDataSource.update!(session.userId, { activeLocationId: locationId });
+
+    // Create the three canonical role-groups for this location
+    const { createUserGroup, addUserToGroup } = await import(
+      "~/server/db/repositories/user-group.repository"
+    );
+    const adminGroup = await createUserGroup({ locationId, groupType: "ADMIN", name: "Admin" });
+    await createUserGroup({ locationId, groupType: "TEACHER", name: "Teacher" });
+    await createUserGroup({ locationId, groupType: "VOLUNTEER", name: "Volunteer" });
+
+    // Assign the creator as ADMIN of this location
+    await addUserToGroup(session.userId, adminGroup.groupId, {
+      locationId,
+      groupType: "ADMIN",
+      groupName: "Admin",
+    });
+
+    // Set active location — resolves & caches activeRole from the group just added
+    const { setActiveLocation } = await import("~/server/services/users.service");
+    await setActiveLocation(session.userId, locationId);
+
     if (session.canBootstrap && session.email) {
       await consumeBootstrapFlag(session.email);
     }

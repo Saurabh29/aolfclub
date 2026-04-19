@@ -17,11 +17,12 @@
  */
 import { createColumnHelper } from "@tanstack/solid-table";
 import { createSignal, Show, Switch, Match, For } from "solid-js";
-import { Download, X, Upload, RefreshCw, PanelLeftClose, PanelLeftOpen, Target, GraduationCap, Users } from "lucide-solid";
-import { queryLeadsQuery, queryMembersQuery, queryUsersQuery } from "~/server/api";
+import { createAsync, useAction } from "@solidjs/router";
+import { Download, X, Upload, RefreshCw, PanelLeftClose, PanelLeftOpen, Target, GraduationCap, Users, ShieldCheck } from "lucide-solid";
+import { queryLeadsQuery, queryMembersQuery, queryUsersQuery, getCommunityTeamQuery, assignRoleAction } from "~/server/api";
 import type { Lead, LeadField } from "~/lib/schemas/domain/lead.schema";
 import type { Member, MemberField } from "~/lib/schemas/domain/member.schema";
-import type { User, UserField } from "~/lib/schemas/domain/user.schema";
+import type { User, UserField, GroupType } from "~/lib/schemas/domain/user.schema";
 import { createCollectionQueryController } from "~/lib/controllers";
 import { ResponsiveCollectionView } from "~/components/collection";
 import { Badge } from "~/components/ui/badge";
@@ -127,6 +128,18 @@ const userColumns = [
 
 type ContactTab = "leads" | "members" | "team";
 
+const ROLE_BADGE_VARIANT: Record<GroupType, "default" | "secondary" | "outline"> = {
+  ADMIN: "default",
+  TEACHER: "secondary",
+  VOLUNTEER: "outline",
+};
+
+const ROLE_LABELS: Record<GroupType, string> = {
+  ADMIN: "Admin",
+  TEACHER: "Teacher",
+  VOLUNTEER: "Volunteer",
+};
+
 // -- Bulk action toolbar -------------------------------------------------------
 
 interface BulkToolbarProps {
@@ -158,6 +171,36 @@ export default function CommunityPage() {
   const [activeTab, setActiveTab] = createSignal<ContactTab>("leads");
   const [showImport, setShowImport] = createSignal(false);
   const [filterPaneOpen, setFilterPaneOpen] = createSignal(true);
+
+  // Team tab: live role data + assignment
+  const teamMembers = createAsync(() => getCommunityTeamQuery(), { deferStream: false });
+  const [teamSelectedIds, setTeamSelectedIds] = createSignal<Set<string>>(new Set());
+  const [assigningRole, setAssigningRole] = createSignal(false);
+  const doAssignRole = useAction(assignRoleAction);
+
+  const handleAssignRole = async (groupType: GroupType) => {
+    const ids = Array.from(teamSelectedIds());
+    if (!ids.length) return;
+    setAssigningRole(true);
+    try {
+      const result = await doAssignRole(ids, groupType);
+      if (result.success) {
+        const { assigned, failed } = result.data;
+        if (failed === 0) {
+          alert(`Assigned ${assigned} member(s) to ${ROLE_LABELS[groupType]}.`);
+        } else {
+          alert(`Assigned ${assigned}, failed ${failed}.`);
+        }
+        setTeamSelectedIds(new Set());
+        // Refresh team data
+        await getCommunityTeamQuery();
+      } else {
+        alert(`Error: ${result.error}`);
+      }
+    } finally {
+      setAssigningRole(false);
+    }
+  };
 
   const leadsController = createCollectionQueryController<Lead, LeadField>({
     queryFn: (spec) => queryLeadsQuery(spec),
@@ -204,6 +247,21 @@ export default function CommunityPage() {
     { id: "members", label: "Members", Icon: GraduationCap },
     { id: "team", label: "Team", Icon: Users },
   ];
+
+  const toggleTeamRow = (id: string) => {
+    setTeamSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleTeamAll = () => {
+    const all = teamMembers() ?? [];
+    setTeamSelectedIds((prev) =>
+      prev.size === all.length ? new Set() : new Set(all.map((m) => m.id))
+    );
+  };
 
   return (
     <div class="flex flex-col h-full overflow-hidden">
@@ -293,17 +351,31 @@ export default function CommunityPage() {
 
           {/* Result count row */}
           <div class="flex items-center justify-between px-4 py-2 shrink-0 text-sm text-muted-foreground border-b border-border">
-            <Show
-              when={activeController().data()?.pageInfo.totalCount !== undefined}
-              fallback={<span>Loading...</span>}
-            >
-              <span>
-                {activeController().data()!.pageInfo.totalCount} result{activeController().data()!.pageInfo.totalCount !== 1 ? "s" : ""}
-                <Show when={selectedCount() > 0}>
-                  {"   "}<span class="text-foreground font-medium">{selectedCount()} selected</span>
+            <Switch>
+              <Match when={activeTab() === "team"}>
+                <Show when={teamMembers() !== undefined} fallback={<span>Loading...</span>}>
+                  <span>
+                    {(teamMembers() ?? []).length} result{(teamMembers() ?? []).length !== 1 ? "s" : ""}
+                    <Show when={teamSelectedIds().size > 0}>
+                      {"   "}<span class="text-foreground font-medium">{teamSelectedIds().size} selected</span>
+                    </Show>
+                  </span>
                 </Show>
-              </span>
-            </Show>
+              </Match>
+              <Match when={true}>
+                <Show
+                  when={activeController().data()?.pageInfo.totalCount !== undefined}
+                  fallback={<span>Loading...</span>}
+                >
+                  <span>
+                    {activeController().data()!.pageInfo.totalCount} result{activeController().data()!.pageInfo.totalCount !== 1 ? "s" : ""}
+                    <Show when={selectedCount() > 0}>
+                      {"   "}<span class="text-foreground font-medium">{selectedCount()} selected</span>
+                    </Show>
+                  </span>
+                </Show>
+              </Match>
+            </Switch>
           </div>
 
           {/* Scrollable collection */}
@@ -370,32 +442,108 @@ export default function CommunityPage() {
               </Match>
 
               <Match when={activeTab() === "team"}>
-                <ResponsiveCollectionView
-                  controller={usersController}
-                  columns={userColumns}
-                  getId={(user) => user.id}
-                  renderCard={(user) => (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle class="flex items-center gap-3">
-                          <Show when={user.image}>
-                            <img src={user.image} alt={user.displayName} class="w-10 h-10 rounded-full" />
-                          </Show>
-                          <div>
-                            <div class="font-semibold">{user.displayName}</div>
-                            <div class="text-sm text-muted-foreground font-normal">{user.email}</div>
-                          </div>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Badge variant="outline">Volunteer</Badge>
-                      </CardContent>
-                    </Card>
-                  )}
-                  selectable={true}
-                  cardColumns={3}
-                  emptyMessage="No volunteers found"
-                />
+                {/* Role-assignment toolbar */}
+                <Show when={teamSelectedIds().size > 0}>
+                  <div class="flex items-center gap-3 px-4 py-3 mb-3 rounded-lg border border-border bg-muted">
+                    <span class="text-sm font-medium">{teamSelectedIds().size} selected</span>
+                    <div class="ml-auto flex items-center gap-2">
+                      <span class="text-xs text-muted-foreground mr-1">Assign role:</span>
+                      <For each={(["ADMIN", "TEACHER", "VOLUNTEER"] as GroupType[])}>
+                        {(role) => (
+                          <Button
+                            size="sm"
+                            variant={ROLE_BADGE_VARIANT[role]}
+                            disabled={assigningRole()}
+                            onClick={() => handleAssignRole(role)}
+                          >
+                            {ROLE_LABELS[role]}
+                          </Button>
+                        )}
+                      </For>
+                      <Button size="sm" variant="ghost" onClick={() => setTeamSelectedIds(new Set())}>
+                        <X class="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </Show>
+
+                {/* Team table */}
+                <Show
+                  when={(teamMembers() ?? []).length > 0}
+                  fallback={
+                    <div class="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
+                      <Users class="w-8 h-8 opacity-30" />
+                      <p class="text-sm">No team members at this location yet.</p>
+                    </div>
+                  }
+                >
+                  <div class="border border-border rounded-lg overflow-hidden">
+                    <table class="w-full text-sm">
+                      <thead class="bg-muted border-b border-border">
+                        <tr>
+                          <th class="w-10 px-3 py-2">
+                            <input
+                              type="checkbox"
+                              checked={(teamMembers() ?? []).length > 0 && teamSelectedIds().size === (teamMembers() ?? []).length}
+                              onChange={toggleTeamAll}
+                              class="w-4 h-4 rounded border-border"
+                            />
+                          </th>
+                          <th class="px-3 py-2 text-left font-medium">Member</th>
+                          <th class="px-3 py-2 text-left font-medium">Email</th>
+                          <th class="px-3 py-2 text-left font-medium">Role</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <For each={teamMembers() ?? []}>
+                          {(member) => (
+                            <tr
+                              class="border-b border-border last:border-0 cursor-pointer hover:bg-muted/50"
+                              classList={{ "bg-muted/70": teamSelectedIds().has(member.id) }}
+                              onClick={() => toggleTeamRow(member.id)}
+                            >
+                              <td class="px-3 py-2">
+                                <input
+                                  type="checkbox"
+                                  checked={teamSelectedIds().has(member.id)}
+                                  onChange={() => toggleTeamRow(member.id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  class="w-4 h-4 rounded border-border"
+                                />
+                              </td>
+                              <td class="px-3 py-2">
+                                <div class="flex items-center gap-2">
+                                  <Show when={member.image}>
+                                    <img src={member.image} alt={member.displayName} class="w-7 h-7 rounded-full" />
+                                  </Show>
+                                  <div class="flex items-center gap-1">
+                                    <span class="font-medium">{member.displayName}</span>
+                                    <Show when={member.isAdmin}>
+                                      <ShieldCheck class="w-3.5 h-3.5 text-primary" />
+                                    </Show>
+                                  </div>
+                                </div>
+                              </td>
+                              <td class="px-3 py-2 text-muted-foreground">{member.email}</td>
+                              <td class="px-3 py-2">
+                                <Show
+                                  when={member.activeRole}
+                                  fallback={<span class="text-muted-foreground">—</span>}
+                                >
+                                  {(role) => (
+                                    <Badge variant={ROLE_BADGE_VARIANT[role()]}>
+                                      {ROLE_LABELS[role()]}
+                                    </Badge>
+                                  )}
+                                </Show>
+                              </td>
+                            </tr>
+                          )}
+                        </For>
+                      </tbody>
+                    </table>
+                  </div>
+                </Show>
               </Match>
             </Switch>
           </div>
