@@ -13,6 +13,12 @@ import type { UserField, GroupType } from "~/lib/schemas/domain";
 
 export const queryUsersQuery = query(async (spec: QuerySpec<UserField>) => {
   "use server";
+  const { getSessionInfo } = await import("~/lib/auth");
+  const session = await getSessionInfo();
+  if (!session.userId) throw new Error("Not authenticated");
+  if (!session.isAdmin && !session.activeLocationId) {
+    throw new Error("No active location selected.");
+  }
   return execQuery(spec, queryUsers);
 }, "query-users");
 

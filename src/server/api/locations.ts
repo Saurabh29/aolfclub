@@ -81,10 +81,22 @@ export const createLocationAction = action(async (data: CreateLocationRequest) =
 
 export const updateLocationAction = action(async (id: string, data: UpdateLocationRequest) => {
   "use server";
+  const { getSessionInfo } = await import("~/lib/auth");
+  const session = await getSessionInfo();
+  if (!session.userId) throw new Error("Not authenticated");
+  if (!session.isAdmin && session.activeRole !== "ADMIN") {
+    throw new Error("Unauthorized: only Admins can update locations.");
+  }
   return await updateLocation(id, data);
 }, "update-location");
 
 export const deleteLocationAction = action(async (id: string) => {
   "use server";
+  const { getSessionInfo } = await import("~/lib/auth");
+  const session = await getSessionInfo();
+  if (!session.userId) throw new Error("Not authenticated");
+  if (!session.isAdmin && session.activeRole !== "ADMIN") {
+    throw new Error("Unauthorized: only Admins can delete locations.");
+  }
   return await deleteLocation(id);
 }, "delete-location");

@@ -1,16 +1,19 @@
 import { membersDataSource } from "../data-sources/instances";
-import { createCollectionService } from "./create-collection-service";
 import type { Member, MemberField } from "~/lib/schemas/domain";
 import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
 
 /**
- * Members Service - Uses generic collection service factory for getById.
+ * Members Service
  * Read queries are location-scoped via queryMembersByLocation().
  */
-const service = createCollectionService<Member, MemberField>(membersDataSource);
 
-export const getMemberById = service.getById;
+export async function getMemberById(id: string): Promise<ApiResult<Member | null>> {
+  if (!membersDataSource.getById) {
+    return { success: false, error: "getById not supported" };
+  }
+  return membersDataSource.getById(id);
+}
 
 /**
  * Query members scoped to a location.

@@ -30,13 +30,13 @@ import {
   onCleanup,
   type Component,
 } from "solid-js";
-import { createColumnHelper } from "@tanstack/solid-table";
 import { X, ChevronDown, ArrowRight } from "lucide-solid";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
 import { createCollectionQueryController } from "~/lib/controllers";
 import { ResponsiveCollectionView } from "~/components/collection";
+import { leadColumns, memberColumns } from "~/components/collection/shared-columns";
 import { LeadFilterPane } from "~/components/community/LeadFilterPane";
 import { MemberFilterPane } from "~/components/community/MemberFilterPane";
 import { queryLeadsQuery, queryMembersQuery, queryUsersQuery } from "~/server/api";
@@ -44,69 +44,7 @@ import type { Lead, LeadField } from "~/lib/schemas/domain/lead.schema";
 import type { Member, MemberField } from "~/lib/schemas/domain/member.schema";
 import type { User } from "~/lib/schemas/domain/user.schema";
 
-// -- Column definitions --------------------------------------------------------
-
-const leadColHelper = createColumnHelper<Lead>();
-const leadColumns = [
-  leadColHelper.accessor("displayName", {
-    header: "Name",
-    cell: (info) => <span class="font-medium">{info.getValue()}</span>,
-  }),
-  leadColHelper.accessor("phone", {
-    header: "Phone",
-    cell: (info) => <span class="text-sm text-muted-foreground">{info.getValue()}</span>,
-  }),
-  leadColHelper.accessor("lastInterestLevel", {
-    header: "Interest",
-    cell: (info) => {
-      const level = info.getValue();
-      if (!level) return <span class="text-muted-foreground"> - </span>;
-      const variant =
-        level === "High" ? "default" :
-        level === "Medium" ? "secondary" :
-        level === "Low" ? "outline" : "error";
-      return <Badge variant={variant}>{level}</Badge>;
-    },
-  }),
-  leadColHelper.accessor("totalCallCount", {
-    header: "Calls",
-    cell: (info) => <span class="text-sm">{info.getValue()}</span>,
-  }),
-  leadColHelper.accessor("nextFollowUpDate", {
-    header: "Follow-up",
-    cell: (info) => {
-      const v = info.getValue();
-      return v ? (
-        <span class="text-sm">{new Date(v).toLocaleDateString()}</span>
-      ) : (
-        <span class="text-muted-foreground"> - </span>
-      );
-    },
-  }),
-];
-
-const memberColHelper = createColumnHelper<Member>();
-const memberColumns = [
-  memberColHelper.accessor("displayName", {
-    header: "Name",
-    cell: (info) => <span class="font-medium">{info.getValue()}</span>,
-  }),
-  memberColHelper.accessor("phone", {
-    header: "Phone",
-    cell: (info) => <span class="text-sm text-muted-foreground">{info.getValue()}</span>,
-  }),
-  memberColHelper.accessor("memberSince", {
-    header: "Member Since",
-    cell: (info) => {
-      const v = info.getValue();
-      return v ? <span class="text-sm">{new Date(v).toLocaleDateString()}</span> : <span class="text-muted-foreground"> - </span>;
-    },
-  }),
-  memberColHelper.accessor("programsDone", {
-    header: "Programs Done",
-    cell: (info) => <span class="text-sm">{info.getValue().length}</span>,
-  }),
-];
+// Columns imported from ~/components/collection/shared-columns
 
 // -- Props ---------------------------------------------------------------------
 

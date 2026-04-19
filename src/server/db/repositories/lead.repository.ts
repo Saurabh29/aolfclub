@@ -22,6 +22,7 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import { ulid } from "ulid";
 import { docClient, TABLE_NAME, Keys, normalizePhone, now } from "~/server/db/client";
+import { fromItem } from "~/server/data-sources/dynamo-helpers";
 import type { Lead } from "~/lib/schemas/domain";
 
 // ---------------------------------------------------------------------------
@@ -37,14 +38,7 @@ export interface CreateLeadInput {
   interestedPrograms?: string[];
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function toLead(item: Record<string, unknown>): Lead {
-  const { PK, SK, itemType, ...rest } = item;
-  return rest as unknown as Lead;
-}
+// Helpers removed — using shared fromItem<Lead> from dynamo-helpers
 
 // ---------------------------------------------------------------------------
 // CRUD
@@ -138,7 +132,7 @@ export async function createLead(input: CreateLeadInput): Promise<Lead> {
     throw error;
   }
 
-  return toLead(leadItem);
+  return fromItem<Lead>(leadItem);
 }
 
 /**
@@ -151,7 +145,7 @@ export async function getLeadById(id: string): Promise<Lead | null> {
       Key: { PK: Keys.leadPK(id), SK: Keys.metaSK() },
     })
   );
-  return result.Item ? toLead(result.Item as Record<string, unknown>) : null;
+  return result.Item ? fromItem<Lead>(result.Item as Record<string, unknown>) : null;
 }
 
 /**
@@ -207,18 +201,24 @@ export async function getLeadsByLocation(locationId: string): Promise<Lead[]> {
   const leads: Lead[] = [];
   for (let i = 0; i < leadIds.length; i += 100) {
     const chunk = leadIds.slice(i, i + 100);
-    const keys = chunk.map((id) => ({ PK: Keys.leadPK(id), SK: Keys.metaSK() }));
+    let keys = chunk.map((id) => ({ PK: Keys.leadPK(id), SK: Keys.metaSK() }));
 
-    const response = await docClient.send(
-      new BatchGetCommand({
-        RequestItems: {
-          [TABLE_NAME]: { Keys: keys },
-        },
-      })
-    );
+    while (keys.length > 0) {
+      const response = await docClient.send(
+        new BatchGetCommand({
+          RequestItems: {
+            [TABLE_NAME]: { Keys: keys },
+          },
+        })
+      );
 
-    for (const item of response.Responses?.[TABLE_NAME] ?? []) {
-      leads.push(toLead(item as Record<string, unknown>));
+      for (const item of response.Responses?.[TABLE_NAME] ?? []) {
+        leads.push(fromItem<Lead>(item as Record<string, unknown>));
+      }
+
+      // Retry any unprocessed keys
+      const unprocessed = response.UnprocessedKeys?.[TABLE_NAME]?.Keys;
+      keys = (unprocessed as typeof keys) ?? [];
     }
   }
 
@@ -284,7 +284,7 @@ export async function updateLead(
         })
       );
 
-      return toLead(newItem as Record<string, unknown>);
+      return fromItem<Lead>(newItem as Record<string, unknown>);
     }
   }
 
@@ -321,7 +321,7 @@ export async function updateLead(
     })
   );
 
-  return toLead(result.Attributes as Record<string, unknown>);
+  return fromItem<Lead>(result.Attributes as Record<string, unknown>);
 }
 
 /**

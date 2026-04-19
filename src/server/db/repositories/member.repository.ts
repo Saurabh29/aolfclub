@@ -22,6 +22,7 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import { ulid } from "ulid";
 import { docClient, TABLE_NAME, Keys, normalizePhone, now } from "~/server/db/client";
+import { fromItem } from "~/server/data-sources/dynamo-helpers";
 import type { Member } from "~/lib/schemas/domain";
 
 // ---------------------------------------------------------------------------
@@ -39,14 +40,7 @@ export interface CreateMemberInput {
   interestedPrograms?: string[];
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function toMember(item: Record<string, unknown>): Member {
-  const { PK, SK, itemType, ...rest } = item;
-  return rest as unknown as Member;
-}
+// Helpers removed — using shared fromItem<Member> from dynamo-helpers
 
 // ---------------------------------------------------------------------------
 // CRUD
@@ -141,7 +135,7 @@ export async function createMember(input: CreateMemberInput): Promise<Member> {
     throw error;
   }
 
-  return toMember(memberItem);
+  return fromItem<Member>(memberItem);
 }
 
 /**
@@ -154,7 +148,7 @@ export async function getMemberById(id: string): Promise<Member | null> {
       Key: { PK: Keys.memberPK(id), SK: Keys.metaSK() },
     })
   );
-  return result.Item ? toMember(result.Item as Record<string, unknown>) : null;
+  return result.Item ? fromItem<Member>(result.Item as Record<string, unknown>) : null;
 }
 
 /**
@@ -208,16 +202,22 @@ export async function getMembersByLocation(locationId: string): Promise<Member[]
   const members: Member[] = [];
   for (let i = 0; i < memberIds.length; i += 100) {
     const chunk = memberIds.slice(i, i + 100);
-    const keys = chunk.map((id) => ({ PK: Keys.memberPK(id), SK: Keys.metaSK() }));
+    let keys = chunk.map((id) => ({ PK: Keys.memberPK(id), SK: Keys.metaSK() }));
 
-    const response = await docClient.send(
-      new BatchGetCommand({
-        RequestItems: { [TABLE_NAME]: { Keys: keys } },
-      })
-    );
+    while (keys.length > 0) {
+      const response = await docClient.send(
+        new BatchGetCommand({
+          RequestItems: { [TABLE_NAME]: { Keys: keys } },
+        })
+      );
 
-    for (const item of response.Responses?.[TABLE_NAME] ?? []) {
-      members.push(toMember(item as Record<string, unknown>));
+      for (const item of response.Responses?.[TABLE_NAME] ?? []) {
+        members.push(fromItem<Member>(item as Record<string, unknown>));
+      }
+
+      // Retry any unprocessed keys
+      const unprocessed = response.UnprocessedKeys?.[TABLE_NAME]?.Keys;
+      keys = (unprocessed as typeof keys) ?? [];
     }
   }
 
@@ -283,7 +283,7 @@ export async function updateMember(
         })
       );
 
-      return toMember(newItem as Record<string, unknown>);
+      return fromItem<Member>(newItem as Record<string, unknown>);
     }
   }
 
@@ -319,7 +319,7 @@ export async function updateMember(
     })
   );
 
-  return toMember(result.Attributes as Record<string, unknown>);
+  return fromItem<Member>(result.Attributes as Record<string, unknown>);
 }
 
 /**

@@ -219,21 +219,26 @@ export async function getTeamForLocation(
     // Process in chunks of 100 (DynamoDB BatchGetItem limit)
     for (let i = 0; i < userIds.length; i += 100) {
       const chunk = userIds.slice(i, i + 100);
-      const batchResult = await docClient.send(
-        new BatchGetCommand({
-          RequestItems: {
-            [TABLE_NAME]: {
-              Keys: chunk.map((uid) => ({
-                PK: Keys.userPK(uid),
-                SK: Keys.metaSK(),
-              })),
+      let keys = chunk.map((uid) => ({
+        PK: Keys.userPK(uid),
+        SK: Keys.metaSK(),
+      }));
+
+      while (keys.length > 0) {
+        const batchResult = await docClient.send(
+          new BatchGetCommand({
+            RequestItems: {
+              [TABLE_NAME]: { Keys: keys },
             },
-          },
-        })
-      );
-      const items = batchResult.Responses?.[TABLE_NAME] ?? [];
-      for (const item of items) {
-        allUsers.push(fromItem<User>(item));
+          })
+        );
+        const items = batchResult.Responses?.[TABLE_NAME] ?? [];
+        for (const item of items) {
+          allUsers.push(fromItem<User>(item));
+        }
+        // Retry any unprocessed keys
+        const unprocessed = batchResult.UnprocessedKeys?.[TABLE_NAME]?.Keys;
+        keys = (unprocessed as typeof keys) ?? [];
       }
     }
 

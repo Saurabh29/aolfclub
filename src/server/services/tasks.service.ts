@@ -30,31 +30,23 @@ export async function queryTasksByLocation(
 export async function createTask(
   request: CreateTaskRequest,
   createdBy: string
-): Promise<Task> {
-  const result = await tasksDataSource.create!({ ...request, createdBy });
-  if (!result.success) {
-    throw new Error(result.error);
-  }
-  return result.data;
+): Promise<ApiResult<Task>> {
+  return tasksDataSource.create!({ ...request, createdBy });
 }
 
 /**
  * Update an existing task
  */
-export async function updateTask(id: string, updates: Partial<Task>): Promise<Task> {
-  const result = await tasksDataSource.update!(id, updates);
-  if (!result.success) {
-    throw new Error(result.error);
-  }
-  return result.data;
+export async function updateTask(id: string, updates: Partial<Task>): Promise<ApiResult<Task>> {
+  return tasksDataSource.update!(id, updates);
 }
 
 /**
  * Delete a task
  */
-export async function deleteTask(id: string): Promise<void> {
-  const result = await tasksDataSource.delete?.(id);
-  if (result && !result.success) {
-    throw new Error(result.error);
+export async function deleteTask(id: string): Promise<ApiResult<void>> {
+  if (!tasksDataSource.delete) {
+    return { success: false, error: "delete not supported" };
   }
+  return tasksDataSource.delete(id);
 }

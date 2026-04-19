@@ -30,18 +30,24 @@ export const createTaskMutation = action(
     const locResult = await getActiveLocationId(session.userId);
     const locationId = locResult.success ? locResult.data : null;
     if (!locationId) throw new Error("No active location selected. Please set an active location before creating a task.");
-    return await createTask({ ...request, locationId } as CreateTaskRequest, session.userId);
+    return unwrap(await createTask({ ...request, locationId } as CreateTaskRequest, session.userId));
   },
   "createTask"
 );
 
 /**
- * Update task
+ * Update task  -  requires auth + ADMIN or TEACHER role.
  */
 export const updateTaskMutation = action(
   async (id: string, updates: Partial<Task>): Promise<Task> => {
     "use server";
-    return await updateTask(id, updates);
+    const { getSessionInfo } = await import("~/lib/auth");
+    const session = await getSessionInfo();
+    if (!session.userId) throw new Error("Not authenticated");
+    if (!session.isAdmin && session.activeRole !== "ADMIN" && session.activeRole !== "TEACHER") {
+      throw new Error("Unauthorized: only Admins or Teachers can update tasks.");
+    }
+    return unwrap(await updateTask(id, updates));
   },
   "updateTask"
 );

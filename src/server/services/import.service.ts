@@ -73,6 +73,8 @@ export async function importLeads(
   const existingLeads = await getLeadsByLocation(locationId);
   for (const lead of existingLeads) existingPhones.add(lead.phone);
 
+  // Deduplicate and collect valid rows
+  const validRows: { row: LeadImportRow; phone: string; input: CreateLeadInput }[] = [];
   for (const row of rows) {
     const phone = normalizePhone(row.phone);
 
@@ -83,22 +85,39 @@ export async function importLeads(
     // Prevent intra-batch duplicates
     existingPhones.add(phone);
 
-    const input: CreateLeadInput = {
-      locationId,
-      displayName: row.displayName,
+    validRows.push({
+      row,
       phone,
-      email: row.email,
-      interestedPrograms: row.interestedPrograms
-        ? row.interestedPrograms.split(",").map((s) => s.trim()).filter(Boolean)
-        : [],
-    };
+      input: {
+        locationId,
+        displayName: row.displayName,
+        phone,
+        email: row.email,
+        interestedPrograms: row.interestedPrograms
+          ? row.interestedPrograms.split(",").map((s) => s.trim()).filter(Boolean)
+          : [],
+      },
+    });
+  }
 
-    const createResult = await leadsDataSource.create!(input);
-    if (!createResult.success) {
-      skipped.push({ row: row.row, value: phone, reason: createResult.error });
-      continue;
+  // Write in parallel batches of 25
+  const BATCH_SIZE = 25;
+  for (let i = 0; i < validRows.length; i += BATCH_SIZE) {
+    const batch = validRows.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(({ input }) => leadsDataSource.create!(input))
+    );
+    for (let j = 0; j < results.length; j++) {
+      const r = results[j];
+      if (r.status === "fulfilled" && r.value.success) {
+        imported++;
+      } else {
+        const reason = r.status === "rejected"
+          ? String(r.reason)
+          : r.value.success === false ? r.value.error : "unknown";
+        skipped.push({ row: batch[j].row.row, value: batch[j].phone, reason });
+      }
     }
-    imported++;
   }
 
   return { imported, skipped };
@@ -134,6 +153,8 @@ export async function importMembers(
   const existingMembers = await getMembersByLocation(locationId);
   for (const member of existingMembers) existingPhones.add(member.phone);
 
+  // Deduplicate and collect valid rows
+  const validRows: { row: MemberImportRow; phone: string; input: CreateMemberInput }[] = [];
   for (const row of rows) {
     const phone = normalizePhone(row.phone);
 
@@ -143,26 +164,43 @@ export async function importMembers(
     }
     existingPhones.add(phone);
 
-    const input: CreateMemberInput = {
-      locationId,
-      displayName: row.displayName,
+    validRows.push({
+      row,
       phone,
-      email: row.email,
-      memberSince: row.memberSince,
-      programsDone: row.programsDone
-        ? row.programsDone.split(",").map((s) => s.trim()).filter(Boolean)
-        : [],
-      interestedPrograms: row.interestedPrograms
-        ? row.interestedPrograms.split(",").map((s) => s.trim()).filter(Boolean)
-        : [],
-    };
+      input: {
+        locationId,
+        displayName: row.displayName,
+        phone,
+        email: row.email,
+        memberSince: row.memberSince,
+        programsDone: row.programsDone
+          ? row.programsDone.split(",").map((s) => s.trim()).filter(Boolean)
+          : [],
+        interestedPrograms: row.interestedPrograms
+          ? row.interestedPrograms.split(",").map((s) => s.trim()).filter(Boolean)
+          : [],
+      },
+    });
+  }
 
-    const createResult = await membersDataSource.create!(input);
-    if (!createResult.success) {
-      skipped.push({ row: row.row, value: phone, reason: createResult.error });
-      continue;
+  // Write in parallel batches of 25
+  const BATCH_SIZE = 25;
+  for (let i = 0; i < validRows.length; i += BATCH_SIZE) {
+    const batch = validRows.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(({ input }) => membersDataSource.create!(input))
+    );
+    for (let j = 0; j < results.length; j++) {
+      const r = results[j];
+      if (r.status === "fulfilled" && r.value.success) {
+        imported++;
+      } else {
+        const reason = r.status === "rejected"
+          ? String(r.reason)
+          : r.value.success === false ? r.value.error : "unknown";
+        skipped.push({ row: batch[j].row.row, value: batch[j].phone, reason });
+      }
     }
-    imported++;
   }
 
   return { imported, skipped };
@@ -185,7 +223,8 @@ export interface TeamImportRow extends ImportRow {
 export async function importTeam(
   rows: TeamImportRow[],
   activeLocationId: string
-): Promise<ImportResult> {  let imported = 0;
+): Promise<ImportResult> {
+  let imported = 0;
   const skipped: ImportSkip[] = [];
 
   // Pre-fetch all existing users in one scan (uses ScanCache)
@@ -201,6 +240,15 @@ export async function importTeam(
     }
   }
 
+  // Pre-fetch volunteer group once for the location
+  const { getGroupsForLocation, addUserToGroup } = await import(
+    "~/server/db/repositories/user-group.repository"
+  );
+  const volunteerGroups = await getGroupsForLocation(activeLocationId, "VOLUNTEER");
+  const volunteerGroup = volunteerGroups.length > 0 ? volunteerGroups[0] : null;
+
+  // Deduplicate and collect valid rows
+  const validRows: { row: TeamImportRow; email: string; input: CreateUserInput }[] = [];
   for (const row of rows) {
     const email = row.email.toLowerCase().trim();
 
@@ -210,38 +258,51 @@ export async function importTeam(
     }
     existingEmails.add(email);
 
-    const input: CreateUserInput = {
+    validRows.push({
+      row,
       email,
-      displayName: row.displayName,
-      phone: row.phone,
-      activeLocationId,
-    };
+      input: {
+        email,
+        displayName: row.displayName,
+        phone: row.phone,
+        activeLocationId,
+      },
+    });
+  }
 
-    const createResult = await usersDataSource.create!(input);
-    if (!createResult.success) {
-      skipped.push({ row: row.row, value: email, reason: createResult.error });
-      continue;
-    }
+  // Write in parallel batches of 25
+  const BATCH_SIZE = 25;
+  for (let i = 0; i < validRows.length; i += BATCH_SIZE) {
+    const batch = validRows.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(async ({ input, row: batchRow }) => {
+        const createResult = await usersDataSource.create!(input);
+        if (!createResult.success) throw new Error(createResult.error);
 
-    // Add the newly-created user to the VOLUNTEER group at this location
-    try {
-      const { getGroupsForLocation, addUserToGroup } = await import(
-        "~/server/db/repositories/user-group.repository"
-      );
-      const groups = await getGroupsForLocation(activeLocationId, "VOLUNTEER");
-      if (groups.length > 0) {
-        await addUserToGroup(createResult.data.id, groups[0].groupId, {
-          locationId: activeLocationId,
-          groupType: "VOLUNTEER",
-          groupName: groups[0].name,
-          userDisplayName: row.displayName,
-        });
+        // Add to VOLUNTEER group
+        if (volunteerGroup) {
+          try {
+            await addUserToGroup(createResult.data.id, volunteerGroup.groupId, {
+              locationId: activeLocationId,
+              groupType: "VOLUNTEER",
+              groupName: volunteerGroup.name,
+              userDisplayName: input.displayName,
+            });
+          } catch {
+            // Group assignment failed but user was created — don't fail the whole row
+          }
+        }
+        return createResult;
+      })
+    );
+    for (let j = 0; j < results.length; j++) {
+      const r = results[j];
+      if (r.status === "fulfilled") {
+        imported++;
+      } else {
+        skipped.push({ row: batch[j].row.row, value: batch[j].email, reason: String(r.reason) });
       }
-    } catch {
-      // Group assignment failed but user was created — don't fail the whole row
     }
-
-    imported++;
   }
 
   return { imported, skipped };

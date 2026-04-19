@@ -15,7 +15,6 @@
  *   (Both also own the displayName search so it round-trips through the server.)
  *   Table       > sorting only (no column-level filtering to avoid field conflicts)
  */
-import { createColumnHelper } from "@tanstack/solid-table";
 import { createSignal, Show, Switch, Match, For, createMemo } from "solid-js";
 import { createAsync, useAction, revalidate } from "@solidjs/router";
 import { Download, X, Upload, RefreshCw, PanelLeftClose, PanelLeftOpen, Target, GraduationCap, Users, ShieldCheck } from "lucide-solid";
@@ -25,6 +24,7 @@ import type { Member, MemberField } from "~/lib/schemas/domain/member.schema";
 import type { GroupType } from "~/lib/schemas/domain/user.schema";
 import { createCollectionQueryController } from "~/lib/controllers";
 import { ResponsiveCollectionView } from "~/components/collection";
+import { leadColumns, memberColumns, renderDisplayName, renderPhone, renderDate } from "~/components/collection/shared-columns";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
@@ -33,75 +33,7 @@ import type { ImportEntityType } from "~/components/community/ImportSheet";
 import { LeadFilterPane } from "~/components/community/LeadFilterPane";
 import { MemberFilterPane } from "~/components/community/MemberFilterPane";
 
-// -- Cell renderers ------------------------------------------------------------
-
-function renderDisplayName(name: string) {
-  return <span class="font-medium">{name}</span>;
-}
-function renderPhone(phone: string) {
-  return <span class="text-sm text-muted-foreground">{phone}</span>;
-}
-function renderDate(isoDate: string | undefined) {
-  return isoDate ? (
-    <span class="text-sm">{new Date(isoDate).toLocaleDateString()}</span>
-  ) : (
-    <span class="text-muted-foreground"> - </span>
-  );
-}
-
-// -- Columns -------------------------------------------------------------------
-
-const leadColHelper = createColumnHelper<Lead>();
-const leadColumns = [
-  leadColHelper.accessor("displayName", {
-    header: "Name",
-    cell: (info) => renderDisplayName(info.getValue()),
-  }),
-  leadColHelper.accessor("phone", {
-    header: "Phone",
-    cell: (info) => renderPhone(info.getValue()),
-  }),
-  leadColHelper.accessor("lastInterestLevel", {
-    header: "Interest",
-    cell: (info) => {
-      const level = info.getValue();
-      if (!level) return <span class="text-muted-foreground"> - </span>;
-      const variant =
-        level === "High" ? "default" :
-        level === "Medium" ? "secondary" :
-        level === "Low" ? "outline" : "error";
-      return <Badge variant={variant}>{level}</Badge>;
-    },
-  }),
-  leadColHelper.accessor("nextFollowUpDate", {
-    header: "Follow-up",
-    cell: (info) => renderDate(info.getValue()),
-  }),
-  leadColHelper.accessor("totalCallCount", {
-    header: "Calls",
-    cell: (info) => <span class="text-sm">{info.getValue()}</span>,
-  }),
-];
-
-const memberColHelper = createColumnHelper<Member>();
-const memberColumns = [
-  memberColHelper.accessor("displayName", {
-    header: "Name",
-    cell: (info) => renderDisplayName(info.getValue()),
-  }),
-  memberColHelper.accessor("phone", {
-    header: "Phone",
-    cell: (info) => renderPhone(info.getValue()),
-  }),
-  memberColHelper.accessor("memberSince", {
-    header: "Member Since",
-    cell: (info) => renderDate(info.getValue()),
-  }),
-  memberColHelper.accessor("programsDone", {
-    header: "Programs",
-    cell: (info) => <span class="text-sm">{info.getValue().length}</span>,
-  }),
-];
+// Columns imported from ~/components/collection/shared-columns
 
 type ContactTab = "leads" | "members" | "team";
 

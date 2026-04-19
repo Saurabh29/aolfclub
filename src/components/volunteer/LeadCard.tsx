@@ -2,7 +2,7 @@ import { Show, createSignal, type Component } from "solid-js";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { Phone, MessageCircle, GraduationCap, Clock, BookOpen, Calendar, FileText, Target, MapPin, Star, X } from "lucide-solid";
+import { Phone, MessageCircle, GraduationCap, Clock, FileText, Target, MapPin, Star, X } from "lucide-solid";
 import type { Lead, Task } from "~/lib/schemas/domain";
 import { formatFollowUpDate, formatRelativeTime } from "~/lib/utils/lead-status";
 
@@ -185,30 +185,6 @@ export const LeadCard: Component<LeadCardProps> = (props) => {
               </ul>
             </Show>
           </div>
-
-          {/* Completed Programs */}
-          <Show when={props.lead.programsDone.length > 0}>
-            <div>
-              <div class="flex items-center gap-1 text-sm font-medium mb-1">
-                <BookOpen class="w-3.5 h-3.5" /> Completed Programs:
-              </div>
-              <ul class="text-sm text-muted-foreground ml-4 list-disc space-y-1">
-                {props.lead.programsDone.map((program) => (
-                  <li>{program}</li>
-                ))}
-              </ul>
-            </div>
-          </Show>
-
-          {/* Member Since */}
-          <Show when={props.lead.memberSince}>
-            <div class="text-sm">
-              <span class="font-medium flex items-center gap-1"><Calendar class="w-3.5 h-3.5" /> Member Since:</span>{" "}
-              <span class="text-muted-foreground">
-                {new Date(props.lead.memberSince!).toLocaleDateString()}
-              </span>
-            </div>
-          </Show>
 
           {/* Last Called */}
           <Show when={props.lead.lastCallDate}>

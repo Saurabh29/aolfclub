@@ -1,11 +1,11 @@
 /**
  * /members  -  members list page (authenticated).
- * Moved from routes/users.tsx.
+ * Queries the Member entity (not User).
  */
 import { createColumnHelper } from "@tanstack/solid-table";
 import { Show } from "solid-js";
-import { queryUsersQuery } from "~/server/api";
-import type { User, UserField } from "~/lib/schemas/domain/user.schema";
+import { queryMembersQuery } from "~/server/api";
+import type { Member, MemberField } from "~/lib/schemas/domain/member.schema";
 import { createCollectionQueryController } from "~/lib/controllers";
 import { ResponsiveCollectionView } from "~/components/collection";
 import { Badge } from "~/components/ui/badge";
@@ -13,36 +13,36 @@ import { Button } from "~/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
 
 // TanStack Table column definitions
-const columnHelper = createColumnHelper<User>();
-const userColumns = [
+const columnHelper = createColumnHelper<Member>();
+const memberColumns = [
   columnHelper.accessor("displayName", {
     header: "Name",
-    cell: (info) => (
-      <div class="flex items-center gap-2">
-        <Show when={info.row.original.image}>
-          <img
-            src={info.row.original.image}
-            alt={info.getValue()}
-            class="w-8 h-8 rounded-full"
-          />
-        </Show>
-        <span class="font-medium">{info.getValue()}</span>
-      </div>
-    ),
+    cell: (info) => <span class="font-medium">{info.getValue()}</span>,
   }),
-  columnHelper.accessor("email", {
-    header: "Email",
+  columnHelper.accessor("phone", {
+    header: "Phone",
     cell: (info) => <span class="text-sm text-muted-foreground">{info.getValue()}</span>,
   }),
-  columnHelper.accessor("createdAt", {
-    header: "Created",
-    cell: (info) => new Date(info.getValue()).toLocaleDateString(),
+  columnHelper.accessor("memberSince", {
+    header: "Member Since",
+    cell: (info) => {
+      const v = info.getValue();
+      return v ? (
+        <span class="text-sm">{new Date(v).toLocaleDateString()}</span>
+      ) : (
+        <span class="text-muted-foreground"> - </span>
+      );
+    },
+  }),
+  columnHelper.accessor("programsDone", {
+    header: "Programs",
+    cell: (info) => <span class="text-sm">{info.getValue().length}</span>,
   }),
 ];
 
 export default function MembersPage() {
-  const controller = createCollectionQueryController<User, UserField>({
-    queryFn: (spec) => queryUsersQuery(spec),
+  const controller = createCollectionQueryController<Member, MemberField>({
+    queryFn: (spec) => queryMembersQuery(spec),
     initialQuery: {
       filters: [],
       sorting: [{ field: "displayName", direction: "asc" }],
@@ -50,21 +50,20 @@ export default function MembersPage() {
     },
   });
 
-  const renderUserCard = (user: User) => (
+  const renderMemberCard = (member: Member) => (
     <Card>
       <CardHeader>
         <CardTitle class="flex items-center gap-3">
-          <Show when={user.image}>
-            <img src={user.image} alt={user.displayName} class="w-10 h-10 rounded-full" />
-          </Show>
           <div>
-            <div class="font-semibold">{user.displayName}</div>
-            <div class="text-sm text-muted-foreground font-normal">{user.email}</div>
+            <div class="font-semibold">{member.displayName}</div>
+            <div class="text-sm text-muted-foreground font-normal">{member.phone}</div>
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Badge variant="outline">Volunteer</Badge>
+        <Show when={member.memberSince}>
+          <Badge variant="outline">Since {new Date(member.memberSince!).toLocaleDateString()}</Badge>
+        </Show>
       </CardContent>
     </Card>
   );
@@ -93,11 +92,11 @@ export default function MembersPage() {
 
       <ResponsiveCollectionView
         controller={controller}
-        columns={userColumns}
-        getId={(user) => user.id}
-        renderCard={renderUserCard}
+        columns={memberColumns}
+        getId={(member) => member.id}
+        renderCard={renderMemberCard}
         selectable={true}
-        onRowClick={(user) => console.log("Member clicked:", user)}
+        onRowClick={(member) => console.log("Member clicked:", member)}
         cardColumns={3}
         emptyMessage="No members found"
         emptyIcon={

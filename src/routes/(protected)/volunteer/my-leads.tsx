@@ -1,5 +1,5 @@
 import { createSignal, createMemo, createResource, Show, For } from "solid-js";
-import { useSearchParams } from "@solidjs/router";
+import { createAsync, useSearchParams } from "@solidjs/router";
 import { Home, ClipboardList, AlertCircle, Calendar, CheckCircle2, ArrowRight, PartyPopper } from "lucide-solid";
 import { LeadCard } from "~/components/volunteer/LeadCard";
 import { CallLogSheet, type CallLogData } from "~/components/volunteer/CallLogSheet";
@@ -7,6 +7,7 @@ import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { queryLeadsQuery, queryTasksQuery } from "~/server/api";
+import { getUser } from "~/lib/auth";
 import type { LeadField, TaskField, Lead, Task } from "~/lib/schemas/domain";
 import type { QuerySpec } from "~/lib/schemas/query";
 import {
@@ -29,8 +30,9 @@ export default function MyLeadsPage() {
   const [callLogLead, setCallLogLead] = createSignal<Lead | null>(null);
   const [callLogTask, setCallLogTask] = createSignal<Task | null>(null);
 
-  // TODO: Get actual volunteer ID from session
-  const volunteerId = "01JBQM7NQJQP5K8V9X2W3Y4Z51"; // Placeholder
+  // Get volunteer ID from session
+  const user = createAsync(() => getUser());
+  const volunteerId = () => (user() as any)?.id as string | undefined;
 
   // Fetch all tasks for this volunteer
   const [tasksData] = createResource(async () => {
