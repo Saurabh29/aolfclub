@@ -103,6 +103,24 @@ export class DummyDataSource<
     }
   }
 
+  /**
+   * Query items scoped to a location (filters by `locationId` then applies QuerySpec).
+   * Works for any entity that has a `locationId` field (Lead, Member, Task, etc.).
+   */
+  async queryByLocation(locationId: string, query: QuerySpec<TField>): Promise<ApiResult<QueryResult<T>>> {
+    try {
+      const scoped = this.data.filter(
+        (item) => (item as Record<string, unknown>)["locationId"] === locationId
+      );
+      return { success: true, data: executeQuery(scoped, query) };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "queryByLocation failed",
+      };
+    }
+  }
+
   async getByUniqueField(field: string, value: string): Promise<ApiResult<T | null>> {
     try {
       const item = this.data.find((item) => {
