@@ -38,7 +38,7 @@ export const getActiveLocationIdQuery = query(async () => {
  * Set the active location for the currently authenticated user.
  * userId is read from the session  -  not accepted from the client.
  */
-export const setActiveLocationMutation = query(
+export const setActiveLocationMutation = action(
   async (locationId: string) => {
     "use server";
     const { getSessionInfo } = await import("~/lib/auth");
@@ -81,15 +81,26 @@ export const assignRoleAction = action(async (userIds: string[], groupType: Grou
     return { success: false, error: "Unauthorized: only Admins can assign roles." } as const;
   }
 
-  const errors: string[] = [];
-  let assigned = 0;
+  const results = await Promise.allSettled(
+    userIds.map((userId) =>
+      assignUserRole(userId, session.activeLocationId!, groupType)
+    )
+  );
 
-  for (const userId of userIds) {
-    const result = await assignUserRole(userId, session.activeLocationId!, groupType);
-    if (result.success) {
+  let assigned = 0;
+  const errors: string[] = [];
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i];
+    if (r.status === "fulfilled" && r.value.success) {
       assigned++;
     } else {
-      errors.push(`${userId}: ${result.error}`);
+      const msg =
+        r.status === "rejected"
+          ? String(r.reason)
+          : r.value.success === false
+            ? r.value.error
+            : "unknown";
+      errors.push(`${userIds[i]}: ${msg}`);
     }
   }
 

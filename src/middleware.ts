@@ -75,22 +75,30 @@ export default createMiddleware({
       }
 
       // ── Super-admin bypass ─────────────────────────────────────────────────
-      if (isAdmin) return;
-
-      // ── Role-based authorization ──────────────────────────────────────────
+      // Read fresh isAdmin + activeRole from DB (not JWT) so revocation is immediate
       if (!userId) {
         return new Response(null, { status: 302, headers: { Location: "/" } });
       }
 
-      // Read fresh activeRole from DB (updated on every location switch)
       let activeRole: GroupType | null = null;
+      let isAdminFromDB = false;
       try {
         const { usersDataSource } = await import("~/server/data-sources/instances");
         const result = await usersDataSource.getById(userId);
-        activeRole = result.success ? (result.data?.activeRole ?? null) : null;
+        if (result.success && result.data) {
+          activeRole = result.data.activeRole ?? null;
+          isAdminFromDB = result.data.isAdmin ?? false;
+          // Stash on event.locals so downstream getSessionInfo() can reuse it
+          (event as any).locals = (event as any).locals ?? {};
+          (event as any).locals._cachedUser = result.data;
+        }
       } catch {
         // fail closed
       }
+
+      if (isAdminFromDB) return;
+
+      // ── Role-based authorization ──────────────────────────────────────────
 
       // No role at active location → no access
       if (!activeRole) {

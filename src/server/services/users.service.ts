@@ -2,6 +2,9 @@ import { usersDataSource } from "../data-sources/instances";
 import { createCollectionService } from "./create-collection-service";
 import type { User, UserField, GroupType } from "~/lib/schemas/domain";
 import type { ApiResult } from "~/lib/types";
+import { BatchGetCommand } from "@aws-sdk/lib-dynamodb";
+import { docClient, TABLE_NAME, Keys } from "~/server/db/client";
+import { fromItem } from "~/server/data-sources/dynamo-helpers";
 
 /**
  * User Service - Uses generic collection service factory
@@ -80,7 +83,7 @@ export async function assignUserRole(
   try {
     const {
       getGroupsForLocation,
-      removeUserFromAllGroupsAtLocation,
+      getGroupsForUser,
       addUserToGroup,
     } = await import("~/server/db/repositories/user-group.repository");
 
@@ -94,15 +97,57 @@ export async function assignUserRole(
     }
     const targetGroup = groups[0];
 
-    // Enforce one-role-per-location
-    await removeUserFromAllGroupsAtLocation(userId, locationId);
+    // Get existing memberships at this location to remove in the same transaction
+    const existingGroups = await getGroupsForUser(userId, locationId);
 
-    // Assign to new group
-    await addUserToGroup(userId, targetGroup.groupId, {
-      locationId,
-      groupType,
-      groupName: targetGroup.name,
-    });
+    // Build transact items: delete old edges + add new edges atomically
+    const timestamp = new Date().toISOString();
+    const transactItems: any[] = [];
+
+    // Remove old group edges
+    for (const g of existingGroups) {
+      transactItems.push(
+        { Delete: { TableName: TABLE_NAME, Key: { PK: Keys.userPK(userId), SK: Keys.groupSK(g.groupId) } } },
+        { Delete: { TableName: TABLE_NAME, Key: { PK: Keys.groupPK(g.groupId), SK: Keys.userSK(userId) } } },
+      );
+    }
+
+    // Add new group edges
+    transactItems.push(
+      {
+        Put: {
+          TableName: TABLE_NAME,
+          Item: {
+            PK: Keys.userPK(userId),
+            SK: Keys.groupSK(targetGroup.groupId),
+            itemType: "UserGroupEdge",
+            userId,
+            groupId: targetGroup.groupId,
+            locationId,
+            groupType,
+            groupName: targetGroup.name,
+            joinedAt: timestamp,
+          },
+        },
+      },
+      {
+        Put: {
+          TableName: TABLE_NAME,
+          Item: {
+            PK: Keys.groupPK(targetGroup.groupId),
+            SK: Keys.userSK(userId),
+            itemType: "GroupUserEdge",
+            groupId: targetGroup.groupId,
+            userId,
+            joinedAt: timestamp,
+          },
+        },
+      },
+    );
+
+    // Execute atomically
+    const { TransactWriteCommand } = await import("@aws-sdk/lib-dynamodb");
+    await docClient.send(new TransactWriteCommand({ TransactItems: transactItems }));
 
     // Keep cached activeRole in sync
     const userResult = await usersDataSource.getById(userId);
@@ -145,35 +190,65 @@ export async function getTeamForLocation(
     // Collect all groups at this location
     const groups = await getGroupsForLocation(locationId);
 
+    // Fetch members for all groups in parallel
+    const groupMemberResults = await Promise.all(
+      groups.map(async (group) => ({
+        groupType: group.groupType as GroupType,
+        members: await getUsersInGroup(group.groupId),
+      }))
+    );
+
     // Build userId → groupType map
     const userRoleMap = new Map<string, GroupType>();
-    for (const group of groups) {
-      const members = await getUsersInGroup(group.groupId);
+    for (const { groupType, members } of groupMemberResults) {
       for (const m of members) {
-        // First match wins (shouldn't be duplicates after one-role enforcement)
         if (!userRoleMap.has(m.userId)) {
-          userRoleMap.set(m.userId, group.groupType as GroupType);
+          userRoleMap.set(m.userId, groupType);
         }
       }
     }
 
-    // Fetch user records
-    const teamMembers: TeamMember[] = [];
-    for (const [userId, role] of userRoleMap.entries()) {
-      const result = await usersDataSource.getById(userId);
-      if (result.success && result.data) {
-        const u = result.data;
-        teamMembers.push({
-          id: u.id,
-          email: u.email,
-          displayName: u.displayName,
-          image: u.image,
-          activeRole: role,
-          isAdmin: u.isAdmin ?? false,
-          createdAt: u.createdAt,
-        });
+    if (userRoleMap.size === 0) {
+      return { success: true, data: [] };
+    }
+
+    // Batch-get all user records (DynamoDB BatchGet supports up to 100 keys)
+    const userIds = Array.from(userRoleMap.keys());
+    const allUsers: User[] = [];
+
+    // Process in chunks of 100 (DynamoDB BatchGetItem limit)
+    for (let i = 0; i < userIds.length; i += 100) {
+      const chunk = userIds.slice(i, i + 100);
+      const batchResult = await docClient.send(
+        new BatchGetCommand({
+          RequestItems: {
+            [TABLE_NAME]: {
+              Keys: chunk.map((uid) => ({
+                PK: Keys.userPK(uid),
+                SK: Keys.metaSK(),
+              })),
+            },
+          },
+        })
+      );
+      const items = batchResult.Responses?.[TABLE_NAME] ?? [];
+      for (const item of items) {
+        allUsers.push(fromItem<User>(item));
       }
     }
+
+    // Build TeamMember array
+    const teamMembers: TeamMember[] = allUsers
+      .filter((u) => userRoleMap.has(u.id))
+      .map((u) => ({
+        id: u.id,
+        email: u.email,
+        displayName: u.displayName,
+        image: u.image,
+        activeRole: userRoleMap.get(u.id)!,
+        isAdmin: u.isAdmin ?? false,
+        createdAt: u.createdAt,
+      }));
 
     return { success: true, data: teamMembers };
   } catch (err) {

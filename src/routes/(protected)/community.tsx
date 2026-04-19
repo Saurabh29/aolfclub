@@ -16,13 +16,13 @@
  *   Table       > sorting only (no column-level filtering to avoid field conflicts)
  */
 import { createColumnHelper } from "@tanstack/solid-table";
-import { createSignal, Show, Switch, Match, For } from "solid-js";
-import { createAsync, useAction } from "@solidjs/router";
+import { createSignal, Show, Switch, Match, For, createMemo } from "solid-js";
+import { createAsync, useAction, revalidate } from "@solidjs/router";
 import { Download, X, Upload, RefreshCw, PanelLeftClose, PanelLeftOpen, Target, GraduationCap, Users, ShieldCheck } from "lucide-solid";
-import { queryLeadsQuery, queryMembersQuery, queryUsersQuery, getCommunityTeamQuery, assignRoleAction } from "~/server/api";
+import { queryLeadsQuery, queryMembersQuery, getCommunityTeamQuery, assignRoleAction } from "~/server/api";
 import type { Lead, LeadField } from "~/lib/schemas/domain/lead.schema";
 import type { Member, MemberField } from "~/lib/schemas/domain/member.schema";
-import type { User, UserField, GroupType } from "~/lib/schemas/domain/user.schema";
+import type { GroupType } from "~/lib/schemas/domain/user.schema";
 import { createCollectionQueryController } from "~/lib/controllers";
 import { ResponsiveCollectionView } from "~/components/collection";
 import { Badge } from "~/components/ui/badge";
@@ -103,29 +103,6 @@ const memberColumns = [
   }),
 ];
 
-const userColHelper = createColumnHelper<User>();
-const userColumns = [
-  userColHelper.accessor("displayName", {
-    header: "Name",
-    cell: (info) => (
-      <div class="flex items-center gap-2">
-        <Show when={info.row.original.image}>
-          <img src={info.row.original.image} alt={info.getValue()} class="w-8 h-8 rounded-full" />
-        </Show>
-        {renderDisplayName(info.getValue())}
-      </div>
-    ),
-  }),
-  userColHelper.accessor("email", {
-    header: "Email",
-    cell: (info) => <span class="text-sm text-muted-foreground">{info.getValue()}</span>,
-  }),
-  userColHelper.accessor("createdAt", {
-    header: "Joined",
-    cell: (info) => renderDate(info.getValue()),
-  }),
-];
-
 type ContactTab = "leads" | "members" | "team";
 
 const ROLE_BADGE_VARIANT: Record<GroupType, "default" | "secondary" | "outline"> = {
@@ -170,13 +147,25 @@ function BulkToolbar(props: BulkToolbarProps) {
 export default function CommunityPage() {
   const [activeTab, setActiveTab] = createSignal<ContactTab>("leads");
   const [showImport, setShowImport] = createSignal(false);
+  const [importEntityType, setImportEntityType] = createSignal<ImportEntityType>("leads");
   const [filterPaneOpen, setFilterPaneOpen] = createSignal(true);
 
   // Team tab: live role data + assignment
   const teamMembers = createAsync(() => getCommunityTeamQuery(), { deferStream: false });
   const [teamSelectedIds, setTeamSelectedIds] = createSignal<Set<string>>(new Set());
   const [assigningRole, setAssigningRole] = createSignal(false);
+  const [teamSearchQuery, setTeamSearchQuery] = createSignal("");
   const doAssignRole = useAction(assignRoleAction);
+
+  // Filtered team members (client-side search)
+  const filteredTeamMembers = createMemo(() => {
+    const all = teamMembers() ?? [];
+    const q = teamSearchQuery().toLowerCase();
+    if (!q) return all;
+    return all.filter(
+      (m) => m.displayName.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)
+    );
+  });
 
   const handleAssignRole = async (groupType: GroupType) => {
     const ids = Array.from(teamSelectedIds());
@@ -192,8 +181,8 @@ export default function CommunityPage() {
           alert(`Assigned ${assigned}, failed ${failed}.`);
         }
         setTeamSelectedIds(new Set());
-        // Refresh team data
-        await getCommunityTeamQuery();
+        // Revalidate the team query so createAsync picks up changes
+        await revalidate(getCommunityTeamQuery.key);
       } else {
         alert(`Error: ${result.error}`);
       }
@@ -220,19 +209,9 @@ export default function CommunityPage() {
     },
   });
 
-  const usersController = createCollectionQueryController<User, UserField>({
-    queryFn: (spec) => queryUsersQuery(spec),
-    initialQuery: {
-      filters: [],
-      sorting: [{ field: "displayName", direction: "asc" }],
-      pagination: { pageSize: 20, pageIndex: 0 },
-    },
-  });
-
   const activeController = () => {
     if (activeTab() === "leads") return leadsController;
-    if (activeTab() === "members") return membersController;
-    return usersController;
+    return membersController;
   };
 
   const selectedCount = () => activeController().selectedIds().size;
@@ -257,7 +236,7 @@ export default function CommunityPage() {
   };
 
   const toggleTeamAll = () => {
-    const all = teamMembers() ?? [];
+    const all = filteredTeamMembers();
     setTeamSelectedIds((prev) =>
       prev.size === all.length ? new Set() : new Set(all.map((m) => m.id))
     );
@@ -279,7 +258,7 @@ export default function CommunityPage() {
               ? <><PanelLeftClose class="w-4 h-4 mr-1" /> Hide Filters</>
               : <><PanelLeftOpen class="w-4 h-4 mr-1" /> Show Filters</>}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
+          <Button variant="outline" size="sm" onClick={() => { setImportEntityType(activeTab() as ImportEntityType); setShowImport(true); }}>
             <Upload class="w-3.5 h-3.5 mr-1" /> Import
           </Button>
           <Button
@@ -313,12 +292,7 @@ export default function CommunityPage() {
                     type="text"
                     placeholder="Name or email..."
                     class="mt-2 w-full h-8 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    onInput={(e) => {
-                      const v = e.currentTarget.value.trim();
-                      usersController.setFilters(
-                        v ? [{ field: "displayName" as UserField, op: "contains", value: v }] : []
-                      );
-                    }}
+                    onInput={(e) => setTeamSearchQuery(e.currentTarget.value.trim())}
                   />
                 </div>
               </Match>
@@ -355,7 +329,7 @@ export default function CommunityPage() {
               <Match when={activeTab() === "team"}>
                 <Show when={teamMembers() !== undefined} fallback={<span>Loading...</span>}>
                   <span>
-                    {(teamMembers() ?? []).length} result{(teamMembers() ?? []).length !== 1 ? "s" : ""}
+                    {filteredTeamMembers().length} result{filteredTeamMembers().length !== 1 ? "s" : ""}
                     <Show when={teamSelectedIds().size > 0}>
                       {"   "}<span class="text-foreground font-medium">{teamSelectedIds().size} selected</span>
                     </Show>
@@ -469,7 +443,7 @@ export default function CommunityPage() {
 
                 {/* Team table */}
                 <Show
-                  when={(teamMembers() ?? []).length > 0}
+                  when={filteredTeamMembers().length > 0}
                   fallback={
                     <div class="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
                       <Users class="w-8 h-8 opacity-30" />
@@ -484,7 +458,7 @@ export default function CommunityPage() {
                           <th class="w-10 px-3 py-2">
                             <input
                               type="checkbox"
-                              checked={(teamMembers() ?? []).length > 0 && teamSelectedIds().size === (teamMembers() ?? []).length}
+                              checked={filteredTeamMembers().length > 0 && teamSelectedIds().size === filteredTeamMembers().length}
                               onChange={toggleTeamAll}
                               class="w-4 h-4 rounded border-border"
                             />
@@ -495,7 +469,7 @@ export default function CommunityPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        <For each={teamMembers() ?? []}>
+                        <For each={filteredTeamMembers()}>
                           {(member) => (
                             <tr
                               class="border-b border-border last:border-0 cursor-pointer hover:bg-muted/50"
@@ -560,7 +534,7 @@ export default function CommunityPage() {
       {/* Import sheet */}
       <Show when={showImport()}>
         <ImportSheet
-          entityType={activeTab() as ImportEntityType}
+          entityType={importEntityType()}
           onClose={() => setShowImport(false)}
         />
       </Show>

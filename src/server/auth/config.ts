@@ -45,11 +45,8 @@ export const authConfig: StartAuthJSConfig = {
     },
 
     jwt: async ({ token, user }) => {
-      // Skip DB lookup on subsequent token refreshes
-      if (token.userId) return token;
-
       // Initial sign-in: resolve our DB userId from the OAuth email
-      if (user?.email) {
+      if (!token.userId && user?.email) {
         const dbUser = await findUserByEmail(user.email);
         if (dbUser) {
           token.userId = dbUser.id;
@@ -61,6 +58,24 @@ export const authConfig: StartAuthJSConfig = {
         // Carry canBootstrap into the token (only true before setup completes)
         if ((user as any)._canBootstrap) {
           token.canBootstrap = true;
+        }
+        return token;
+      }
+
+      // Subsequent requests: refresh mutable fields from DB
+      if (token.userId) {
+        try {
+          const dbUser = await findUserByEmail(token.email as string);
+          if (dbUser) {
+            token.activeLocationId = dbUser.activeLocationId ?? undefined;
+            token.isAdmin = dbUser.isAdmin ?? false;
+            // Clear canBootstrap once a location has been set
+            if (dbUser.activeLocationId) {
+              token.canBootstrap = undefined;
+            }
+          }
+        } catch {
+          // Keep existing token values on DB error
         }
       }
       return token;

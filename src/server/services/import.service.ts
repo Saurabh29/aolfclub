@@ -222,6 +222,25 @@ export async function importTeam(
       skipped.push({ row: row.row, value: email, reason: createResult.error });
       continue;
     }
+
+    // Add the newly-created user to the VOLUNTEER group at this location
+    try {
+      const { getGroupsForLocation, addUserToGroup } = await import(
+        "~/server/db/repositories/user-group.repository"
+      );
+      const groups = await getGroupsForLocation(activeLocationId, "VOLUNTEER");
+      if (groups.length > 0) {
+        await addUserToGroup(createResult.data.id, groups[0].groupId, {
+          locationId: activeLocationId,
+          groupType: "VOLUNTEER",
+          groupName: groups[0].name,
+          userDisplayName: row.displayName,
+        });
+      }
+    } catch {
+      // Group assignment failed but user was created — don't fail the whole row
+    }
+
     imported++;
   }
 

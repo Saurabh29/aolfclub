@@ -49,8 +49,7 @@ export const AppShell: Component<AppShellProps> = (props) => {
   };
 
   const handleSignOut = () => {
-    // TODO: call real sign-out
-    navigate("/");
+    window.location.href = "/api/auth/signout";
   };
 
   const handleSignIn = () => {

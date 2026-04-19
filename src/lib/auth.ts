@@ -1,4 +1,3 @@
-import { isServer } from "solid-js/web";
 import { query, redirect } from "@solidjs/router";
 
 /**
@@ -12,20 +11,13 @@ import { query, redirect } from "@solidjs/router";
 export const getAuthSession = query(async () => {
   "use server";
   try {
-    if (isServer) {
-      const { getSession } = await import("start-authjs");
-      const { getRequestEvent } = await import("solid-js/web");
-      const { authConfig } = await import("~/server/auth");
+    const { getSession } = await import("start-authjs");
+    const { getRequestEvent } = await import("solid-js/web");
+    const { authConfig } = await import("~/server/auth");
 
-      const ev = getRequestEvent?.();
-      if (!ev) return null;
-      return (await getSession(ev.request as Request, authConfig as any)) ?? null;
-    } else {
-      const resp = await fetch("/api/auth/session", { credentials: "include" });
-      if (!resp.ok) return null;
-      const data = await resp.json();
-      return data || null;
-    }
+    const ev = getRequestEvent?.();
+    if (!ev) return null;
+    return (await getSession(ev.request as Request, authConfig as any)) ?? null;
   } catch (err) {
     console.error("[auth] getAuthSession failed:", err);
     return null;
@@ -63,31 +55,46 @@ export type SessionInfo = {
 export async function getSessionInfo(): Promise<SessionInfo> {
   const session = await getAuthSession();
   const raw = session ?? null;
+  // Auth.js types session.user as AuthUser which lacks our custom fields.
+  // Cast to any for the fields we promote via the jwt → session callback.
+  const rawUser = (raw?.user as any) ?? null;
   const userId =
-    raw?.user?.id ?? raw?.user?.userId ?? raw?.user?.sub ?? null;
+    rawUser?.id ?? rawUser?.userId ?? rawUser?.sub ?? null;
 
   if (!userId) {
     return { userId: null, activeLocationId: null, activeRole: null, isAdmin: false, canBootstrap: false, email: null, name: null, image: null, raw };
   }
 
-  let activeLocationId = raw?.user?.activeLocationId ?? null;
-  const canBootstrap = raw?.user?.canBootstrap === true;
+  let activeLocationId: string | null = rawUser?.activeLocationId ?? null;
+  const canBootstrap: boolean = rawUser?.canBootstrap === true;
   let activeRole: import("~/lib/schemas/domain/user.schema").GroupType | null = null;
   let isAdmin = false;
 
   // Read fresh activeRole and isAdmin from DB (always authoritative)
+  // Reuse the user record cached by middleware (if available) to avoid a duplicate read
   if (typeof window === "undefined") {
     try {
-      const { getActiveLocationId } = await import("~/server/services/users.service");
-      const { usersDataSource } = await import("~/server/data-sources/instances");
-      const userResult = await usersDataSource.getById(userId);
-      if (userResult.success && userResult.data) {
-        if (!activeLocationId) activeLocationId = userResult.data.activeLocationId ?? null;
-        activeRole = userResult.data.activeRole ?? null;
-        isAdmin = userResult.data.isAdmin ?? false;
-      } else if (!activeLocationId) {
-        const result = await getActiveLocationId(userId);
-        if (result.success && result.data) activeLocationId = result.data;
+      const { getRequestEvent } = await import("solid-js/web");
+      const ev = getRequestEvent?.();
+      const cachedUser = (ev as any)?.locals?._cachedUser as import("~/lib/schemas/domain/user.schema").User | undefined;
+
+      if (cachedUser) {
+        if (!activeLocationId) activeLocationId = cachedUser.activeLocationId ?? null;
+        activeRole = cachedUser.activeRole ?? null;
+        isAdmin = cachedUser.isAdmin ?? false;
+      } else {
+        const { usersDataSource } = await import("~/server/data-sources/instances");
+        const userResult = await usersDataSource.getById(userId);
+        if (userResult.success && userResult.data) {
+          if (!activeLocationId) activeLocationId = userResult.data.activeLocationId ?? null;
+          activeRole = userResult.data.activeRole ?? null;
+          isAdmin = userResult.data.isAdmin ?? false;
+          // Cache for any further calls in this request
+          if (ev) {
+            (ev as any).locals = (ev as any).locals ?? {};
+            (ev as any).locals._cachedUser = userResult.data;
+          }
+        }
       }
     } catch {
       // Ignore DB errors
@@ -100,9 +107,9 @@ export async function getSessionInfo(): Promise<SessionInfo> {
     activeRole,
     isAdmin,
     canBootstrap,
-    email: raw?.user?.email ?? null,
-    name: raw?.user?.name ?? null,
-    image: raw?.user?.image ?? null,
+    email: rawUser?.email ?? null,
+    name: rawUser?.name ?? null,
+    image: rawUser?.image ?? null,
     raw,
   };
 }
