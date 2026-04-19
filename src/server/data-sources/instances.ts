@@ -5,8 +5,8 @@ import { MembersDataSource } from "./members.data-source";
 import { LeadsDataSource } from "./leads.data-source";
 import { DummyDataSource } from "./dummy.data-source";
 import { DummyLocationDataSource } from "./dummy-data/dummy-location.data-source";
+import { DummyUsersDataSource } from "./dummy-data/dummy-users.data-source";
 import { dummyUsers, dummyLeads, dummyMembers, dummyLocations, dummyTasks } from "./dummy-data";
-import type { User, UserField } from "~/lib/schemas/domain";
 import type { Lead, LeadField } from "~/lib/schemas/domain";
 import type { Member, MemberField } from "~/lib/schemas/domain";
 import type { Task, TaskField } from "~/lib/schemas/domain";
@@ -18,7 +18,7 @@ import type { Task, TaskField } from "~/lib/schemas/domain";
 const useDummy = process.env.USE_DUMMY_DATA === "true";
 
 export const usersDataSource = useDummy
-  ? new DummyDataSource<User, UserField>(dummyUsers)
+  ? new DummyUsersDataSource(dummyUsers)
   : new UsersDataSource();
 
 export const membersDataSource = useDummy

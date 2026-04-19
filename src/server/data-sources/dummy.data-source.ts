@@ -14,7 +14,7 @@ export class DummyDataSource<
   T extends { id: string },
   TField extends string = string
 > implements DataSource<T, TField> {
-  private data: T[];
+  protected data: T[];
 
   constructor(data: T[]) {
     this.data = data;
