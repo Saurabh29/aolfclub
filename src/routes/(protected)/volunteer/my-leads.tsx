@@ -144,9 +144,15 @@ export default function MyLeadsPage() {
   const filteredAndGrouped = createMemo(() => {
     let leads = allLeads();
 
-    // Task filter
+    // Task filter — restrict to contacts assigned to this campaign
     const taskId = selectedTaskId();
-    if (taskId) leads = leads.slice(0, 20); // demo: real app would filter by assignment
+    if (taskId) {
+      const task = tasks().find((t) => t.id === taskId);
+      if (task && task.matchedContactIds.length > 0) {
+        const contactIdSet = new Set(task.matchedContactIds);
+        leads = leads.filter((lead) => contactIdSet.has(lead.id));
+      }
+    }
 
     // Lead filters
     const filters = activeFilters();
@@ -180,7 +186,13 @@ export default function MyLeadsPage() {
   const filterMatchCount = createMemo(() => {
     let leads = allLeads();
     const taskId = selectedTaskId();
-    if (taskId) leads = leads.slice(0, 20);
+    if (taskId) {
+      const task = tasks().find((t) => t.id === taskId);
+      if (task && task.matchedContactIds.length > 0) {
+        const contactIdSet = new Set(task.matchedContactIds);
+        leads = leads.filter((lead) => contactIdSet.has(lead.id));
+      }
+    }
     const filters = activeFilters();
     if (!isFiltersActive(filters)) return leads.length;
     return leads.filter((lead) => leadMatchesFilters(lead, filters)).length;

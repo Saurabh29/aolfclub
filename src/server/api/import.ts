@@ -47,23 +47,36 @@ async function resolveActiveLocationId(): Promise<string> {
   return locationId;
 }
 
+function parseOrThrow<T>(schema: z.ZodType<T>, value: unknown): T {
+  try {
+    return schema.parse(value);
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      throw new Error(
+        `Validation failed: ${e.issues.map((i) => `row ${i.path[0] ?? "?"}: ${i.message}`).join("; ")}`,
+      );
+    }
+    throw e;
+  }
+}
+
 export const importLeadsAction = action(async (rows: LeadImportRow[]): Promise<ImportResult> => {
   "use server";
-  const validated = z.array(LeadImportRowSchema).parse(rows);
+  const validated = parseOrThrow(z.array(LeadImportRowSchema), rows);
   const locationId = await resolveActiveLocationId();
   return importLeads(validated as LeadImportRow[], locationId);
 }, "import-leads");
 
 export const importMembersAction = action(async (rows: MemberImportRow[]): Promise<ImportResult> => {
   "use server";
-  const validated = z.array(MemberImportRowSchema).parse(rows);
+  const validated = parseOrThrow(z.array(MemberImportRowSchema), rows);
   const locationId = await resolveActiveLocationId();
   return importMembers(validated as MemberImportRow[], locationId);
 }, "import-members");
 
 export const importTeamAction = action(async (rows: TeamImportRow[]): Promise<ImportResult> => {
   "use server";
-  const validated = z.array(TeamImportRowSchema).parse(rows);
+  const validated = parseOrThrow(z.array(TeamImportRowSchema), rows);
   const locationId = await resolveActiveLocationId();
   return importTeam(validated as TeamImportRow[], locationId);
 }, "import-team");

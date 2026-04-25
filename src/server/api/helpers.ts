@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { QuerySpecSchema } from "~/lib/schemas/query";
 import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
@@ -10,7 +11,15 @@ export async function execQuery<T, TField extends string>(
   spec: QuerySpec<TField>,
   serviceFn: (spec: QuerySpec<TField>) => Promise<ApiResult<QueryResult<T>>>,
 ): Promise<QueryResult<T>> {
-  const validated = QuerySpecSchema.parse(spec);
+  let validated: ReturnType<typeof QuerySpecSchema.parse>;
+  try {
+    validated = QuerySpecSchema.parse(spec);
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      throw new Error(`Invalid query: ${e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(", ")}`);
+    }
+    throw e;
+  }
   const result = await serviceFn(validated as QuerySpec<TField>);
   if (!result.success) throw new Error(result.error);
   return result.data!;
