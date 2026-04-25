@@ -1,8 +1,7 @@
 import { createSignal, createMemo, createResource, Show, For } from "solid-js";
 import { createAsync, useSearchParams } from "@solidjs/router";
 import { Home, ClipboardList, AlertCircle, Calendar, CheckCircle2, ArrowRight, PartyPopper, SlidersHorizontal, X } from "lucide-solid";
-import { LeadCard } from "~/components/volunteer/LeadCard";
-import { CallLogSheet, type CallLogData } from "~/components/volunteer/CallLogSheet";
+import { LeadCard, type CallLogData } from "~/components/volunteer/LeadCard";
 import { MyLeadsFilterSheet, type LeadFilters, type FilterStatus, DEFAULT_LEAD_FILTERS } from "~/components/volunteer/MyLeadsFilterSheet";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
@@ -107,8 +106,6 @@ export default function MyLeadsPage() {
   const [selectedTaskId, setSelectedTaskId] = createSignal<string | null>(
     (typeof searchParams.task === "string" ? searchParams.task : null)
   );
-  const [callLogLead, setCallLogLead] = createSignal<Lead | null>(null);
-  const [callLogTask, setCallLogTask] = createSignal<Task | null>(null);
   const [activeFilters, setActiveFilters] = createSignal<LeadFilters>(DEFAULT_LEAD_FILTERS);
   const [filterSheetOpen, setFilterSheetOpen] = createSignal(false);
 
@@ -264,69 +261,18 @@ export default function MyLeadsPage() {
     }
   };
 
-  // Handle call button
-  const handleCall = (lead: Lead) => {
-    // Find task for this lead
-    const task = tasks().find((t) => t.matchedContactIds?.includes(lead.id));
-    
-    // Launch native dialer
-    if (lead.phone) {
-      window.location.href = `tel:${lead.phone}`;
-    }
-    
-    // Show call log sheet
-    setCallLogLead(lead);
-    setCallLogTask(task || null);
-  };
-
-  // Handle WhatsApp button
-  const handleWhatsApp = (lead: Lead) => {
-    if (!lead.phone) return;
-    
-    const message = `Hi ${lead.displayName}, this is from [NGO Name]. `;
-    const url = `https://wa.me/${lead.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank");
-  };
-
-  // Handle call log save
-  const handleCallLogSave = async (data: CallLogData) => {
-    console.log("Saving call log:", data);
-    // TODO: Call API to update lead
-    // await updateLeadMutation({
-    //   id: callLogLead()!.id,
+  // Handle call log save (inline form)
+  const handleCallLogSave = async (lead: Lead, data: CallLogData) => {
+    console.log("Saving call log:", lead.displayName, data);
+    // TODO: await updateLeadMutation({
+    //   id: lead.id,
     //   lastCallDate: new Date().toISOString(),
     //   lastInterestLevel: data.interestLevel,
     //   lastNotes: data.notes,
     //   nextFollowUpDate: data.followUpDate,
-    //   totalCallCount: (callLogLead()!.totalCallCount || 0) + 1,
+    //   tags: data.tags,
+    //   totalCallCount: (lead.totalCallCount || 0) + 1,
     // });
-    
-    setCallLogLead(null);
-    setCallLogTask(null);
-  };
-
-  // Handle notes update
-  const handleUpdateNotes = async (lead: Lead, notes: string) => {
-    console.log("Updating notes for", lead.displayName, ":", notes);
-    // TODO: await updateLeadMutation({ id: lead.id, lastNotes: notes });
-  };
-
-  // Handle reschedule
-  const handleReschedule = async (lead: Lead, date: string) => {
-    console.log("Rescheduling", lead.displayName, "to:", date);
-    // TODO: await updateLeadMutation({ id: lead.id, nextFollowUpDate: new Date(date).toISOString() });
-  };
-
-  // Handle inline interest level update
-  const handleUpdateInterestLevel = async (lead: Lead, level: InterestLevel) => {
-    console.log("Updating interest level for", lead.displayName, ":", level);
-    // TODO: await updateLeadMutation({ id: lead.id, lastInterestLevel: level });
-  };
-
-  // Handle tag update
-  const handleUpdateTags = async (lead: Lead, tags: LeadTag[]) => {
-    console.log("Updating tags for", lead.displayName, ":", tags);
-    // TODO: await updateLeadMutation({ id: lead.id, tags });
   };
 
   return (
@@ -444,12 +390,7 @@ export default function MyLeadsPage() {
                   lead={lead}
                   task={selectedTask() || undefined}
                   showTaskBadge={!selectedTaskId()}
-                  onCall={handleCall}
-                  onWhatsApp={handleWhatsApp}
-                  onUpdateNotes={handleUpdateNotes}
-                  onReschedule={handleReschedule}
-                  onUpdateInterestLevel={handleUpdateInterestLevel}
-                  onUpdateTags={handleUpdateTags}
+                  onCallLogSave={handleCallLogSave}
                 />
               )}
             </For>
@@ -473,12 +414,7 @@ export default function MyLeadsPage() {
                   lead={lead}
                   task={selectedTask() || undefined}
                   showTaskBadge={!selectedTaskId()}
-                  onCall={handleCall}
-                  onWhatsApp={handleWhatsApp}
-                  onUpdateNotes={handleUpdateNotes}
-                  onReschedule={handleReschedule}
-                  onUpdateInterestLevel={handleUpdateInterestLevel}
-                  onUpdateTags={handleUpdateTags}
+                  onCallLogSave={handleCallLogSave}
                 />
               )}
             </For>
@@ -500,12 +436,7 @@ export default function MyLeadsPage() {
                   lead={lead}
                   task={selectedTask() || undefined}
                   showTaskBadge={!selectedTaskId()}
-                  onCall={handleCall}
-                  onWhatsApp={handleWhatsApp}
-                  onUpdateNotes={handleUpdateNotes}
-                  onReschedule={handleReschedule}
-                  onUpdateInterestLevel={handleUpdateInterestLevel}
-                  onUpdateTags={handleUpdateTags}
+                  onCallLogSave={handleCallLogSave}
                 />
               )}
             </For>
@@ -513,8 +444,7 @@ export default function MyLeadsPage() {
         </section>
       </Show>
 
-      {/* Empty State */}
-      <Show when={filteredLeads().length === 0 && !leadsData.loading}>
+      {/* Empty State */}      <Show when={filteredLeads().length === 0 && !leadsData.loading}>
         <Card class="p-12 text-center">
           <div class="text-6xl mb-4 flex justify-center"><PartyPopper class="w-12 h-12 text-primary" /></div>
           <h3 class="text-xl font-semibold mb-2">All caught up!</h3>
@@ -527,15 +457,6 @@ export default function MyLeadsPage() {
           <Button class="flex items-center gap-1">Browse Lead Pool <ArrowRight class="w-3.5 h-3.5" /></Button>
         </Card>
       </Show>
-
-      {/* Call Log Sheet */}
-      <CallLogSheet
-        lead={callLogLead()!}
-        task={callLogTask() || undefined}
-        isOpen={callLogLead() !== null}
-        onClose={() => setCallLogLead(null)}
-        onSave={handleCallLogSave}
-      />
 
       {/* Filter Sheet */}
       <MyLeadsFilterSheet

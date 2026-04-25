@@ -15,22 +15,41 @@ export const InterestLevelEnum = z.enum(["High", "Medium", "Low", "Not_Intereste
 export type InterestLevel = z.infer<typeof InterestLevelEnum>;
 
 export const LeadTagEnum = z.enum([
-  "Wrong Number",
+  // Call outcome — mutually exclusive, updated on each call
+  "Answered",
+  "No Answer",
+  "Busy",
+  "Invalid Number",
+  // Contact labels — combinable, persist across calls
   "No WhatsApp",
   "DND",
-  "Callback Requested",
-  "Gatekeeper",
   "Language Barrier",
 ]);
 export type LeadTag = z.infer<typeof LeadTagEnum>;
 
-/** Ordered list of all predefined lead tags */
+/** All predefined lead tags */
 export const LEAD_TAGS: readonly LeadTag[] = [
-  "Wrong Number",
+  "Answered",
+  "No Answer",
+  "Busy",
+  "Invalid Number",
   "No WhatsApp",
   "DND",
-  "Callback Requested",
-  "Gatekeeper",
+  "Language Barrier",
+];
+
+/** Call outcome tags — single-select, set per call */
+export const OUTCOME_TAGS: readonly LeadTag[] = [
+  "Answered",
+  "No Answer",
+  "Busy",
+  "Invalid Number",
+];
+
+/** Contact label tags — multi-select, persist across calls */
+export const CONTACT_TAGS: readonly LeadTag[] = [
+  "No WhatsApp",
+  "DND",
   "Language Barrier",
 ];
 
