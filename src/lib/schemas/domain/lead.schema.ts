@@ -14,6 +14,26 @@ import { z } from "zod";
 export const InterestLevelEnum = z.enum(["High", "Medium", "Low", "Not_Interested"]);
 export type InterestLevel = z.infer<typeof InterestLevelEnum>;
 
+export const LeadTagEnum = z.enum([
+  "Wrong Number",
+  "No WhatsApp",
+  "DND",
+  "Callback Requested",
+  "Gatekeeper",
+  "Language Barrier",
+]);
+export type LeadTag = z.infer<typeof LeadTagEnum>;
+
+/** Ordered list of all predefined lead tags */
+export const LEAD_TAGS: readonly LeadTag[] = [
+  "Wrong Number",
+  "No WhatsApp",
+  "DND",
+  "Callback Requested",
+  "Gatekeeper",
+  "Language Barrier",
+];
+
 export const LeadSchema = z.object({
   id: z.ulid(),
   /** Location this lead belongs to. Required — leads are scoped per-location. */
@@ -32,6 +52,9 @@ export const LeadSchema = z.object({
   nextFollowUpDate: z.iso.datetime().optional(),
   lastNotes: z.string().optional(),
   totalCallCount: z.number().int().default(0),
+
+  // Volunteer-assigned contact labels
+  tags: z.array(LeadTagEnum).default([]),
 
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),

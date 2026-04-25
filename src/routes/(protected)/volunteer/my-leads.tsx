@@ -1,14 +1,15 @@
 import { createSignal, createMemo, createResource, Show, For } from "solid-js";
 import { createAsync, useSearchParams } from "@solidjs/router";
-import { Home, ClipboardList, AlertCircle, Calendar, CheckCircle2, ArrowRight, PartyPopper } from "lucide-solid";
+import { Home, ClipboardList, AlertCircle, Calendar, CheckCircle2, ArrowRight, PartyPopper, SlidersHorizontal, X } from "lucide-solid";
 import { LeadCard } from "~/components/volunteer/LeadCard";
 import { CallLogSheet, type CallLogData } from "~/components/volunteer/CallLogSheet";
+import { MyLeadsFilterSheet, type LeadFilters, type FilterStatus, DEFAULT_LEAD_FILTERS } from "~/components/volunteer/MyLeadsFilterSheet";
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { queryLeadsQuery, queryTasksQuery } from "~/server/api";
 import { getUser } from "~/lib/auth";
-import type { LeadField, TaskField, Lead, Task } from "~/lib/schemas/domain";
+import type { LeadField, TaskField, Lead, Task, InterestLevel, LeadTag } from "~/lib/schemas/domain";
 import type { QuerySpec } from "~/lib/schemas/query";
 import {
   getLeadStatus,
@@ -17,6 +18,85 @@ import {
   calculateCompletionRate,
   getProgressColor,
 } from "~/lib/utils/lead-status";
+
+// ── Filter helpers ────────────────────────────────────────────────────────
+
+const INTEREST_LEVEL_LABELS: Record<InterestLevel, string> = {
+  High: "High",
+  Medium: "Medium",
+  Low: "Low",
+  Not_Interested: "Not Interested",
+};
+
+const STATUS_LABELS: Record<FilterStatus, string> = {
+  overdue: "Overdue",
+  due_today: "Due Today",
+  not_started: "Not Started",
+  completed: "Completed",
+};
+
+const CALL_HISTORY_LABELS: Record<"never" | "not_in_7d", string> = {
+  never: "Never Called",
+  not_in_7d: "Not in 7d",
+};
+
+function isFiltersActive(f: LeadFilters): boolean {
+  return (
+    f.interestLevels.length > 0 ||
+    f.statuses.length > 0 ||
+    f.callHistory.length > 0 ||
+    f.tags.length > 0 ||
+    f.hasNotes !== undefined
+  );
+}
+
+function activeFilterCount(f: LeadFilters): number {
+  return (
+    f.interestLevels.length +
+    f.statuses.length +
+    f.callHistory.length +
+    f.tags.length +
+    (f.hasNotes !== undefined ? 1 : 0)
+  );
+}
+
+function leadMatchesFilters(lead: Lead, f: LeadFilters): boolean {
+  if (f.interestLevels.length > 0) {
+    if (!lead.lastInterestLevel || !f.interestLevels.includes(lead.lastInterestLevel))
+      return false;
+  }
+  if (f.statuses.length > 0) {
+    const overdue = isLeadOverdue(lead);
+    const today = isLeadDueToday(lead);
+    const status = getLeadStatus(lead);
+    const matches = f.statuses.some((s) => {
+      if (s === "overdue") return overdue;
+      if (s === "due_today") return today && !overdue;
+      if (s === "not_started") return status === "not_started";
+      if (s === "completed") return status === "completed";
+      return false;
+    });
+    if (!matches) return false;
+  }
+  if (f.callHistory.length > 0) {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const matches = f.callHistory.some((c) => {
+      if (c === "never") return lead.totalCallCount === 0;
+      if (c === "not_in_7d")
+        return lead.lastCallDate ? new Date(lead.lastCallDate) < sevenDaysAgo : true;
+      return false;
+    });
+    if (!matches) return false;
+  }
+  if (f.tags.length > 0) {
+    const leadTags = lead.tags ?? [];
+    if (!f.tags.some((t) => leadTags.includes(t))) return false;
+  }
+  if (f.hasNotes === true && !(lead.lastNotes && lead.lastNotes.trim())) return false;
+  if (f.hasNotes === false && lead.lastNotes && lead.lastNotes.trim()) return false;
+  return true;
+}
 
 /**
  * Volunteer My Leads Dashboard
@@ -29,6 +109,8 @@ export default function MyLeadsPage() {
   );
   const [callLogLead, setCallLogLead] = createSignal<Lead | null>(null);
   const [callLogTask, setCallLogTask] = createSignal<Task | null>(null);
+  const [activeFilters, setActiveFilters] = createSignal<LeadFilters>(DEFAULT_LEAD_FILTERS);
+  const [filterSheetOpen, setFilterSheetOpen] = createSignal(false);
 
   // Get volunteer ID from session
   const user = createAsync(() => getUser());
@@ -61,14 +143,85 @@ export default function MyLeadsPage() {
   const tasks = createMemo(() => tasksData()?.items || []);
   const allLeads = createMemo(() => leadsData()?.items || []);
 
-  // Filter leads by selected task
+  // Filter leads by selected task + active filters
   const filteredLeads = createMemo(() => {
+    let leads = allLeads();
+
+    // Task filter
     const taskId = selectedTaskId();
-    if (!taskId) return allLeads();
-    
-    // In real app: filter by task assignment
-    // For now, return first 20 leads as demo
-    return allLeads().slice(0, 20);
+    if (taskId) leads = leads.slice(0, 20); // demo: real app would filter by assignment
+
+    // Lead filters
+    const filters = activeFilters();
+    if (isFiltersActive(filters)) {
+      leads = leads.filter((lead) => leadMatchesFilters(lead, filters));
+    }
+
+    return leads;
+  });
+
+  // Live count for filter sheet "Show N leads" button
+  const filterMatchCount = createMemo(() => {
+    let leads = allLeads();
+    const taskId = selectedTaskId();
+    if (taskId) leads = leads.slice(0, 20);
+    return leads.filter((lead) => leadMatchesFilters(lead, activeFilters())).length;
+  });
+
+  // Active filter chips (each has a label + remove fn)
+  const activeChips = createMemo(() => {
+    const f = activeFilters();
+    const chips: { key: string; label: string; remove: () => void }[] = [];
+    for (const level of f.interestLevels) {
+      chips.push({
+        key: `level-${level}`,
+        label: INTEREST_LEVEL_LABELS[level],
+        remove: () =>
+          setActiveFilters((prev) => ({
+            ...prev,
+            interestLevels: prev.interestLevels.filter((l) => l !== level),
+          })),
+      });
+    }
+    for (const status of f.statuses) {
+      chips.push({
+        key: `status-${status}`,
+        label: STATUS_LABELS[status],
+        remove: () =>
+          setActiveFilters((prev) => ({
+            ...prev,
+            statuses: prev.statuses.filter((s) => s !== status),
+          })),
+      });
+    }
+    for (const ch of f.callHistory) {
+      chips.push({
+        key: `callHistory-${ch}`,
+        label: CALL_HISTORY_LABELS[ch],
+        remove: () =>
+          setActiveFilters((prev) => ({
+            ...prev,
+            callHistory: prev.callHistory.filter((c) => c !== ch),
+          })),
+      });
+    }
+    for (const tag of f.tags) {
+      chips.push({
+        key: `tag-${tag}`,
+        label: tag,
+        remove: () =>
+          setActiveFilters((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== tag) })),
+      });
+    }
+    if (f.hasNotes !== undefined) {
+      const val = f.hasNotes;
+      chips.push({
+        key: "hasNotes",
+        label: val ? "Has Notes" : "No Notes",
+        remove: () => setActiveFilters((prev) => ({ ...prev, hasNotes: undefined })),
+      });
+    }
+    return chips;
   });
 
   // Group leads by status
@@ -155,29 +308,72 @@ export default function MyLeadsPage() {
   // Handle notes update
   const handleUpdateNotes = async (lead: Lead, notes: string) => {
     console.log("Updating notes for", lead.displayName, ":", notes);
-    // TODO: Call API to update lead notes
-    // await updateLeadMutation({
-    //   id: lead.id,
-    //   lastNotes: notes,
-    // });
+    // TODO: await updateLeadMutation({ id: lead.id, lastNotes: notes });
   };
 
   // Handle reschedule
   const handleReschedule = async (lead: Lead, date: string) => {
     console.log("Rescheduling", lead.displayName, "to:", date);
-    // TODO: Call API to update follow-up date
-    // await updateLeadMutation({
-    //   id: lead.id,
-    //   nextFollowUpDate: new Date(date).toISOString(),
-    // });
+    // TODO: await updateLeadMutation({ id: lead.id, nextFollowUpDate: new Date(date).toISOString() });
+  };
+
+  // Handle inline interest level update
+  const handleUpdateInterestLevel = async (lead: Lead, level: InterestLevel) => {
+    console.log("Updating interest level for", lead.displayName, ":", level);
+    // TODO: await updateLeadMutation({ id: lead.id, lastInterestLevel: level });
+  };
+
+  // Handle tag update
+  const handleUpdateTags = async (lead: Lead, tags: LeadTag[]) => {
+    console.log("Updating tags for", lead.displayName, ":", tags);
+    // TODO: await updateLeadMutation({ id: lead.id, tags });
   };
 
   return (
     <main class="container mx-auto p-4 sm:p-8 max-w-4xl">
       {/* Header */}
       <div class="mb-6">
-        <h1 class="text-2xl sm:text-3xl font-bold mb-2 flex items-center gap-2"><Home class="w-6 h-6" /> My Leads</h1>
+        {/* Title row with filter icon */}
+        <div class="flex items-center justify-between mb-2">
+          <h1 class="text-2xl font-bold flex items-center gap-2">
+            <Home class="w-6 h-6" /> My Leads
+          </h1>
+          <button
+            onClick={() => setFilterSheetOpen(true)}
+            class="relative flex items-center justify-center w-9 h-9 rounded-full hover:bg-muted transition-colors"
+            aria-label="Filter leads"
+          >
+            <SlidersHorizontal class="w-5 h-5" />
+            <Show when={activeFilterCount(activeFilters()) > 0}>
+              <span class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] text-[10px] font-bold bg-primary text-primary-foreground rounded-full flex items-center justify-center px-0.5">
+                {activeFilterCount(activeFilters())}
+              </span>
+            </Show>
+          </button>
+        </div>
         
+        {/* Active filter chip strip — appears only when filters are active */}
+        <Show when={activeChips().length > 0}>
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 mt-3 -mx-4 px-4 scrollbar-none">
+            <For each={activeChips()}>
+              {(chip) => (
+                <button
+                  onClick={chip.remove}
+                  class="flex items-center gap-1 shrink-0 text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+                >
+                  {chip.label} <X class="w-3 h-3" />
+                </button>
+              )}
+            </For>
+            <button
+              onClick={() => setFilterSheetOpen(true)}
+              class="flex items-center gap-1 shrink-0 text-xs px-2.5 py-1 rounded-full border border-dashed border-muted-foreground/50 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+            >
+              + Filter
+            </button>
+          </div>
+        </Show>
+
         {/* Overall Progress */}
         <Show when={filteredLeads().length > 0}>
           <Card class="p-4 bg-primary/5 border-primary/20 mt-4">
@@ -252,6 +448,8 @@ export default function MyLeadsPage() {
                   onWhatsApp={handleWhatsApp}
                   onUpdateNotes={handleUpdateNotes}
                   onReschedule={handleReschedule}
+                  onUpdateInterestLevel={handleUpdateInterestLevel}
+                  onUpdateTags={handleUpdateTags}
                 />
               )}
             </For>
@@ -279,6 +477,8 @@ export default function MyLeadsPage() {
                   onWhatsApp={handleWhatsApp}
                   onUpdateNotes={handleUpdateNotes}
                   onReschedule={handleReschedule}
+                  onUpdateInterestLevel={handleUpdateInterestLevel}
+                  onUpdateTags={handleUpdateTags}
                 />
               )}
             </For>
@@ -304,6 +504,8 @@ export default function MyLeadsPage() {
                   onWhatsApp={handleWhatsApp}
                   onUpdateNotes={handleUpdateNotes}
                   onReschedule={handleReschedule}
+                  onUpdateInterestLevel={handleUpdateInterestLevel}
+                  onUpdateTags={handleUpdateTags}
                 />
               )}
             </For>
@@ -333,6 +535,15 @@ export default function MyLeadsPage() {
         isOpen={callLogLead() !== null}
         onClose={() => setCallLogLead(null)}
         onSave={handleCallLogSave}
+      />
+
+      {/* Filter Sheet */}
+      <MyLeadsFilterSheet
+        isOpen={filterSheetOpen()}
+        onClose={() => setFilterSheetOpen(false)}
+        filters={activeFilters()}
+        onFiltersChange={setActiveFilters}
+        matchCount={filterMatchCount()}
       />
     </main>
   );

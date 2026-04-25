@@ -163,6 +163,28 @@ export function calculateCompletionRate(leads: Lead[]): {
 }
 
 /**
+ * Get color class for follow-up date based on urgency
+ * Returns a Tailwind text-color class
+ */
+export function getFollowUpDateColor(isoDate: string | undefined): string {
+  if (!isoDate) return "text-muted-foreground";
+  const followUp = new Date(isoDate);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const nextWeek = new Date(today);
+  nextWeek.setDate(nextWeek.getDate() + 7);
+  const followUpDay = new Date(followUp.getFullYear(), followUp.getMonth(), followUp.getDate());
+
+  if (followUpDay < today) return "text-red-600";
+  if (followUpDay.getTime() === today.getTime()) return "text-amber-600";
+  if (followUpDay.getTime() === tomorrow.getTime()) return "text-yellow-600";
+  if (followUp <= nextWeek) return "text-blue-600";
+  return "text-muted-foreground";
+}
+
+/**
  * Get progress bar color based on completion percentage
  */
 export function getProgressColor(percentage: number): string {
