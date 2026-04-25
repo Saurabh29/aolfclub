@@ -73,32 +73,29 @@ export interface ContactPickerDrawerProps {
 // -- Component -----------------------------------------------------------------
 
 export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) => {
-  // -- Controllers  -  created once per drawer instance ------------------------
-  const leadsController = createCollectionQueryController<Lead, LeadField>({
-    queryFn: (spec) => queryLeadsQuery(spec),
-    initialQuery: {
-      filters: [],
-      sorting: [{ field: "displayName", direction: "asc" }],
-      pagination: { pageSize: 25, pageIndex: 0 },
-    },
-  });
-
-  const membersController = createCollectionQueryController<Member, MemberField>({
-    queryFn: (spec) => queryMembersQuery(spec),
-    initialQuery: {
-      filters: [],
-      sorting: [{ field: "displayName", direction: "asc" }],
-      pagination: { pageSize: 25, pageIndex: 0 },
-    },
-  });
-
-  const controller = () =>
-    props.targetType === "LEAD" ? leadsController : membersController;
+  // -- Controller  -  only create the one needed by targetType ----------------
+  const controller = props.targetType === "LEAD"
+    ? createCollectionQueryController<Lead, LeadField>({
+        queryFn: (spec) => queryLeadsQuery(spec),
+        initialQuery: {
+          filters: [],
+          sorting: [{ field: "displayName", direction: "asc" }],
+          pagination: { pageSize: 25, pageIndex: 0 },
+        },
+      })
+    : createCollectionQueryController<Member, MemberField>({
+        queryFn: (spec) => queryMembersQuery(spec),
+        initialQuery: {
+          filters: [],
+          sorting: [{ field: "displayName", direction: "asc" }],
+          pagination: { pageSize: 25, pageIndex: 0 },
+        },
+      });
 
   // Restore pre-selected IDs on mount
   onMount(() => {
     if (props.initialSelectedIds?.length) {
-      controller().setSelectedIds(new Set(props.initialSelectedIds));
+      controller.setSelectedIds(new Set(props.initialSelectedIds));
     }
   });
 
@@ -140,16 +137,16 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
   /** Assign all currently-checked rows to one agent, then clear the selection */
   const assignSelectedToAgent = (agentId: string) => {
     const map = new Map(inlineAssignmentMap());
-    controller().selectedIds().forEach((id) => map.set(id, agentId));
+    controller.selectedIds().forEach((id) => map.set(id, agentId));
     setInlineAssignmentMap(map);
-    controller().clearSelection();
+    controller.clearSelection();
     setShowAgentDropdown(false);
   };
 
   // -- Derived ---------------------------------------------------------------
 
-  const selectedCount = () => controller().selectedIds().size;
-  const totalCount = () => controller().data()?.pageInfo.totalCount ?? 0;
+  const selectedCount = () => controller.selectedIds().size;
+  const totalCount = () => controller.data()?.pageInfo.totalCount ?? 0;
 
   /** Contacts that have been assigned to an agent (across all batches) */
   const assignedCount = () => inlineAssignmentMap().size;
@@ -157,7 +154,7 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
   /** Contacts checked in the table but NOT yet assigned  -  will go to pool */
   const poolCount = () => {
     let n = 0;
-    controller().selectedIds().forEach((id) => {
+    controller.selectedIds().forEach((id) => {
       if (!inlineAssignmentMap().has(id)) n++;
     });
     return n;
@@ -167,13 +164,13 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
   const totalForTask = () => {
     const all = new Set([
       ...Array.from(inlineAssignmentMap().keys()),
-      ...Array.from(controller().selectedIds()),
+      ...Array.from(controller.selectedIds()),
     ]);
     return all.size;
   };
 
   const handleDone = () => {
-    const checkedIds = Array.from(controller().selectedIds());
+    const checkedIds = Array.from(controller.selectedIds());
     const assignedIds = Array.from(inlineAssignmentMap().keys());
     const allIds = Array.from(new Set([...assignedIds, ...checkedIds]));
 
@@ -189,7 +186,7 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
 
     props.onDone({
       selectedIds: allIds,
-      filterSpec: JSON.stringify(controller().querySpec()),
+      filterSpec: JSON.stringify(controller.querySpec()),
       inlineAssignments,
     });
   };
@@ -229,10 +226,10 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
           <div class="w-56 shrink-0 hidden md:block overflow-hidden">
             <Switch>
               <Match when={props.targetType === "LEAD"}>
-                <LeadFilterPane controller={leadsController} compact />
+                <LeadFilterPane controller={controller as any} compact />
               </Match>
               <Match when={props.targetType === "MEMBER"}>
-                <MemberFilterPane controller={membersController} compact />
+                <MemberFilterPane controller={controller as any} compact />
               </Match>
             </Switch>
           </div>
@@ -242,7 +239,7 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
             {/* Result count + clear */}
             <div class="flex items-center justify-between px-4 py-2 border-b border-border shrink-0 text-sm text-muted-foreground">
               <span>
-                <Show when={!controller().isLoading()} fallback="Loading...">
+                <Show when={!controller.isLoading()} fallback="Loading...">
                   {totalCount()} result{totalCount() !== 1 ? "s" : ""}
                   <Show when={selectedCount() > 0}>
                     {"   "}
@@ -253,7 +250,7 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
               <Show when={selectedCount() > 0}>
                 <button
                   type="button"
-                  onClick={() => controller().clearSelection()}
+                  onClick={() => controller.clearSelection()}
                   class="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Clear selection
@@ -304,7 +301,7 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
               <Switch>
                 <Match when={props.targetType === "LEAD"}>
                   <ResponsiveCollectionView
-                    controller={leadsController}
+                    controller={controller as any}
                     columns={leadColumns}
                     getId={(lead) => lead.id}
                     renderCard={(lead) => (
@@ -329,7 +326,7 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
                 </Match>
                 <Match when={props.targetType === "MEMBER"}>
                   <ResponsiveCollectionView
-                    controller={membersController}
+                    controller={controller as any}
                     columns={memberColumns}
                     getId={(member) => member.id}
                     renderCard={(member) => (

@@ -11,18 +11,20 @@ import {
   createSignal,
   createEffect,
   For,
-  Show,
   batch,
   type Component,
 } from "solid-js";
-import { ChevronUp, ChevronDown } from "lucide-solid";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import { Checkbox } from "~/components/ui/checkbox";
 import type { CollectionQueryState } from "~/lib/controllers";
 import type { FilterCondition } from "~/lib/schemas/query";
 import type { Member, MemberField } from "~/lib/schemas/domain/member.schema";
 import { PROGRAMS } from "./LeadFilterPane";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
+import {
+  FilterPaneShell,
+  CheckboxFilterGroup,
+  FilterSearchInput,
+} from "~/components/collection/filter-components";
+import { toggleItem } from "~/lib/utils/toggle-item";
 
 // -- Component -----------------------------------------------------------------
 
@@ -37,9 +39,7 @@ export const MemberFilterPane: Component<MemberFilterPaneProps> = (props) => {
   const [searchText, setSearchText] = createSignal("");
   const [selectedPrograms, setSelectedPrograms] = createSignal<string[]>([]);
   const [selectedDonePrograms, setSelectedDonePrograms] = createSignal<string[]>([]);
-  const [memberSinceYear, setMemberSinceYear] = createSignal<number | null>(null);
-  const [interestedOpen, setInterestedOpen] = createSignal(true);
-  const [doneOpen, setDoneOpen] = createSignal(false);
+  const [memberSinceYear, setMemberSinceYear] = createSignal<string | null>(null);
 
   const activeCount = () => {
     let n = selectedPrograms().length + selectedDonePrograms().length;
@@ -51,7 +51,8 @@ export const MemberFilterPane: Component<MemberFilterPaneProps> = (props) => {
   createEffect(() => {
     const programs = selectedPrograms();
     const donePrograms = selectedDonePrograms();
-    const since = memberSinceYear();
+    const sinceStr = memberSinceYear();
+    const since = sinceStr !== null ? parseInt(sinceStr) : null;
     const search = searchText().trim();
 
     const filters: FilterCondition<MemberField>[] = [];
@@ -93,144 +94,63 @@ export const MemberFilterPane: Component<MemberFilterPaneProps> = (props) => {
   };
 
   const toggleProgram = (p: string) => {
-    setSelectedPrograms((prev) =>
-      prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]
-    );
+    setSelectedPrograms((prev) => toggleItem(prev, p));
   };
 
   const toggleDoneProgram = (p: string) => {
-    setSelectedDonePrograms((prev) =>
-      prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]
-    );
+    setSelectedDonePrograms((prev) => toggleItem(prev, p));
   };
 
   // Generate year options from 2015 to current year
   const years = Array.from(
     { length: currentYear - 2014 },
-    (_, i) => currentYear - i
+    (_, i) => String(currentYear - i)
   );
 
   return (
-    <div class="flex flex-col h-full bg-background border-r border-border">
-      {/* Header */}
-      <div class="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-        <div class="flex items-center gap-2">
-          <span class="text-sm font-semibold">Filters</span>
-          <Show when={activeCount() > 0}>
-            <Badge variant="default" class="text-xs px-1.5 py-0.5 leading-none">
-              {activeCount()}
-            </Badge>
-          </Show>
-        </div>
-        <Show when={activeCount() > 0}>
-          <button
-            type="button"
-            onClick={clearAll}
-            class="text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Clear all
-          </button>
-        </Show>
+    <FilterPaneShell activeCount={activeCount()} onClearAll={clearAll}>
+      {/* Search */}
+      <FilterSearchInput
+        value={searchText()}
+        onInput={setSearchText}
+      />
+
+      {/* Member Since — using solid-ui Select */}
+      <div class="space-y-1.5">
+        <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Member Since</p>
+        <Select
+          value={memberSinceYear() ?? undefined}
+          onChange={(v) => setMemberSinceYear(v ?? null)}
+          options={years}
+          placeholder="Any year"
+          itemComponent={(itemProps) => (
+            <SelectItem item={itemProps.item}>{itemProps.item.rawValue} or later</SelectItem>
+          )}
+        >
+          <SelectTrigger class="h-8 text-sm">
+            <SelectValue<string>>{(state) => state.selectedOption() ? `${state.selectedOption()} or later` : "Any year"}</SelectValue>
+          </SelectTrigger>
+          <SelectContent />
+        </Select>
       </div>
 
-      {/* Scrollable body */}
-      <div class="flex-1 overflow-y-auto px-4 py-3 space-y-5">
+      {/* Interested In Programs */}
+      <CheckboxFilterGroup
+        label="Interested In"
+        options={PROGRAMS}
+        selected={selectedPrograms()}
+        onToggle={toggleProgram}
+        defaultOpen={true}
+      />
 
-        {/* Search */}
-        <div class="space-y-1.5">
-          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Search</p>
-          <input
-            type="text"
-            placeholder="Name or phone..."
-            value={searchText()}
-            onInput={(e) => setSearchText(e.currentTarget.value)}
-            class="w-full h-8 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
-
-        {/* Member Since */}
-        <div class="space-y-1.5">
-          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Member Since</p>
-          <select
-            value={memberSinceYear() ?? ""}
-            onChange={(e) => {
-              const v = parseInt(e.currentTarget.value);
-              setMemberSinceYear(isNaN(v) ? null : v);
-            }}
-            class="w-full h-8 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="">Any year</option>
-            <For each={years}>
-              {(y) => <option value={y}>{y} or later</option>}
-            </For>
-          </select>
-        </div>
-
-        {/* Interested In Programs */}
-        <div class="space-y-2">
-          <button
-            type="button"
-            class="flex w-full items-center justify-between"
-            onClick={() => setInterestedOpen((v) => !v)}
-          >
-            <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Interested In
-              <Show when={selectedPrograms().length > 0}>
-                <span class="ml-1 text-primary">({selectedPrograms().length})</span>
-              </Show>
-            </p>
-            <span class="text-muted-foreground text-xs">{interestedOpen() ? <ChevronUp class="w-3 h-3" /> : <ChevronDown class="w-3 h-3" />}</span>
-          </button>
-          <Show when={interestedOpen()}>
-            <div class="space-y-1.5">
-              <For each={PROGRAMS}>
-                {(prog) => (
-                  <div
-                    class="flex items-center gap-2 cursor-pointer"
-                    onClick={() => toggleProgram(prog)}
-                  >
-                    <Checkbox checked={selectedPrograms().includes(prog)} onChange={() => {}} />
-                    <span class="text-sm">{prog}</span>
-                  </div>
-                )}
-              </For>
-            </div>
-          </Show>
-        </div>
-
-        {/* Programs Done */}
-        <div class="space-y-2">
-          <button
-            type="button"
-            class="flex w-full items-center justify-between"
-            onClick={() => setDoneOpen((v) => !v)}
-          >
-            <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Completed Programs
-              <Show when={selectedDonePrograms().length > 0}>
-                <span class="ml-1 text-primary">({selectedDonePrograms().length})</span>
-              </Show>
-            </p>
-            <span class="text-muted-foreground text-xs">{doneOpen() ? <ChevronUp class="w-3 h-3" /> : <ChevronDown class="w-3 h-3" />}</span>
-          </button>
-          <Show when={doneOpen()}>
-            <div class="space-y-1.5">
-              <For each={PROGRAMS}>
-                {(prog) => (
-                  <div
-                    class="flex items-center gap-2 cursor-pointer"
-                    onClick={() => toggleDoneProgram(prog)}
-                  >
-                    <Checkbox checked={selectedDonePrograms().includes(prog)} onChange={() => {}} />
-                    <span class="text-sm">{prog}</span>
-                  </div>
-                )}
-              </For>
-            </div>
-          </Show>
-        </div>
-
-      </div>
-    </div>
+      {/* Programs Done */}
+      <CheckboxFilterGroup
+        label="Completed Programs"
+        options={PROGRAMS}
+        selected={selectedDonePrograms()}
+        onToggle={toggleDoneProgram}
+        defaultOpen={false}
+      />
+    </FilterPaneShell>
   );
 };

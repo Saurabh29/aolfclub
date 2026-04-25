@@ -28,6 +28,8 @@ import { leadColumns, memberColumns, renderDisplayName, renderPhone, renderDate 
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent, TabsIndicator } from "~/components/ui/tabs";
+import { TextField, TextFieldInput } from "~/components/ui/text-field";
 import { ImportSheet } from "~/components/community/ImportSheet";
 import type { ImportEntityType } from "~/components/community/ImportSheet";
 import { LeadFilterPane } from "~/components/community/LeadFilterPane";
@@ -112,7 +114,7 @@ export default function CommunityPage() {
         } else {
           alert(`Assigned ${assigned}, failed ${failed}.`);
         }
-        setTeamSelectedIds(new Set());
+        setTeamSelectedIds(new Set<string>());
         // Revalidate the team query so createAsync picks up changes
         await revalidate(getCommunityTeamQuery.key);
       } else {
@@ -153,12 +155,6 @@ export default function CommunityPage() {
     alert(`Export ${selectedCount()} records (not yet implemented)`);
   };
 
-  const tabs: { id: ContactTab; label: string; Icon: typeof Target }[] = [
-    { id: "leads", label: "Leads", Icon: Target },
-    { id: "members", label: "Members", Icon: GraduationCap },
-    { id: "team", label: "Team", Icon: Users },
-  ];
-
   const toggleTeamRow = (id: string) => {
     setTeamSelectedIds((prev) => {
       const next = new Set(prev);
@@ -170,7 +166,7 @@ export default function CommunityPage() {
   const toggleTeamAll = () => {
     const all = filteredTeamMembers();
     setTeamSelectedIds((prev) =>
-      prev.size === all.length ? new Set() : new Set(all.map((m) => m.id))
+      prev.size === all.length ? new Set<string>() : new Set<string>(all.map((m) => m.id))
     );
   };
 
@@ -220,12 +216,14 @@ export default function CommunityPage() {
                 {/* Team tab has no semantic filter pane  -  just shows a placeholder */}
                 <div class="flex flex-col h-full bg-background border-r border-border px-4 py-3">
                   <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Search</p>
-                  <input
-                    type="text"
-                    placeholder="Name or email..."
-                    class="mt-2 w-full h-8 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    onInput={(e) => setTeamSearchQuery(e.currentTarget.value.trim())}
-                  />
+                  <TextField class="mt-2">
+                    <TextFieldInput
+                      type="text"
+                      placeholder="Name or email..."
+                      class="h-8 text-sm"
+                      onInput={(e: InputEvent) => setTeamSearchQuery((e.currentTarget as HTMLInputElement).value.trim())}
+                    />
+                  </TextField>
                 </div>
               </Match>
             </Switch>
@@ -235,25 +233,22 @@ export default function CommunityPage() {
         {/* -- Main content --------------------------------------------------- */}
         <div class="flex flex-col flex-1 overflow-hidden">
 
-          {/* Tab bar */}
-          <div class="flex gap-1 border-b border-border px-4 shrink-0">
-            <For each={tabs}>
-              {(tab) => (
-                <button
-                  type="button"
-                  class={`px-4 py-2 text-sm font-medium rounded-t transition-colors ${
-                    activeTab() === tab.id
-                      ? "border-b-2 border-primary text-primary"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  <tab.Icon class="w-3.5 h-3.5 inline mr-1" />
-                  {tab.label}
-                </button>
-              )}
-            </For>
-          </div>
+          {/* Tab bar using solid-ui Tabs */}
+          <Tabs value={activeTab()} onChange={(v) => setActiveTab(v as ContactTab)} class="flex flex-col flex-1 overflow-hidden">
+            <div class="px-4 shrink-0 border-b border-border">
+              <TabsList class="bg-transparent h-10 gap-1">
+                <TabsTrigger value="leads" class="gap-1">
+                  <Target class="w-3.5 h-3.5" /> Leads
+                </TabsTrigger>
+                <TabsTrigger value="members" class="gap-1">
+                  <GraduationCap class="w-3.5 h-3.5" /> Members
+                </TabsTrigger>
+                <TabsTrigger value="team" class="gap-1">
+                  <Users class="w-3.5 h-3.5" /> Team
+                </TabsTrigger>
+                <TabsIndicator class="bg-primary" />
+              </TabsList>
+            </div>
 
           {/* Result count row */}
           <div class="flex items-center justify-between px-4 py-2 shrink-0 text-sm text-muted-foreground border-b border-border">
@@ -453,6 +448,7 @@ export default function CommunityPage() {
               </Match>
             </Switch>
           </div>
+        </Tabs>
         </div>
       </div>
 
@@ -463,13 +459,12 @@ export default function CommunityPage() {
         onClear={() => activeController().clearSelection()}
       />
 
-      {/* Import sheet */}
-      <Show when={showImport()}>
-        <ImportSheet
-          entityType={importEntityType()}
-          onClose={() => setShowImport(false)}
-        />
-      </Show>
+      {/* Import dialog */}
+      <ImportSheet
+        open={showImport()}
+        entityType={importEntityType()}
+        onClose={() => setShowImport(false)}
+      />
     </div>
   );
 }

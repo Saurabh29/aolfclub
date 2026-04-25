@@ -12,15 +12,22 @@
 import { createSignal, Show, type Component } from "solid-js";
 import { useAction } from "@solidjs/router";
 import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
-import { X, Download } from "lucide-solid";
+import { Download } from "lucide-solid";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "~/components/ui/dialog";
 import { importLeadsAction, importMembersAction, importTeamAction } from "~/server/api";
 import type { ImportResult } from "~/server/services/import.service";
 
 export type ImportEntityType = "leads" | "members" | "team";
 
 interface ImportSheetProps {
+  open: boolean;
   entityType: ImportEntityType;
   onClose: () => void;
 }
@@ -130,22 +137,12 @@ export const ImportSheet: Component<ImportSheetProps> = (props) => {
   };
 
   return (
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <Card class="w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-        <CardHeader>
-          <div class="flex items-center justify-between">
-            <CardTitle>Import {label()}</CardTitle>
-            <button
-              type="button"
-              onClick={props.onClose}
-              class="text-muted-foreground hover:text-foreground"
-              aria-label="Close"
-            >
-              <X class="w-4 h-4" />
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent class="space-y-4">
+    <Dialog open={props.open} onOpenChange={(open) => { if (!open) props.onClose(); }}>
+      <DialogContent class="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Import {label()}</DialogTitle>
+        </DialogHeader>
+        <div class="space-y-4">
           {/* Template download */}
           <div class="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
             <p class="mb-2">
@@ -198,23 +195,23 @@ export const ImportSheet: Component<ImportSheetProps> = (props) => {
               </div>
             )}
           </Show>
+        </div>
 
-          {/* Actions */}
-          <div class="flex gap-2 justify-end pt-2">
-            <Button variant="outline" onClick={props.onClose}>
-              {result() ? "Close" : "Cancel"}
+        {/* Actions */}
+        <DialogFooter>
+          <Button variant="outline" onClick={props.onClose}>
+            {result() ? "Close" : "Cancel"}
+          </Button>
+          <Show when={!result()}>
+            <Button
+              onClick={handleImport}
+              disabled={!file() || isImporting()}
+            >
+              {isImporting() ? "Importing..." : `Import ${label()}`}
             </Button>
-            <Show when={!result()}>
-              <Button
-                onClick={handleImport}
-                disabled={!file() || isImporting()}
-              >
-                {isImporting() ? "Importing..." : `Import ${label()}`}
-              </Button>
-            </Show>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          </Show>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

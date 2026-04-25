@@ -14,18 +14,20 @@
 import {
   createSignal,
   createEffect,
-  For,
   Show,
   batch,
   type Component,
 } from "solid-js";
-import { ChevronUp, ChevronDown } from "lucide-solid";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import type { CollectionQueryState } from "~/lib/controllers";
 import type { FilterCondition } from "~/lib/schemas/query";
 import type { Lead, LeadField } from "~/lib/schemas/domain/lead.schema";
+import {
+  FilterPaneShell,
+  CheckboxFilterGroup,
+  FilterSearchInput,
+} from "~/components/collection/filter-components";
+import { toggleItem } from "~/lib/utils/toggle-item";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -80,7 +82,6 @@ export const LeadFilterPane: Component<LeadFilterPaneProps> = (props) => {
   const [hasFollowUp, setHasFollowUp] = createSignal(false);
   const [minCalls, setMinCalls] = createSignal<number | null>(null);
   const [searchText, setSearchText] = createSignal("");
-  const [programsOpen, setProgramsOpen] = createSignal(true);
 
   // -- Active filter count (for badge on collapse) ---------------------------
 
@@ -158,154 +159,93 @@ export const LeadFilterPane: Component<LeadFilterPaneProps> = (props) => {
   };
 
   const toggleLevel = (level: InterestLevel) => {
-    setSelectedLevels((prev) =>
-      prev.includes(level) ? prev.filter((l) => l !== level) : [...prev, level]
-    );
+    setSelectedLevels((prev) => toggleItem(prev, level));
   };
 
   const toggleProgram = (p: string) => {
-    setSelectedPrograms((prev) =>
-      prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]
-    );
+    setSelectedPrograms((prev) => toggleItem(prev, p));
   };
 
   // -- Render ----------------------------------------------------------------
 
   return (
-    <div class="flex flex-col h-full bg-background border-r border-border">
-      {/* Header */}
-      <div class="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-        <div class="flex items-center gap-2">
-          <span class="text-sm font-semibold">Filters</span>
-          <Show when={activeCount() > 0}>
-            <Badge variant="default" class="text-xs px-1.5 py-0.5 leading-none">
-              {activeCount()}
-            </Badge>
-          </Show>
+    <FilterPaneShell activeCount={activeCount()} onClearAll={clearAll}>
+      {/* Search */}
+      <FilterSearchInput
+        value={searchText()}
+        onInput={setSearchText}
+      />
+
+      {/* Interest Level */}
+      <div class="space-y-2">
+        <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Interest Level</p>
+        <div class="flex flex-wrap gap-1.5">
+          {INTEREST_LEVELS.map((level) => (
+            <button
+              type="button"
+              onClick={() => toggleLevel(level)}
+              class={`rounded-full px-2.5 py-0.5 text-xs font-medium border transition-colors ${
+                selectedLevels().includes(level)
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-foreground border-border hover:bg-muted"
+              }`}
+            >
+              {interestLabel(level)}
+            </button>
+          ))}
         </div>
-        <Show when={activeCount() > 0}>
-          <button
-            type="button"
-            onClick={clearAll}
-            class="text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Clear all
-          </button>
-        </Show>
       </div>
 
-      {/* Scrollable body */}
-      <div class="flex-1 overflow-y-auto px-4 py-3 space-y-5">
-
-        {/* Search */}
-        <div class="space-y-1.5">
-          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Search</p>
-          <input
-            type="text"
-            placeholder="Name or phone..."
-            value={searchText()}
-            onInput={(e) => setSearchText(e.currentTarget.value)}
-            class="w-full h-8 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
-
-        {/* Interest Level */}
+      {/* Call History */}
+      <div class="space-y-2">
+        <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Call History</p>
         <div class="space-y-2">
-          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Interest Level</p>
-          <div class="flex flex-wrap gap-1.5">
-            <For each={INTEREST_LEVELS}>
-              {(level) => (
-                <button
-                  type="button"
-                  onClick={() => toggleLevel(level)}
-                  class={`rounded-full px-2.5 py-0.5 text-xs font-medium border transition-colors ${
-                    selectedLevels().includes(level)
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background text-foreground border-border hover:bg-muted"
-                  }`}
-                >
-                  {interestLabel(level)}
-                </button>
-              )}
-            </For>
-          </div>
-        </div>
-
-        {/* Call History */}
-        <div class="space-y-2">
-          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Call History</p>
-          <div class="space-y-2">
-            <div
-              class="flex items-center gap-2 cursor-pointer"
-              onClick={() => { setNeverCalled((v) => !v); if (!neverCalled()) setMinCalls(null); }}
-            >
-              <Checkbox checked={neverCalled()} onChange={() => {}} />
-              <span class="text-sm">Never called</span>
-            </div>
-            <Show when={!neverCalled()}>
-              <div class="flex items-center gap-2">
-                <span class="text-sm text-muted-foreground shrink-0">Min calls</span>
-                <input
-                  type="number"
-                  min="1"
-                  placeholder="e.g. 2"
-                  value={minCalls() ?? ""}
-                  onInput={(e) => {
-                    const v = parseInt(e.currentTarget.value);
-                    setMinCalls(isNaN(v) ? null : v);
-                  }}
-                  class="w-16 h-7 rounded border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-            </Show>
-          </div>
-        </div>
-
-        {/* Follow-up */}
-        <div class="space-y-2">
-          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Follow-up</p>
           <div
             class="flex items-center gap-2 cursor-pointer"
-            onClick={() => setHasFollowUp((v) => !v)}
+            onClick={() => { setNeverCalled((v) => !v); if (!neverCalled()) setMinCalls(null); }}
           >
-            <Checkbox checked={hasFollowUp()} onChange={() => {}} />
-            <span class="text-sm">Has scheduled follow-up</span>
+            <Checkbox checked={neverCalled()} onChange={() => {}} />
+            <span class="text-sm">Never called</span>
           </div>
-        </div>
-
-        {/* Programs */}
-        <div class="space-y-2">
-          <button
-            type="button"
-            class="flex w-full items-center justify-between"
-            onClick={() => setProgramsOpen((v) => !v)}
-          >
-            <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Interested In Programs
-              <Show when={selectedPrograms().length > 0}>
-                <span class="ml-1 text-primary">({selectedPrograms().length})</span>
-              </Show>
-            </p>
-            <span class="text-muted-foreground text-xs">{programsOpen() ? <ChevronUp class="w-3 h-3" /> : <ChevronDown class="w-3 h-3" />}</span>
-          </button>
-          <Show when={programsOpen()}>
-            <div class="space-y-1.5">
-              <For each={PROGRAMS}>
-                {(prog) => (
-                  <div
-                    class="flex items-center gap-2 cursor-pointer"
-                    onClick={() => toggleProgram(prog)}
-                  >
-                    <Checkbox checked={selectedPrograms().includes(prog)} onChange={() => {}} />
-                    <span class="text-sm">{prog}</span>
-                  </div>
-                )}
-              </For>
+          <Show when={!neverCalled()}>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-muted-foreground shrink-0">Min calls</span>
+              <input
+                type="number"
+                min="1"
+                placeholder="e.g. 2"
+                value={minCalls() ?? ""}
+                onInput={(e) => {
+                  const v = parseInt(e.currentTarget.value);
+                  setMinCalls(isNaN(v) ? null : v);
+                }}
+                class="w-16 h-7 rounded border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
             </div>
           </Show>
         </div>
-
       </div>
-    </div>
+
+      {/* Follow-up */}
+      <div class="space-y-2">
+        <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Follow-up</p>
+        <div
+          class="flex items-center gap-2 cursor-pointer"
+          onClick={() => setHasFollowUp((v) => !v)}
+        >
+          <Checkbox checked={hasFollowUp()} onChange={() => {}} />
+          <span class="text-sm">Has scheduled follow-up</span>
+        </div>
+      </div>
+
+      {/* Programs */}
+      <CheckboxFilterGroup
+        label="Interested In Programs"
+        options={PROGRAMS}
+        selected={selectedPrograms()}
+        onToggle={toggleProgram}
+        defaultOpen={true}
+      />
+    </FilterPaneShell>
   );
 };

@@ -140,8 +140,8 @@ export default function MyLeadsPage() {
   const tasks = createMemo(() => tasksData()?.items || []);
   const allLeads = createMemo(() => leadsData()?.items || []);
 
-  // Filter leads by selected task + active filters
-  const filteredLeads = createMemo(() => {
+  // Filter leads by selected task + active filters (combined with grouping)
+  const filteredAndGrouped = createMemo(() => {
     let leads = allLeads();
 
     // Task filter
@@ -154,15 +154,36 @@ export default function MyLeadsPage() {
       leads = leads.filter((lead) => leadMatchesFilters(lead, filters));
     }
 
-    return leads;
+    // Single-pass grouping into buckets
+    const overdue: Lead[] = [];
+    const today: Lead[] = [];
+    const active: Lead[] = [];
+    for (const lead of leads) {
+      if (isLeadOverdue(lead)) {
+        overdue.push(lead);
+      } else if (isLeadDueToday(lead)) {
+        today.push(lead);
+      } else if (getLeadStatus(lead) !== "completed") {
+        active.push(lead);
+      }
+    }
+
+    return { all: leads, overdue, today, active };
   });
+
+  const filteredLeads = () => filteredAndGrouped().all;
+  const overdueLeads = () => filteredAndGrouped().overdue;
+  const todayLeads = () => filteredAndGrouped().today;
+  const activeLeads = () => filteredAndGrouped().active;
 
   // Live count for filter sheet "Show N leads" button
   const filterMatchCount = createMemo(() => {
     let leads = allLeads();
     const taskId = selectedTaskId();
     if (taskId) leads = leads.slice(0, 20);
-    return leads.filter((lead) => leadMatchesFilters(lead, activeFilters())).length;
+    const filters = activeFilters();
+    if (!isFiltersActive(filters)) return leads.length;
+    return leads.filter((lead) => leadMatchesFilters(lead, filters)).length;
   });
 
   // Active filter chips (each has a label + remove fn)
@@ -220,26 +241,6 @@ export default function MyLeadsPage() {
     }
     return chips;
   });
-
-  // Group leads by status
-  const overdueLeads = createMemo(() =>
-    filteredLeads().filter((lead) => isLeadOverdue(lead))
-  );
-
-  const todayLeads = createMemo(() =>
-    filteredLeads().filter((lead) => !isLeadOverdue(lead) && isLeadDueToday(lead))
-  );
-
-  const activeLeads = createMemo(() =>
-    filteredLeads().filter((lead) => {
-      const status = getLeadStatus(lead);
-      return (
-        status !== "completed" &&
-        !isLeadOverdue(lead) &&
-        !isLeadDueToday(lead)
-      );
-    })
-  );
 
   // Calculate overall progress
   const overallProgress = createMemo(() => calculateCompletionRate(Array.from(filteredLeads())));

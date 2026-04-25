@@ -13,6 +13,7 @@
     "@auth/core": "^0.41.1",
     "@aws-sdk/client-dynamodb": "^3.1014.0",
     "@aws-sdk/lib-dynamodb": "^3.1014.0",
+    "@corvu/drawer": "^0.2.4",
     "@googlemaps/js-api-loader": "^2.0.2",
     "@kobalte/core": "^0.13.11",
     "@solidjs/router": "^0.15.0",

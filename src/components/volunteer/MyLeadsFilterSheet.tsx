@@ -1,6 +1,15 @@
-import { Show, For, type Component } from "solid-js";
-import { SlidersHorizontal, X } from "lucide-solid";
+import { type Component } from "solid-js";
+import { SlidersHorizontal } from "lucide-solid";
 import { Button } from "~/components/ui/button";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerFooter,
+} from "~/components/ui/drawer";
+import { ChipToggleGroup } from "~/components/collection/filter-components";
+import { toggleItem } from "~/lib/utils/toggle-item";
 import type { InterestLevel, LeadTag } from "~/lib/schemas/domain";
 import { LEAD_TAGS } from "~/lib/schemas/domain";
 
@@ -28,10 +37,6 @@ export interface MyLeadsFilterSheetProps {
   filters: LeadFilters;
   onFiltersChange: (filters: LeadFilters) => void;
   matchCount: number;
-}
-
-function toggleItem<T>(arr: T[], item: T): T[] {
-  return arr.includes(item) ? arr.filter((i) => i !== item) : [...arr, item];
 }
 
 const INTEREST_LEVEL_OPTIONS: { value: InterestLevel; label: string }[] = [
@@ -89,160 +94,73 @@ export const MyLeadsFilterSheet: Component<MyLeadsFilterSheetProps> = (props) =>
     });
   };
 
-  return (
-    <Show when={props.isOpen}>
-      {/* Backdrop */}
-      <div class="fixed inset-0 bg-black/50 z-50" onClick={props.onClose} />
+  const TAG_OPTIONS = LEAD_TAGS.map((t) => ({ value: t, label: t }));
 
-      {/* Bottom Sheet */}
-      <div class="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-2xl max-h-[85vh] overflow-y-auto shadow-xl">
-        {/* Drag handle */}
-        <div class="flex justify-center pt-3 pb-1">
-          <div class="w-12 h-1 bg-muted-foreground/30 rounded-full" />
+  const NOTES_OPTIONS: { value: "yes" | "no"; label: string }[] = [
+    { value: "yes", label: "Has Notes" },
+    { value: "no", label: "No Notes" },
+  ];
+
+  const selectedNotes = () => {
+    if (props.filters.hasNotes === true) return ["yes" as const];
+    if (props.filters.hasNotes === false) return ["no" as const];
+    return [];
+  };
+
+  return (
+    <Drawer open={props.isOpen} onOpenChange={(open) => { if (!open) props.onClose(); }}>
+      <DrawerContent class="max-h-[85vh]">
+        <DrawerHeader class="flex flex-row items-center justify-between">
+          <DrawerTitle class="flex items-center gap-2">
+            <SlidersHorizontal class="w-4 h-4" /> Filters
+          </DrawerTitle>
+          <button
+            onClick={() => props.onFiltersChange({ ...DEFAULT_LEAD_FILTERS })}
+            class="text-sm text-destructive hover:underline"
+          >
+            Clear all
+          </button>
+        </DrawerHeader>
+
+        <div class="px-4 space-y-5 overflow-y-auto pb-2">
+          <ChipToggleGroup
+            label="Interest Level"
+            options={INTEREST_LEVEL_OPTIONS}
+            selected={props.filters.interestLevels}
+            onToggle={toggleInterestLevel}
+          />
+          <ChipToggleGroup
+            label="Status"
+            options={STATUS_OPTIONS}
+            selected={props.filters.statuses}
+            onToggle={toggleStatus}
+          />
+          <ChipToggleGroup
+            label="Call History"
+            options={CALL_HISTORY_OPTIONS}
+            selected={props.filters.callHistory}
+            onToggle={toggleCallHistory}
+          />
+          <ChipToggleGroup
+            label="Tags"
+            options={TAG_OPTIONS}
+            selected={props.filters.tags}
+            onToggle={toggleTag}
+          />
+          <ChipToggleGroup
+            label="Notes"
+            options={NOTES_OPTIONS}
+            selected={selectedNotes()}
+            onToggle={(v) => toggleHasNotes(v === "yes")}
+          />
         </div>
 
-        <div class="p-4 space-y-5 pb-6">
-          {/* Header */}
-          <div class="flex items-center justify-between">
-            <h3 class="text-base font-semibold flex items-center gap-2">
-              <SlidersHorizontal class="w-4 h-4" /> Filters
-            </h3>
-            <div class="flex items-center gap-3">
-              <button
-                onClick={() =>
-                  props.onFiltersChange({ ...DEFAULT_LEAD_FILTERS })
-                }
-                class="text-sm text-destructive hover:underline"
-              >
-                Clear all
-              </button>
-              <button
-                onClick={props.onClose}
-                class="text-muted-foreground hover:text-foreground"
-                aria-label="Close"
-              >
-                <X class="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Interest Level */}
-          <div>
-            <p class="text-sm font-medium mb-2">Interest Level</p>
-            <div class="flex flex-wrap gap-2">
-              <For each={INTEREST_LEVEL_OPTIONS}>
-                {(item) => (
-                  <button
-                    onClick={() => toggleInterestLevel(item.value)}
-                    class={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
-                      props.filters.interestLevels.includes(item.value)
-                        ? "bg-primary/10 border-primary/40 text-primary"
-                        : "bg-background border-border text-muted-foreground hover:border-primary/30"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                )}
-              </For>
-            </div>
-          </div>
-
-          {/* Status */}
-          <div>
-            <p class="text-sm font-medium mb-2">Status</p>
-            <div class="flex flex-wrap gap-2">
-              <For each={STATUS_OPTIONS}>
-                {(item) => (
-                  <button
-                    onClick={() => toggleStatus(item.value)}
-                    class={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
-                      props.filters.statuses.includes(item.value)
-                        ? "bg-primary/10 border-primary/40 text-primary"
-                        : "bg-background border-border text-muted-foreground hover:border-primary/30"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                )}
-              </For>
-            </div>
-          </div>
-
-          {/* Call History */}
-          <div>
-            <p class="text-sm font-medium mb-2">Call History</p>
-            <div class="flex flex-wrap gap-2">
-              <For each={CALL_HISTORY_OPTIONS}>
-                {(item) => (
-                  <button
-                    onClick={() => toggleCallHistory(item.value)}
-                    class={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
-                      props.filters.callHistory.includes(item.value)
-                        ? "bg-primary/10 border-primary/40 text-primary"
-                        : "bg-background border-border text-muted-foreground hover:border-primary/30"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                )}
-              </For>
-            </div>
-          </div>
-
-          {/* Tags */}
-          <div>
-            <p class="text-sm font-medium mb-2">Tags</p>
-            <div class="flex flex-wrap gap-2">
-              <For each={LEAD_TAGS}>
-                {(tag) => (
-                  <button
-                    onClick={() => toggleTag(tag)}
-                    class={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
-                      props.filters.tags.includes(tag)
-                        ? "bg-primary/10 border-primary/40 text-primary"
-                        : "bg-background border-border text-muted-foreground hover:border-primary/30"
-                    }`}
-                  >
-                    {tag}
-                  </button>
-                )}
-              </For>
-            </div>
-          </div>
-
-          {/* Has Notes */}
-          <div>
-            <p class="text-sm font-medium mb-2">Notes</p>
-            <div class="flex gap-2">
-              <button
-                onClick={() => toggleHasNotes(true)}
-                class={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
-                  props.filters.hasNotes === true
-                    ? "bg-primary/10 border-primary/40 text-primary"
-                    : "bg-background border-border text-muted-foreground hover:border-primary/30"
-                }`}
-              >
-                Has Notes
-              </button>
-              <button
-                onClick={() => toggleHasNotes(false)}
-                class={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
-                  props.filters.hasNotes === false
-                    ? "bg-primary/10 border-primary/40 text-primary"
-                    : "bg-background border-border text-muted-foreground hover:border-primary/30"
-                }`}
-              >
-                No Notes
-              </button>
-            </div>
-          </div>
-
-          {/* Apply Button */}
+        <DrawerFooter>
           <Button class="w-full" onClick={props.onClose}>
             Show {props.matchCount} Lead{props.matchCount !== 1 ? "s" : ""}
           </Button>
-        </div>
-      </div>
-    </Show>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 };
