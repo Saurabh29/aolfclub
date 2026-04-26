@@ -1,26 +1,22 @@
 import { createSignal, Show, For } from "solid-js";
-import { A } from "@solidjs/router";
-import { createResource } from "solid-js";
+import { A, createAsync } from "@solidjs/router";
 import { Button } from "~/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { queryTasksQuery } from "~/server/api";
-import type { QuerySpec } from "~/lib/schemas/query";
-import type { TaskField } from "~/lib/schemas/domain";
 
 /**
  * Tasks List Page
  * Shows all call tasks with filters and actions
  */
 export default function TasksPage() {
-  const [tasksData] = createResource(async () => {
-    const spec: QuerySpec<TaskField> = {
+  const tasksData = createAsync(() =>
+    queryTasksQuery({
       filters: [],
       sorting: [{ field: "createdAt", direction: "desc" }],
       pagination: { pageSize: 50, pageIndex: 0 },
-    };
-    return await queryTasksQuery(spec);
-  });
+    })
+  );
 
   const formatDate = (isoString: string) => {
     const date = new Date(isoString);
@@ -78,14 +74,14 @@ export default function TasksPage() {
       </div>
 
       {/* Loading State */}
-      <Show when={tasksData.loading}>
+      <Show when={tasksData() === undefined}>
         <div class="text-center py-12 text-muted-foreground">
           Loading tasks...
         </div>
       </Show>
 
       {/* Tasks Grid */}
-      <Show when={!tasksData.loading && tasksData()}>
+      <Show when={tasksData() !== undefined}>
         <div class="grid gap-4">
           <For
             each={tasksData()?.items || []}

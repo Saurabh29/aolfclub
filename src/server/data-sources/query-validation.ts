@@ -130,6 +130,7 @@ import type { LeadField } from "~/lib/schemas/domain";
 
 export const LEAD_QUERY_CONFIG: QueryValidationConfig<LeadField> = {
   filterableFields: {
+    id: { operators: ENUM_OPS },
     displayName: { operators: STRING_OPS },
     phone: { operators: STRING_OPS },
     email: { operators: STRING_OPS },
@@ -142,7 +143,7 @@ export const LEAD_QUERY_CONFIG: QueryValidationConfig<LeadField> = {
     tags: { operators: ["in", "contains"] as readonly FilterOperator[] },
     createdAt: { operators: COMPARABLE_OPS },
     updatedAt: { operators: COMPARABLE_OPS },
-    // Not filterable: id, image, lastNotes
+    // Not filterable: image, lastNotes
   } as Record<LeadField, FieldValidation>,
   sortableFields: [
     "displayName", "phone", "lastCallDate", "nextFollowUpDate",

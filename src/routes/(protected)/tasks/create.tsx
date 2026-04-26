@@ -1,6 +1,6 @@
-import { useNavigate, useAction } from "@solidjs/router";
+import { useNavigate, useAction, revalidate } from "@solidjs/router";
 import { TaskWizard } from "~/components/tasks/TaskWizard";
-import { createTaskMutation } from "~/server/api";
+import { createTaskMutation, queryTasksQuery } from "~/server/api";
 
 export default function CreateTaskPage() {
   const navigate = useNavigate();
@@ -17,6 +17,7 @@ export default function CreateTaskPage() {
         submitLabel="Create Task"
         onSubmit={async (data) => {
           await doCreateTask(data);
+          await revalidate(queryTasksQuery.key);
           navigate("/tasks");
         }}
         onCancel={() => navigate("/tasks")}
