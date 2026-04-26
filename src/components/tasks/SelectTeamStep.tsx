@@ -94,35 +94,44 @@ export const SelectTeamStep: Component<SelectTeamStepProps> = (props) => {
         </p>
       </div>
 
-      {/* Selected Agents Summary */}
-      <Show when={selectedAgents().length > 0}>
+      {/* Selected Agents Summary — shown as soon as IDs are known, names resolve once list loads */}
+      <Show when={props.selectedAgentIds.length > 0}>
         <Card class="p-4 bg-primary/5 border-primary/20">
           <div class="space-y-3">
             <div class="flex items-center justify-between">
               <span class="text-sm font-medium">Selected Agents</span>
               <Badge variant="default" class="text-base px-3 py-1">
-                {selectedAgents().length}
+                {props.selectedAgentIds.length}
               </Badge>
             </div>
-            <div class="flex flex-wrap gap-2">
-              <For each={selectedAgents()}>
-                {(agent) => (
-                  <Badge variant="secondary" class="gap-1 pr-1">
-                    {agent.displayName}
-                    <button
-                      type="button"
-                      onClick={() => removeAgent(agent.id)}
-                      class="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-                      aria-label={`Remove ${agent.displayName}`}
-                    >
-                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </Badge>
-                )}
-              </For>
-            </div>
+            <Show
+              when={selectedAgents().length > 0}
+              fallback={
+                <p class="text-xs text-muted-foreground">
+                  {props.selectedAgentIds.length} agent{props.selectedAgentIds.length !== 1 ? "s" : ""} selected — loading names…
+                </p>
+              }
+            >
+              <div class="flex flex-wrap gap-2">
+                <For each={selectedAgents()}>
+                  {(agent) => (
+                    <Badge variant="secondary" class="gap-1 pr-1">
+                      {agent.displayName}
+                      <button
+                        type="button"
+                        onClick={() => removeAgent(agent.id)}
+                        class="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                        aria-label={`Remove ${agent.displayName}`}
+                      >
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </Badge>
+                  )}
+                </For>
+              </div>
+            </Show>
           </div>
         </Card>
       </Show>

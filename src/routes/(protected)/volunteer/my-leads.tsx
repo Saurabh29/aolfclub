@@ -113,7 +113,7 @@ export default function MyLeadsPage() {
   const user = createAsync(() => getUser());
   const volunteerId = () => (user() as any)?.id as string | undefined;
 
-  // Fetch tasks where this volunteer is a selected agent
+  // Tasks for this volunteer
   const [tasksData] = createResource(async () => {
     const spec: QuerySpec<TaskField> = {
       filters: [],
@@ -123,55 +123,50 @@ export default function MyLeadsPage() {
     return await queryTasksQuery(spec);
   });
 
-  // Fetch all leads for the active location (we filter client-side by assignment below)
-  const [leadsData] = createResource(async () => {
-    const spec: QuerySpec<LeadField> = {
-      filters: [],
-      sorting: [{ field: "displayName", direction: "asc" }],
-      pagination: { pageSize: 500, pageIndex: 0 },
-    };
-    return await queryLeadsQuery(spec);
-  });
-
   const tasks = createMemo(() => tasksData()?.items || []);
-  const allLeads = createMemo(() => leadsData()?.items || []);
 
-  /**
-   * Set of lead IDs that are actually assigned to this volunteer across all active tasks.
-   * A lead appears here only if:
-   *   - The task lists this volunteer in selectedAgentIds, AND
-   *   - This volunteer has the lead in their task assignments array.
-   * This is task-scoped: the same lead can be assigned to different agents in different tasks.
-   */
+  // Derive which lead IDs are assigned to this volunteer across all tasks
   const myAssignedLeadIds = createMemo(() => {
     const vid = volunteerId();
     if (!vid) return new Set<string>();
-
     const ids = new Set<string>();
     for (const task of tasks()) {
       if (!task.selectedAgentIds.includes(vid)) continue;
       for (const assignment of task.assignments) {
         if (assignment.agentId === vid) {
-          for (const contactId of assignment.contactIds) {
-            ids.add(contactId);
-          }
+          for (const contactId of assignment.contactIds) ids.add(contactId);
         }
       }
     }
     return ids;
   });
 
+  // Reactively fetch ONLY the leads assigned to this volunteer (avoids pageSize > 100)
+  const [leadsData] = createResource(
+    () => [...myAssignedLeadIds()],
+    async (ids) => {
+      if (ids.length === 0) return { items: [] as Lead[], totalCount: 0, hasNextPage: false };
+      const spec: QuerySpec<LeadField> = {
+        filters: [{ field: "id", op: "in", value: ids }],
+        sorting: [{ field: "displayName", direction: "asc" }],
+        pagination: { pageSize: 100, pageIndex: 0 },
+      };
+      return await queryLeadsQuery(spec);
+    }
+  );
+
+  const allLeads = createMemo(() => leadsData()?.items || []);
+
   // Filter leads by selected task + active filters (combined with grouping)
   const filteredAndGrouped = createMemo(() => {
-    // Start with only leads assigned to this volunteer
-    let leads = allLeads().filter((lead) => myAssignedLeadIds().has(lead.id));
+    // allLeads() already contains only this volunteer's assigned leads
+    let leads = allLeads();
 
-    // Task filter — further restrict to a specific campaign's contacts
+    // Task filter — restrict to a specific campaign's assignment for this volunteer
     const taskId = selectedTaskId();
     if (taskId) {
       const task = tasks().find((t) => t.id === taskId);
       if (task) {
-        // Intersect: my assigned leads that are also in this task's matched contacts
         const vid = volunteerId();
         const taskAssignment = vid
           ? task.assignments.find((a) => a.agentId === vid)
@@ -212,7 +207,7 @@ export default function MyLeadsPage() {
   // Live count for filter sheet "Show N leads" button
   const filterMatchCount = createMemo(() => {
     const vid = volunteerId();
-    let leads = allLeads().filter((lead) => myAssignedLeadIds().has(lead.id));
+    let leads = allLeads();
     const taskId = selectedTaskId();
     if (taskId) {
       const task = tasks().find((t) => t.id === taskId);

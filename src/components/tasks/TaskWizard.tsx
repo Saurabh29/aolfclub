@@ -345,6 +345,7 @@ export const TaskWizard: Component<TaskWizardProps> = (props) => {
         <ContactPickerDrawer
           targetType={taskData().targetUserType ?? "LEAD"}
           initialSelectedIds={taskData().matchedContactIds}
+          initialAssignments={taskData().assignments?.map((a) => ({ agentId: a.agentId, contactIds: a.contactIds }))}
           selectedAgentIds={taskData().selectedAgentIds}
           onDone={handlePickerDone}
           onCancel={() => setPickerOpen(false)}

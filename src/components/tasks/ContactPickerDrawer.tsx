@@ -118,6 +118,8 @@ export interface ContactPickerDrawerProps {
   targetType: "LEAD" | "MEMBER";
   /** Pre-selected IDs to restore when drawer re-opens */
   initialSelectedIds?: string[];
+  /** Existing assignments to restore (edit mode) */
+  initialAssignments?: Array<{ agentId: string; contactIds: string[] }>;
   /** Agent IDs from the team selection step  -  enables inline assignment toolbar */
   selectedAgentIds?: string[];
   /** Called when user confirms selection */
@@ -148,10 +150,19 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
         },
       });
 
-  // Restore pre-selected IDs on mount
+  // Restore pre-selected IDs and assignment map on mount
   onMount(() => {
     if (props.initialSelectedIds?.length) {
       controller.setSelectedIds(new Set(props.initialSelectedIds));
+    }
+    if (props.initialAssignments?.length) {
+      const map = new Map<string, string>();
+      for (const a of props.initialAssignments) {
+        for (const cid of a.contactIds) {
+          map.set(cid, a.agentId);
+        }
+      }
+      setInlineAssignmentMap(map);
     }
   });
 
