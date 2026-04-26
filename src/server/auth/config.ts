@@ -2,7 +2,7 @@ import github from "@auth/core/providers/github";
 import google from "@auth/core/providers/google";
 import type { StartAuthJSConfig } from "start-authjs";
 import { env } from "~/server/config";
-import { createOrGetOAuthUser, findUserByEmail } from "../services/auth.service";
+import { createOrGetOAuthUser, findUserByEmail, AuthDeniedError } from "../services/auth.service";
 
 export const authConfig: StartAuthJSConfig = {
   secret: env.AUTH_SECRET,
@@ -52,13 +52,15 @@ export const authConfig: StartAuthJSConfig = {
         (user as any)._canBootstrap = result.canBootstrap;
         return true;
       } catch (err) {
-        console.error("[auth] signIn callback error:", err);
-        // Redirect to landing with a descriptive error instead of triggering
-        // a generic AccessDenied page.
-        if (err instanceof Error && err.message.toLowerCase().includes("not whitelisted")) {
-          return "/?error=not_whitelisted";
+        // AuthDeniedError = known denial (not in DB, not on bootstrap whitelist).
+        // Log as a warning (expected case) and redirect with a user-friendly message.
+        if (err instanceof AuthDeniedError) {
+          console.warn("[auth] sign-in denied:", err.message);
+          return "/?error=not_authorized";
         }
-        return false;
+        // Unexpected error (DB down, network failure, etc.) — log as a real error.
+        console.error("[auth] signIn callback error:", err);
+        return "/?error=auth_error";
       }
     },
 

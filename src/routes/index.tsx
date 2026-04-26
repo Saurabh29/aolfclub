@@ -46,7 +46,8 @@ const TESTIMONIALS = [
 export default function LandingPage() {
   const [searchParams] = useSearchParams();
   const errorMessages: Record<string, string> = {
-    not_whitelisted: "Your account is not authorised to access this system. Please contact your administrator.",
+    not_authorized: "Your account is not authorised to access this system. Please contact your administrator.",
+    auth_error: "An unexpected error occurred during sign-in. Please try again or contact your administrator.",
   };
   const errorMsg = () => searchParams.error ? (errorMessages[searchParams.error] ?? "An unexpected sign-in error occurred.") : null;
 

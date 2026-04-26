@@ -7,9 +7,12 @@
  * Seed data:
  *   - Whitelist entry for jsaurabh@gmail.com with canBootstrap = true
  *     (no User entity — created on first OAuth login)
- *   - Roles:  ADMIN, VOLUNTEER
- *   - Pages:  /leads, /community, /tasks, /locations
- *   - Role→Page permissions: ADMIN gets all pages; VOLUNTEER gets /leads and /tasks
+ *   - Roles:  ADMIN, TEACHER, VOLUNTEER
+ *   - Pages:  leads, community, tasks, locations  (no leading slash — matches middleware extraction)
+ *   - Role→Page permissions:
+ *       ADMIN    → all pages
+ *       TEACHER  → all pages
+ *       VOLUNTEER → leads only
  *
  * No seed locations — the bootstrap user creates the first location via the UI.
  *
@@ -125,7 +128,8 @@ async function seedDb(): Promise<void> {
   console.log("🔑 Seeding roles...");
   const roles = [
     { roleName: "ADMIN",     description: "Full access to all pages" },
-    { roleName: "VOLUNTEER", description: "Access to leads and tasks" },
+    { roleName: "TEACHER",   description: "Full access to all pages" },
+    { roleName: "VOLUNTEER", description: "Access to leads only" },
   ];
 
   for (const role of roles) {
@@ -148,11 +152,13 @@ async function seedDb(): Promise<void> {
 
   // ── Pages ──────────────────────────────────────────────────────────────────
   console.log("📄 Seeding pages...");
+  // Page names must match the segment extracted by middleware:
+  //   pathname.split("/").filter(Boolean)[0]  →  "leads", not "/leads"
   const pages = [
-    { pageName: "/leads",     description: "Leads management" },
-    { pageName: "/community", description: "Community (Leads, Members, Team)" },
-    { pageName: "/tasks",     description: "Call task management" },
-    { pageName: "/locations", description: "Location management" },
+    { pageName: "leads",     description: "Leads management" },
+    { pageName: "community", description: "Community (Leads, Members, Team)" },
+    { pageName: "tasks",     description: "Call task management" },
+    { pageName: "locations", description: "Location management" },
   ];
 
   for (const page of pages) {
@@ -175,11 +181,12 @@ async function seedDb(): Promise<void> {
   // ── Role→Page permissions ──────────────────────────────────────────────────
   console.log("🔒 Seeding role→page permissions...");
 
-  const adminPages = ["/leads", "/community", "/tasks", "/locations"];
-  const volunteerPages = ["/leads", "/tasks"];
+  const allPages = ["leads", "community", "tasks", "locations"];
+  const volunteerPages = ["leads"];
 
   const permissionItems = [
-    ...adminPages.map((p) => ({ role: "ADMIN",     page: p })),
+    ...allPages.map((p) => ({ role: "ADMIN",     page: p })),
+    ...allPages.map((p) => ({ role: "TEACHER",   page: p })),
     ...volunteerPages.map((p) => ({ role: "VOLUNTEER", page: p })),
   ];
 

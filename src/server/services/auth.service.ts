@@ -1,11 +1,12 @@
 /**
  * Auth Service  -  user lookup and creation on OAuth sign-in.
  *
- * Flow:
- *   1. Check WHITELIST#<email>  -  deny if absent.
- *   2. If User already exists (email lookup via DataSource) > return existing user.
- *   3. Otherwise create User via DataSource.
- *   4. Surface canBootstrap from the whitelist entry in the returned result.
+ * Flow (Option A — DB-first):
+ *   1. If User already exists (email lookup via DataSource) → allow.
+ *      They were pre-added by an admin via team import or the UI.
+ *   2. If not in DB, check WHITELIST#<email> (bootstrap path only).
+ *      If whitelisted → create User, surface canBootstrap.
+ *   3. Otherwise → deny with AuthDeniedError (caller redirects to landing).
  */
 import type { User } from "~/lib/schemas/domain";
 import { usersDataSource } from "~/server/data-sources/instances";
@@ -18,6 +19,17 @@ export interface OAuthUserResult {
 }
 
 /**
+ * Thrown when an OAuth email is neither a known User nor on the whitelist.
+ * Caught by the signIn callback to redirect rather than trigger AccessDenied.
+ */
+export class AuthDeniedError extends Error {
+  constructor(email: string) {
+    super(`Email "${email}" is not authorised to access this system.`);
+    this.name = "AuthDeniedError";
+  }
+}
+
+/**
  * Find a user by email via the DataSource lookup.
  */
 export async function findUserByEmail(email: string): Promise<User | null> {
@@ -26,8 +38,10 @@ export async function findUserByEmail(email: string): Promise<User | null> {
 }
 
 /**
- * Gate OAuth sign-in against the whitelist, then create or return the User.
- * Throws if the email is not whitelisted (caller maps this to signIn > false).
+ * DB-first OAuth sign-in gate.
+ * Allows existing users (pre-added by admin) without any whitelist entry.
+ * Falls back to the whitelist bootstrap path for brand-new installations.
+ * Throws AuthDeniedError when neither condition is met.
  */
 export async function createOrGetOAuthUser(
   email: string,
@@ -37,19 +51,19 @@ export async function createOrGetOAuthUser(
 ): Promise<OAuthUserResult> {
   const normalised = email.toLowerCase().trim();
 
-  // 1. Whitelist check
-  const whitelist = await getWhitelistEntry(normalised);
-  if (!whitelist) {
-    throw new Error(`Email "${normalised}" is not whitelisted.`);
-  }
-
-  // 2. Existing User?
+  // 1. Existing User? → allow immediately (pre-added via team import / UI)
   const existing = await findUserByEmail(normalised);
   if (existing) {
-    return { user: existing, isNewUser: false, canBootstrap: whitelist.canBootstrap };
+    return { user: existing, isNewUser: false, canBootstrap: false };
   }
 
-  // 3. Create new User via DataSource
+  // 2. Not in DB — check whitelist (bootstrap path for first-time system setup)
+  const whitelist = await getWhitelistEntry(normalised);
+  if (!whitelist) {
+    throw new AuthDeniedError(normalised);
+  }
+
+  // 3. Create new User via DataSource (bootstrap admin path)
   const createResult = await usersDataSource.create!({
     email: normalised,
     displayName: name || normalised.split("@")[0],
