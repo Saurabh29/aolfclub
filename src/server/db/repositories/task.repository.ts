@@ -56,7 +56,9 @@ export async function createTask(
     ...input,
     assignments: input.assignments ?? [],
     contactPoolIds: input.contactPoolIds ?? [],
-    status: "Draft" as const,
+    // Use status from input if provided (e.g. "Draft" for future save-as-draft);
+    // default to "Active" since tasks created via the wizard are being launched.
+    status: (input as any).status ?? "Active",
     createdBy,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -124,6 +126,9 @@ export async function updateTask(
   const parts: string[] = [];
 
   for (const [key, value] of Object.entries(payload)) {
+    // Skip undefined values — DynamoDB rejects attribute values that are present
+    // in the expression but not defined (happens when optional fields are unset).
+    if (value === undefined) continue;
     const nameKey = `#f_${key}`;
     const valueKey = `:v_${key}`;
     names[nameKey] = key;

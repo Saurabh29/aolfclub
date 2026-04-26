@@ -50,6 +50,17 @@ const ProtectedLayout: Component<RouteSectionProps> = (props) => {
     if (id !== undefined) setActiveLocId(id ?? null);
   });
 
+  // Redirect to create-location if no locations exist and not already on that page
+  createEffect(() => {
+    const locs = locationsData();
+    if (locs && locs.items.length === 0) {
+      const path = window.location.pathname;
+      if (!path.startsWith("/locations")) {
+        window.location.href = "/locations/new";
+      }
+    }
+  });
+
   const allLocations = () => (locationsData()?.items ?? []) as Location[];
 
   const activeLocation = () => {

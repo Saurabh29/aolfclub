@@ -34,6 +34,7 @@ import { X, ChevronDown, ArrowRight } from "lucide-solid";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
+import { createColumnHelper } from "@tanstack/solid-table";
 import { createCollectionQueryController } from "~/lib/controllers";
 import { ResponsiveCollectionView } from "~/components/collection";
 import { leadColumns, memberColumns } from "~/components/collection/shared-columns";
@@ -43,6 +44,61 @@ import { queryLeadsQuery, queryMembersQuery, queryUsersQuery } from "~/server/ap
 import type { Lead, LeadField } from "~/lib/schemas/domain/lead.schema";
 import type { Member, MemberField } from "~/lib/schemas/domain/member.schema";
 import type { User } from "~/lib/schemas/domain/user.schema";
+
+// -- Assignment column helpers ------------------------------------------------
+
+const leadAssignColHelper = createColumnHelper<Lead>();
+const memberAssignColHelper = createColumnHelper<Member>();
+
+/**
+ * Build lead columns with an "Assigned To" column appended.
+ * The column cell reads reactively from the assignment map and agent list.
+ */
+function buildLeadColumns(
+  getMap: () => Map<string, string>,
+  getAgents: () => User[]
+) {
+  return [
+    ...leadColumns,
+    leadAssignColHelper.display({
+      id: "_assignedTo",
+      header: "Assigned To",
+      cell: (info) => {
+        const agentId = getMap().get(info.row.original.id);
+        if (!agentId) return <span class="text-xs text-muted-foreground">Unassigned</span>;
+        const agent = getAgents().find((a) => a.id === agentId);
+        return (
+          <span class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+            {agent?.displayName ?? "Unknown"}
+          </span>
+        );
+      },
+    }),
+  ];
+}
+
+function buildMemberColumns(
+  getMap: () => Map<string, string>,
+  getAgents: () => User[]
+) {
+  return [
+    ...memberColumns,
+    memberAssignColHelper.display({
+      id: "_assignedTo",
+      header: "Assigned To",
+      cell: (info) => {
+        const agentId = getMap().get(info.row.original.id);
+        if (!agentId) return <span class="text-xs text-muted-foreground">Unassigned</span>;
+        const agent = getAgents().find((a) => a.id === agentId);
+        return (
+          <span class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+            {agent?.displayName ?? "Unknown"}
+          </span>
+        );
+      },
+    }),
+  ];
+}
 
 // Columns imported from ~/components/collection/shared-columns
 
@@ -127,6 +183,45 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
     new Map<string, string>()
   );
   const [showAgentDropdown, setShowAgentDropdown] = createSignal(false);
+
+  // -- Augmented columns + client-side sort ----------------------------------
+
+  /** Columns with "Assigned To" appended */
+  const augmentedLeadColumns = createMemo(() =>
+    buildLeadColumns(() => inlineAssignmentMap(), () => agents())
+  );
+  const augmentedMemberColumns = createMemo(() =>
+    buildMemberColumns(() => inlineAssignmentMap(), () => agents())
+  );
+
+  /**
+   * Sort items so unassigned contacts appear first (top = work remaining).
+   * Within each group sort alphabetically by displayName.
+   * Only active when agents are present (assignment UI is shown).
+   */
+  const sortedLeadItems = createMemo(() => {
+    const items = [...(controller.data()?.items ?? [])] as Lead[];
+    if (agents().length === 0) return items;
+    const map = inlineAssignmentMap();
+    return items.sort((a, b) => {
+      const aAssigned = map.has(a.id);
+      const bAssigned = map.has(b.id);
+      if (aAssigned !== bAssigned) return aAssigned ? 1 : -1;
+      return a.displayName.localeCompare(b.displayName);
+    });
+  });
+
+  const sortedMemberItems = createMemo(() => {
+    const items = [...(controller.data()?.items ?? [])] as Member[];
+    if (agents().length === 0) return items;
+    const map = inlineAssignmentMap();
+    return items.sort((a, b) => {
+      const aAssigned = map.has(a.id);
+      const bAssigned = map.has(b.id);
+      if (aAssigned !== bAssigned) return aAssigned ? 1 : -1;
+      return a.displayName.localeCompare(b.displayName);
+    });
+  });
 
   const assignmentCountForAgent = (agentId: string) => {
     let n = 0;
@@ -302,7 +397,8 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
                 <Match when={props.targetType === "LEAD"}>
                   <ResponsiveCollectionView
                     controller={controller as any}
-                    columns={leadColumns}
+                    columns={augmentedLeadColumns()}
+                    itemsOverride={sortedLeadItems()}
                     getId={(lead) => lead.id}
                     renderCard={(lead) => (
                       <Card>
@@ -327,7 +423,8 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
                 <Match when={props.targetType === "MEMBER"}>
                   <ResponsiveCollectionView
                     controller={controller as any}
-                    columns={memberColumns}
+                    columns={augmentedMemberColumns()}
+                    itemsOverride={sortedMemberItems()}
                     getId={(member) => member.id}
                     renderCard={(member) => (
                       <Card>

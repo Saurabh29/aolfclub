@@ -7,7 +7,9 @@
     "start": "vinxi start",
     "db:create-table": "tsx --env-file=.env scripts/create-table.ts",
     "db:clean": "tsx --env-file=.env scripts/clean-db.ts",
-    "db:init": "tsx --env-file=.env scripts/clean-and-init-db.ts"
+    "db:init": "tsx --env-file=.env scripts/clean-and-init-db.ts",
+    "db:dump": "tsx --env-file=.env scripts/dump-db-to-json.ts",
+    "db:test": "tsx --env-file=.env scripts/test-db-connection.ts"
   },
   "dependencies": {
     "@auth/core": "^0.41.1",

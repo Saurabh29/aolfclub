@@ -32,6 +32,11 @@ export interface CollectionTableProps<T, TField extends string = string>
   containerClass?: string;
   /** Additional CSS class for the table wrapper div */
   tableClass?: string;
+  /**
+   * Override the items rendered in the table (e.g. for client-side sort).
+   * When provided, these items are rendered instead of controller.data().
+   */
+  itemsOverride?: readonly T[];
 }
 
 /**
@@ -70,7 +75,7 @@ export function CollectionTable<T, TField extends string = string>(
   // Create TanStack Table instance (controlled by QuerySpec)
   const table = createSolidTable({
     get data() {
-      return Array.from(state.items());
+      return Array.from(props.itemsOverride ?? state.items());
     },
     get columns() {
       return props.columns;

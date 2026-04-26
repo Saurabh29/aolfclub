@@ -113,26 +113,22 @@ export default function MyLeadsPage() {
   const user = createAsync(() => getUser());
   const volunteerId = () => (user() as any)?.id as string | undefined;
 
-  // Fetch all tasks for this volunteer
+  // Fetch tasks where this volunteer is a selected agent
   const [tasksData] = createResource(async () => {
     const spec: QuerySpec<TaskField> = {
-      filters: [
-        // In real app: filter by tasks where volunteerId is in selectedAgentIds
-      ],
+      filters: [],
       sorting: [{ field: "createdAt", direction: "desc" }],
       pagination: { pageSize: 50, pageIndex: 0 },
     };
     return await queryTasksQuery(spec);
   });
 
-  // Fetch all assigned leads for this volunteer
+  // Fetch all leads for the active location (we filter client-side by assignment below)
   const [leadsData] = createResource(async () => {
     const spec: QuerySpec<LeadField> = {
-      filters: [
-        // In real app: filter by leads assigned to this volunteer's tasks
-      ],
+      filters: [],
       sorting: [{ field: "displayName", direction: "asc" }],
-      pagination: { pageSize: 100, pageIndex: 0 },
+      pagination: { pageSize: 500, pageIndex: 0 },
     };
     return await queryLeadsQuery(spec);
   });
@@ -140,17 +136,48 @@ export default function MyLeadsPage() {
   const tasks = createMemo(() => tasksData()?.items || []);
   const allLeads = createMemo(() => leadsData()?.items || []);
 
+  /**
+   * Set of lead IDs that are actually assigned to this volunteer across all active tasks.
+   * A lead appears here only if:
+   *   - The task lists this volunteer in selectedAgentIds, AND
+   *   - This volunteer has the lead in their task assignments array.
+   * This is task-scoped: the same lead can be assigned to different agents in different tasks.
+   */
+  const myAssignedLeadIds = createMemo(() => {
+    const vid = volunteerId();
+    if (!vid) return new Set<string>();
+
+    const ids = new Set<string>();
+    for (const task of tasks()) {
+      if (!task.selectedAgentIds.includes(vid)) continue;
+      for (const assignment of task.assignments) {
+        if (assignment.agentId === vid) {
+          for (const contactId of assignment.contactIds) {
+            ids.add(contactId);
+          }
+        }
+      }
+    }
+    return ids;
+  });
+
   // Filter leads by selected task + active filters (combined with grouping)
   const filteredAndGrouped = createMemo(() => {
-    let leads = allLeads();
+    // Start with only leads assigned to this volunteer
+    let leads = allLeads().filter((lead) => myAssignedLeadIds().has(lead.id));
 
-    // Task filter — restrict to contacts assigned to this campaign
+    // Task filter — further restrict to a specific campaign's contacts
     const taskId = selectedTaskId();
     if (taskId) {
       const task = tasks().find((t) => t.id === taskId);
-      if (task && task.matchedContactIds.length > 0) {
-        const contactIdSet = new Set(task.matchedContactIds);
-        leads = leads.filter((lead) => contactIdSet.has(lead.id));
+      if (task) {
+        // Intersect: my assigned leads that are also in this task's matched contacts
+        const vid = volunteerId();
+        const taskAssignment = vid
+          ? task.assignments.find((a) => a.agentId === vid)
+          : null;
+        const taskContactSet = new Set(taskAssignment?.contactIds ?? []);
+        leads = leads.filter((lead) => taskContactSet.has(lead.id));
       }
     }
 
@@ -184,13 +211,15 @@ export default function MyLeadsPage() {
 
   // Live count for filter sheet "Show N leads" button
   const filterMatchCount = createMemo(() => {
-    let leads = allLeads();
+    const vid = volunteerId();
+    let leads = allLeads().filter((lead) => myAssignedLeadIds().has(lead.id));
     const taskId = selectedTaskId();
     if (taskId) {
       const task = tasks().find((t) => t.id === taskId);
-      if (task && task.matchedContactIds.length > 0) {
-        const contactIdSet = new Set(task.matchedContactIds);
-        leads = leads.filter((lead) => contactIdSet.has(lead.id));
+      if (task) {
+        const taskAssignment = vid ? task.assignments.find((a) => a.agentId === vid) : null;
+        const taskContactSet = new Set(taskAssignment?.contactIds ?? []);
+        leads = leads.filter((lead) => taskContactSet.has(lead.id));
       }
     }
     const filters = activeFilters();
@@ -361,7 +390,7 @@ export default function MyLeadsPage() {
           </Card>
         </Show>
 
-        {/* Campaign Filter */}
+        {/* Campaign Filter — only show tasks this volunteer is assigned to */}
         <div class="mt-4">
           <label class="text-sm font-medium mb-2 block flex items-center gap-1"><ClipboardList class="w-3.5 h-3.5" /> Campaign:</label>
           <select
@@ -370,15 +399,21 @@ export default function MyLeadsPage() {
             class="w-full p-2 border rounded-md bg-background"
           >
             <option value="">All Tasks</option>
-            <For each={tasks()}>
+            <For each={tasks().filter((t) => {
+              const vid = volunteerId();
+              return vid ? t.selectedAgentIds.includes(vid) : false;
+            })}>
               {(task) => {
-                const taskLeads = allLeads().filter((l) =>
-                  task.matchedContactIds?.includes(l.id)
+                const vid = volunteerId();
+                const myAssignment = vid ? task.assignments.find((a) => a.agentId === vid) : null;
+                const myContactCount = myAssignment?.contactIds.length ?? 0;
+                const myLeads = allLeads().filter((l) =>
+                  myAssignment?.contactIds.includes(l.id)
                 );
-                const progress = calculateCompletionRate(taskLeads);
+                const progress = calculateCompletionRate(myLeads);
                 return (
                   <option value={task.id}>
-                    {task.name} ({taskLeads.length}) - {progress.percentage}% completed
+                    {task.name} ({myContactCount}) - {progress.percentage}% completed
                   </option>
                 );
               }}

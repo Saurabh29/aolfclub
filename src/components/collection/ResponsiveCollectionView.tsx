@@ -27,6 +27,11 @@ export interface ResponsiveCollectionViewProps<T, TField extends string = string
   cardClass?: string;
   /** Table wrapper class for table view */
   tableClass?: string;
+  /**
+   * Override the items rendered in the table (e.g. for client-side sort).
+   * Passed through to CollectionTable only.
+   */
+  itemsOverride?: readonly T[];
 }
 
 /**
@@ -77,6 +82,7 @@ export function ResponsiveCollectionView<T, TField extends string = string>(
         onRowClick={props.onRowClick}
         containerClass={props.containerClass}
         tableClass={props.tableClass}
+        itemsOverride={props.itemsOverride}
         emptyMessage={props.emptyMessage}
         emptyIcon={props.emptyIcon}
         emptyAction={props.emptyAction}

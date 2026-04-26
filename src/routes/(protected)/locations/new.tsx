@@ -26,8 +26,8 @@ export default function NewLocationPage() {
         setServerError(result.error ?? "Failed to create location");
         return;
       }
-      // Setup complete  -  navigate to community page
-      navigate("/");
+      // Stay on locations page after creation
+      navigate("/locations");
     } finally {
       setIsSubmitting(false);
     }

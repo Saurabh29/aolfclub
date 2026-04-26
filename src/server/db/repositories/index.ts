@@ -5,3 +5,4 @@ export * from "./task.repository";
 export * from "./user-group.repository";
 export * from "./whitelist.repository";
 export * from "./location-admin.repository";
+export * from "./access.repository";

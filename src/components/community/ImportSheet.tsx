@@ -9,7 +9,7 @@
  *   Members: displayName, phone, email (opt), memberSince (opt), programsDone (opt), interestedPrograms (opt)
  *   Team:    displayName, email, phone (opt)
  */
-import { createSignal, Show, type Component } from "solid-js";
+import { createSignal, createEffect, Show, type Component } from "solid-js";
 import { useAction } from "@solidjs/router";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
@@ -54,15 +54,44 @@ const ENTITY_LABELS: Record<ImportEntityType, string> = {
 };
 
 /** Minimal CSV parser  -  handles quoted fields with embedded commas. */
+function parseCsvLine(line: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        current += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ",") {
+      result.push(current.trim());
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
 function parseCsv(text: string): Record<string, string>[] {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
-  const headers = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
-  return lines.slice(1).map((line) => {
-    const values = line.match(/("(?:[^"]|"")*"|[^,]*)/g) ?? [];
+  const headers = parseCsvLine(lines[0]);
+  return lines.slice(1).filter((l) => l.trim()).map((line) => {
+    const values = parseCsvLine(line);
     const row: Record<string, string> = {};
     headers.forEach((h, i) => {
-      row[h] = (values[i] ?? "").trim().replace(/^"|"$/g, "").replace(/""/g, '"');
+      row[h] = values[i] ?? "";
     });
     return row;
   });
@@ -73,6 +102,15 @@ export const ImportSheet: Component<ImportSheetProps> = (props) => {
   const [isImporting, setIsImporting] = createSignal(false);
   const [result, setResult] = createSignal<ImportResult | null>(null);
   const [parseError, setParseError] = createSignal<string | null>(null);
+
+  // Reset state every time the dialog is opened
+  createEffect(() => {
+    if (props.open) {
+      setFile(null);
+      setResult(null);
+      setParseError(null);
+    }
+  });
 
   const doImportLeads = useAction(importLeadsAction);
   const doImportMembers = useAction(importMembersAction);

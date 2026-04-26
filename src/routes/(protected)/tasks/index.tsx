@@ -2,7 +2,7 @@ import { createSignal, Show, For } from "solid-js";
 import { A } from "@solidjs/router";
 import { createResource } from "solid-js";
 import { Button } from "~/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "~/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { queryTasksQuery } from "~/server/api";
 import type { QuerySpec } from "~/lib/schemas/query";
@@ -154,6 +154,11 @@ export default function TasksPage() {
                     </div>
                   </Show>
                 </CardContent>
+                <CardFooter class="border-t pt-3 flex justify-end">
+                  <A href={`/tasks/${task.id}/edit`}>
+                    <Button variant="outline" size="sm">Edit</Button>
+                  </A>
+                </CardFooter>
               </Card>
             )}
           </For>

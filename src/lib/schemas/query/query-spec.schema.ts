@@ -83,7 +83,7 @@ export interface PaginationSpec {
 }
 
 export const PaginationSpecSchema = z.object({
-  pageSize: z.number().int().positive().max(100).default(20),
+  pageSize: z.number().int().positive().max(500).default(20),
   pageIndex: z.number().int().nonnegative().optional(),
   cursor: z.string().optional(),
 });
