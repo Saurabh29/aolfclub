@@ -76,6 +76,18 @@ export async function createUserGroup(input: CreateUserGroupInput): Promise<User
     createdAt: timestamp,
   };
 
+  // Group→Role edge: ties this group to its matching role name so the RBAC
+  // chain (User → Group → Role → Page) resolves correctly.
+  // groupType === roleName by convention (ADMIN / TEACHER / VOLUNTEER).
+  const groupRoleEdge = {
+    PK: Keys.groupPK(groupId),
+    SK: Keys.roleSK(input.groupType),
+    itemType: "GroupRoleEdge",
+    groupId,
+    roleName: input.groupType,
+    createdAt: timestamp,
+  };
+
   await docClient.send(
     new TransactWriteCommand({
       TransactItems: [
@@ -87,6 +99,7 @@ export async function createUserGroup(input: CreateUserGroupInput): Promise<User
           },
         },
         { Put: { TableName: TABLE_NAME, Item: locationGroupEdge } },
+        { Put: { TableName: TABLE_NAME, Item: groupRoleEdge } },
       ],
     })
   );

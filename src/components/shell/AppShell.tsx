@@ -18,6 +18,8 @@ export interface AppShellProps {
   session: StubSession | null;
   userLocations: Location[];
   activeLocation: Location | null;
+  /** Page names the current user is allowed to access (e.g. ["leads","community"]) */
+  accessiblePages: string[];
   /** Called when the user picks a different centre; parent persists to DB */
   onSelectLocation: (slug: string) => void;
 }
@@ -26,14 +28,16 @@ interface NavItem {
   href: string;
   label: string;
   Icon: Component;
+  /** Page name used for RBAC filtering (matches DB page names) */
+  page: string;
 }
 
 function buildNav(): NavItem[] {
   return [
-    { href: "/leads", label: "My Leads", Icon: Home },
-    { href: "/tasks", label: "Tasks", Icon: ClipboardList },
-    { href: "/community", label: "Community", Icon: Users },
-    { href: "/locations", label: "Locations", Icon: MapPin },
+    { href: "/leads", label: "My Leads", Icon: Home, page: "leads" },
+    { href: "/tasks", label: "Tasks", Icon: ClipboardList, page: "tasks" },
+    { href: "/community", label: "Community", Icon: Users, page: "community" },
+    { href: "/locations", label: "Locations", Icon: MapPin, page: "locations" },
   ];
 }
 
@@ -41,7 +45,10 @@ export const AppShell: Component<AppShellProps> = (props) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const navItems = () => buildNav();
+  const navItems = () => {
+    const allowed = new Set(props.accessiblePages);
+    return buildNav().filter((item) => allowed.has(item.page));
+  };
 
   const isActive = (href: string) => location.pathname.startsWith(href);
 

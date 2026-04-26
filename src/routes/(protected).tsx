@@ -15,6 +15,7 @@ import {
   queryLocationsQuery,
   getActiveLocationIdQuery,
   setActiveLocationMutation,
+  getAccessiblePagesQuery,
 } from "~/server/api";
 import { getUser, getAuthSession } from "~/lib/auth";
 import type { LocationField, Location } from "~/lib/schemas/domain";
@@ -28,6 +29,9 @@ const ProtectedLayout: Component<RouteSectionProps> = (props) => {
 
   // Full session for display (name, email, image)
   const session = createAsync(() => getAuthSession());
+
+  // Pages the user is allowed to access (drives nav filtering)
+  const accessiblePages = createAsync(() => getAccessiblePagesQuery());
 
   // All active locations  -  for the location switcher in AvatarMenu
   const locationsData = createAsync(async () => {
@@ -105,6 +109,7 @@ const ProtectedLayout: Component<RouteSectionProps> = (props) => {
         session={shellSession()}
         userLocations={allLocations()}
         activeLocation={activeLocation()}
+        accessiblePages={accessiblePages() ?? []}
         onSelectLocation={handleSelectLocation}
       >
         {props.children}

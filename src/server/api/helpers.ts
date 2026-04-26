@@ -48,7 +48,7 @@ export async function requireAuth(): Promise<AuthScope> {
     userId: session.userId,
     isAdmin: session.isAdmin ?? false,
     activeRole: session.activeRole ?? null,
-    activeLocationId: session.activeLocationId,
+    activeLocationId: session.activeLocationId ?? undefined,
   };
 }
 
@@ -59,6 +59,31 @@ export function requireAdminRole(session: { isAdmin: boolean; activeRole: GroupT
   if (!session.isAdmin && session.activeRole !== "ADMIN") {
     throw new Error("Unauthorized: only Admins can perform this action.");
   }
+}
+
+/**
+ * Require that the current user can access the given page at their active location.
+ * Checks the full RBAC chain: User → Groups (at location) → Roles → Page permissions.
+ * Super-admins and isAdmin users bypass the check.
+ *
+ * Returns the SessionScope on success (so callers can reuse it).
+ */
+export async function requirePageAccess(pageName: string): Promise<SessionScope> {
+  const scope = await requireLocationScope();
+  if (scope.isAdmin) return scope;
+
+  const { canUserAccessPage } = await import(
+    "~/server/db/repositories/access.repository"
+  );
+  const allowed = await canUserAccessPage(
+    scope.userId,
+    scope.activeLocationId,
+    pageName,
+  );
+  if (!allowed) {
+    throw new Error(`Access denied: no permission for "${pageName}".`);
+  }
+  return scope;
 }
 
 // -- Query helpers ------------------------------------------------------------
