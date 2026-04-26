@@ -60,21 +60,21 @@ function parseOrThrow<T>(schema: z.ZodType<T>, value: unknown): T {
   }
 }
 
-export const importLeadsAction = action(async (rows: LeadImportRow[]): Promise<ImportResult> => {
+export const importLeadsAction = action(async (rows: LeadImportRow[]) => {
   "use server";
   const validated = parseOrThrow(z.array(LeadImportRowSchema), rows);
   const locationId = await resolveActiveLocationId();
   return importLeads(validated as LeadImportRow[], locationId);
 }, "import-leads");
 
-export const importMembersAction = action(async (rows: MemberImportRow[]): Promise<ImportResult> => {
+export const importMembersAction = action(async (rows: MemberImportRow[]) => {
   "use server";
   const validated = parseOrThrow(z.array(MemberImportRowSchema), rows);
   const locationId = await resolveActiveLocationId();
   return importMembers(validated as MemberImportRow[], locationId);
 }, "import-members");
 
-export const importTeamAction = action(async (rows: TeamImportRow[]): Promise<ImportResult> => {
+export const importTeamAction = action(async (rows: TeamImportRow[]) => {
   "use server";
   const validated = parseOrThrow(z.array(TeamImportRowSchema), rows);
   const locationId = await resolveActiveLocationId();

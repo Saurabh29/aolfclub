@@ -2,11 +2,21 @@ import { leadsDataSource } from "../data-sources/instances";
 import type { Lead, LeadField } from "~/lib/schemas/domain";
 import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
+import type { CreateLeadInput } from "~/server/db/repositories/lead.repository";
 
 /**
  * Leads Service
  * Read queries are location-scoped via queryLeadsByLocation().
  */
+
+export async function createLead(
+  input: CreateLeadInput
+): Promise<ApiResult<Lead>> {
+  if (!leadsDataSource.create) {
+    return { success: false, error: "create not supported" };
+  }
+  return leadsDataSource.create(input);
+}
 
 export async function getLeadById(id: string): Promise<ApiResult<Lead | null>> {
   if (!leadsDataSource.getById) {

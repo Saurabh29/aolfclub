@@ -20,7 +20,7 @@ export const getTaskByIdQuery = query(async (id: string) => {
  * Create new task  -  locationId resolved from session, never trusted from client.
  */
 export const createTaskMutation = action(
-  async (request: Omit<CreateTaskRequest, "locationId">): Promise<Task> => {
+  async (request: Omit<CreateTaskRequest, "locationId">) => {
     "use server";
     const session = await requireLocationScope();
     const fullRequest = { ...request, locationId: session.activeLocationId };
@@ -34,7 +34,7 @@ export const createTaskMutation = action(
  * Update task  -  requires auth + ADMIN or TEACHER role.
  */
 export const updateTaskMutation = action(
-  async (id: string, updates: Partial<Task>): Promise<Task> => {
+  async (id: string, updates: Partial<Task>) => {
     "use server";
     const session = await requireAuth();
     if (!session.isAdmin && session.activeRole !== "ADMIN" && session.activeRole !== "TEACHER") {

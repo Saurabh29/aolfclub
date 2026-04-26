@@ -162,6 +162,60 @@ export async function assignUserRole(
   }
 }
 
+// -- Team member creation -----------------------------------------------------
+
+/**
+ * Create a new team member (User) and add them as VOLUNTEER at the given location.
+ * Returns an error if the email already exists.
+ */
+export async function createTeamMember(
+  displayName: string,
+  email: string,
+  phone: string | undefined,
+  activeLocationId: string
+): Promise<ApiResult<{ created: boolean; email: string }>> {
+  try {
+    const normEmail = email.toLowerCase().trim();
+
+    // Create the user record
+    if (!usersDataSource.create) {
+      return { success: false, error: "User creation not supported" };
+    }
+    const createResult = await usersDataSource.create({
+      email: normEmail,
+      displayName,
+      phone,
+      activeLocationId,
+    });
+    if (!createResult.success) return { success: false, error: createResult.error };
+
+    // Add to VOLUNTEER group (best-effort)
+    try {
+      const { getGroupsForLocation, addUserToGroup } = await import(
+        "~/server/db/repositories/user-group.repository"
+      );
+      const volunteerGroups = await getGroupsForLocation(activeLocationId, "VOLUNTEER");
+      if (volunteerGroups.length > 0) {
+        await addUserToGroup(createResult.data.id, volunteerGroups[0].groupId, {
+          locationId: activeLocationId,
+          groupType: "VOLUNTEER",
+          groupName: volunteerGroups[0].name,
+          userDisplayName: displayName,
+        });
+      }
+    } catch {
+      // Group assignment failure doesn't block user creation
+    }
+
+    return { success: true, data: { created: true, email: normEmail } };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "createTeamMember failed",
+    };
+  }
+}
+
 // -- Community team query -----------------------------------------------------
 
 export interface TeamMember {

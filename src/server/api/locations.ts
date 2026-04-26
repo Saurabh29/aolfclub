@@ -1,5 +1,5 @@
 import { query, action } from "@solidjs/router";
-import { execQuery, unwrap } from "./helpers";
+import { execQuery, unwrap, requireAuth, requireAdminRole } from "./helpers";
 import {
   queryLocations,
   getLocationById,
@@ -9,6 +9,7 @@ import {
   updateLocation,
   deleteLocation,
 } from "../services/locations.service";
+import { setActiveLocation } from "../services/users.service";
 import type { QuerySpec } from "~/lib/schemas/query";
 import type { LocationField, CreateLocationRequest, UpdateLocationRequest } from "~/lib/schemas/domain";
 import { CreateLocationSchema, UpdateLocationSchema } from "~/lib/schemas/domain/location.schema";
@@ -70,7 +71,6 @@ export const createLocationAction = action(async (data: CreateLocationRequest) =
     });
 
     // Set active location — resolves & caches activeRole from the group just added
-    const { setActiveLocation } = await import("~/server/services/users.service");
     await setActiveLocation(session.userId, locationId);
 
     if (session.canBootstrap && session.email) {
@@ -83,7 +83,6 @@ export const createLocationAction = action(async (data: CreateLocationRequest) =
 
 export const updateLocationAction = action(async (id: string, data: UpdateLocationRequest) => {
   "use server";
-  const { requireAuth, requireAdminRole } = await import("./helpers");
   const session = await requireAuth();
   requireAdminRole(session);
   UpdateLocationSchema.parse(data);
@@ -92,7 +91,6 @@ export const updateLocationAction = action(async (id: string, data: UpdateLocati
 
 export const deleteLocationAction = action(async (id: string) => {
   "use server";
-  const { requireAuth, requireAdminRole } = await import("./helpers");
   const session = await requireAuth();
   requireAdminRole(session);
   return await deleteLocation(id);

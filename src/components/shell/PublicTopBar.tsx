@@ -8,11 +8,12 @@ import { type Component } from "solid-js";
 import { createAsync, useNavigate } from "@solidjs/router";
 import { Leaf } from "lucide-solid";
 import { AvatarMenu } from "./AvatarMenu";
-import { getAuthSession } from "~/lib/auth";
+import { getAuthSession, getAvailableProviders } from "~/lib/auth";
 
 export const PublicTopBar: Component = () => {
   const navigate = useNavigate();
   const session = createAsync(() => getAuthSession());
+  const providers = createAsync(() => getAvailableProviders());
 
   const avatarSession = () => {
     const s = session();
@@ -35,8 +36,9 @@ export const PublicTopBar: Component = () => {
         session={avatarSession()}
         userLocations={[]}
         activeSlug={null}
-        onSignIn={() => {
-          window.location.href = "/api/auth/signin?provider=github";
+        providers={providers() ?? []}
+        onSignIn={(provider) => {
+          window.location.href = `/api/auth/signin/${encodeURIComponent(provider)}`;
         }}
         onSignOut={() => {
           window.location.href = "/api/auth/signout";

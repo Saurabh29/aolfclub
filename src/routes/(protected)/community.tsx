@@ -17,7 +17,7 @@
  */
 import { createSignal, Show, Switch, Match, For, createMemo } from "solid-js";
 import { createAsync, useAction, revalidate } from "@solidjs/router";
-import { Download, X, Upload, RefreshCw, PanelLeftClose, PanelLeftOpen, Target, GraduationCap, Users, ShieldCheck } from "lucide-solid";
+import { Download, X, Upload, RefreshCw, PanelLeftClose, PanelLeftOpen, Target, GraduationCap, Users, ShieldCheck, Plus } from "lucide-solid";
 import { queryLeadsQuery, queryMembersQuery, getCommunityTeamQuery, assignRoleAction } from "~/server/api";
 import type { Lead, LeadField } from "~/lib/schemas/domain/lead.schema";
 import type { Member, MemberField } from "~/lib/schemas/domain/member.schema";
@@ -32,6 +32,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent, TabsIndicator } from "~/compo
 import { TextField, TextFieldInput } from "~/components/ui/text-field";
 import { ImportSheet } from "~/components/community/ImportSheet";
 import type { ImportEntityType } from "~/components/community/ImportSheet";
+import { AddEntitySheet } from "~/components/community/AddEntitySheet";
+import type { AddEntityType } from "~/components/community/AddEntitySheet";
 import { LeadFilterPane } from "~/components/community/LeadFilterPane";
 import { MemberFilterPane } from "~/components/community/MemberFilterPane";
 
@@ -82,6 +84,8 @@ export default function CommunityPage() {
   const [activeTab, setActiveTab] = createSignal<ContactTab>("leads");
   const [showImport, setShowImport] = createSignal(false);
   const [importEntityType, setImportEntityType] = createSignal<ImportEntityType>("leads");
+  const [showAddNew, setShowAddNew] = createSignal(false);
+  const [addEntityType, setAddEntityType] = createSignal<AddEntityType>("leads");
   const [filterPaneOpen, setFilterPaneOpen] = createSignal(true);
 
   // Team tab: live role data + assignment
@@ -118,7 +122,10 @@ export default function CommunityPage() {
         // Revalidate the team query so createAsync picks up changes
         await revalidate(getCommunityTeamQuery.key);
       } else {
-        alert(`Error: ${result.error}`);
+        const errorMsg = result.data.errors?.length > 0 
+          ? result.data.errors[0] 
+          : "Failed to assign role";
+        alert(`Error: ${errorMsg}`);
       }
     } finally {
       setAssigningRole(false);
@@ -188,6 +195,9 @@ export default function CommunityPage() {
           </Button>
           <Button variant="outline" size="sm" onClick={() => { setImportEntityType(activeTab() as ImportEntityType); setShowImport(true); }}>
             <Upload class="w-3.5 h-3.5 mr-1" /> Import
+          </Button>
+          <Button size="sm" onClick={() => { setAddEntityType(activeTab() as AddEntityType); setShowAddNew(true); }}>
+            <Plus class="w-3.5 h-3.5 mr-1" /> Add New
           </Button>
           <Button
             variant="outline"
@@ -464,6 +474,13 @@ export default function CommunityPage() {
         open={showImport()}
         entityType={importEntityType()}
         onClose={() => setShowImport(false)}
+      />
+
+      {/* Add New dialog */}
+      <AddEntitySheet
+        open={showAddNew()}
+        entityType={addEntityType()}
+        onClose={() => setShowAddNew(false)}
       />
     </div>
   );

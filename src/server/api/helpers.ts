@@ -13,6 +13,13 @@ export interface SessionScope {
   isAdmin: boolean;
 }
 
+export interface AuthScope {
+  userId: string;
+  isAdmin: boolean;
+  activeRole: GroupType | null;
+  activeLocationId?: string;
+}
+
 /**
  * Require an authenticated user with an active location selected.
  * Throws if not authenticated or no active location.
@@ -33,7 +40,7 @@ export async function requireLocationScope(): Promise<SessionScope> {
 /**
  * Require an authenticated user (no location needed).
  */
-export async function requireAuth(): Promise<{ userId: string; isAdmin: boolean; activeRole: GroupType | null; activeLocationId?: string }> {
+export async function requireAuth(): Promise<AuthScope> {
   const { getSessionInfo } = await import("~/lib/auth");
   const session = await getSessionInfo();
   if (!session.userId) throw new Error("Not authenticated");

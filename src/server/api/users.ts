@@ -1,4 +1,5 @@
 import { query, action } from "@solidjs/router";
+import { z } from "zod";
 import { execQuery, unwrap, requireAuth, requireLocationScope, requireAdminRole } from "./helpers";
 import {
   queryUsers,
@@ -7,6 +8,7 @@ import {
   setActiveLocation,
   assignUserRole,
   getTeamForLocation,
+  createTeamMember,
 } from "../services/users.service";
 import type { QuerySpec } from "~/lib/schemas/query";
 import type { UserField, GroupType } from "~/lib/schemas/domain";
@@ -96,3 +98,31 @@ export const assignRoleAction = action(async (userIds: string[], groupType: Grou
 
   return { success: true, data: { assigned, failed: errors.length, errors } } as const;
 }, "assign-role");
+
+const CreateTeamMemberInputSchema = z.object({
+  displayName: z.string().min(1, "Name is required"),
+  email: z.string().email("Valid email is required"),
+  phone: z.string().optional(),
+});
+
+/**
+ * Create a new team member at the active location.
+ * Only Admins may call this.
+ */
+export const createTeamMemberAction = action(
+  async (input: z.infer<typeof CreateTeamMemberInputSchema>) => {
+    "use server";
+    const session = await requireLocationScope();
+    requireAdminRole(session);
+    const validated = CreateTeamMemberInputSchema.parse(input);
+    const result = await createTeamMember(
+      validated.displayName,
+      validated.email,
+      validated.phone,
+      session.activeLocationId
+    );
+    if (!result.success) throw new Error(result.error);
+    return result.data;
+  },
+  "create-team-member"
+);

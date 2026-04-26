@@ -25,6 +25,17 @@ export const getAuthSession = query(async () => {
 }, "auth-session");
 
 /**
+ * Returns the list of provider IDs that are currently configured on the server
+ * (e.g. ["github"] or ["github", "google"]).
+ * Use in sign-in UI to show only the buttons that will actually work.
+ */
+export const getAvailableProviders = query(async () => {
+  "use server";
+  const { authConfig } = await import("~/server/auth");
+  return (authConfig.providers as any[]).map((p: any) => p.id as string);
+}, "auth-providers");
+
+/**
  * Get the authenticated user or redirect to "/".
  * Use with { deferStream: true } in protected layouts to block rendering
  * until auth is confirmed.

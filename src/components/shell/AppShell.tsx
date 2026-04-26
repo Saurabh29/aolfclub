@@ -52,9 +52,8 @@ export const AppShell: Component<AppShellProps> = (props) => {
     window.location.href = "/api/auth/signout";
   };
 
-  const handleSignIn = () => {
-    // TODO: trigger auth flow
-    navigate("/");
+  const handleSignIn = (provider: string) => {
+    window.location.href = `/api/auth/signin?provider=${encodeURIComponent(provider)}`;
   };
 
   return (

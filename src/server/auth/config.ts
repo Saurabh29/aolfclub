@@ -1,4 +1,5 @@
 import github from "@auth/core/providers/github";
+import google from "@auth/core/providers/google";
 import type { StartAuthJSConfig } from "start-authjs";
 import { env } from "~/server/config";
 import { createOrGetOAuthUser, findUserByEmail } from "../services/auth.service";
@@ -10,11 +11,23 @@ export const authConfig: StartAuthJSConfig = {
     strategy: "jwt",
   },
   providers: [
-    github({
-      clientId: env.GITHUB_CLIENT_ID,
-      clientSecret: env.GITHUB_CLIENT_SECRET,
-      authorization: { params: { scope: "read:user user:email" } },
-    }),
+    ...(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET
+      ? [
+          github({
+            clientId: env.GITHUB_CLIENT_ID,
+            clientSecret: env.GITHUB_CLIENT_SECRET,
+            authorization: { params: { scope: "read:user user:email" } },
+          }),
+        ]
+      : []),
+    ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+      ? [
+          google({
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+          }),
+        ]
+      : []),
   ],
   callbacks: {
     signIn: async ({ user, account }) => {
