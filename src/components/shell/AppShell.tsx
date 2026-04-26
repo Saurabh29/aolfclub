@@ -10,6 +10,7 @@ import { createSignal, Show, type Component, type JSX } from "solid-js";
 import { useLocation, useNavigate, A } from "@solidjs/router";
 import { Home, ClipboardList, Users, MapPin, Leaf } from "lucide-solid";
 import { AvatarMenu, type StubSession } from "./AvatarMenu";
+import { signInWithProvider } from "~/lib/auth";
 import type { Location } from "~/lib/schemas/domain";
 
 export interface AppShellProps {
@@ -53,7 +54,7 @@ export const AppShell: Component<AppShellProps> = (props) => {
   };
 
   const handleSignIn = (provider: string) => {
-    window.location.href = `/api/auth/signin?provider=${encodeURIComponent(provider)}`;
+    signInWithProvider(provider);
   };
 
   return (

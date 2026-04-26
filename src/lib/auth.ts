@@ -1,6 +1,36 @@
 import { query, redirect } from "@solidjs/router";
 
 /**
+ * Client-side helper to sign in with a specific OAuth provider.
+ *
+ * Auth.js v0.x requires a POST to /api/auth/signin/{provider} with a valid
+ * csrfToken. A plain GET to that URL throws "UnknownAction".
+ * This helper fetches the CSRF token then programmatically submits a form.
+ */
+export async function signInWithProvider(provider: string, callbackUrl = "/") {
+  const csrfRes = await fetch("/api/auth/csrf");
+  const { csrfToken } = await csrfRes.json();
+
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = `/api/auth/signin/${encodeURIComponent(provider)}`;
+
+  const addField = (name: string, value: string) => {
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = value;
+    form.appendChild(input);
+  };
+
+  addField("csrfToken", csrfToken);
+  addField("callbackUrl", callbackUrl);
+
+  document.body.appendChild(form);
+  form.submit();
+}
+
+/**
  * Unified session query  -  works on both server and client.
  *
  * Server: reads the JWT session from the incoming request via start-authjs.
