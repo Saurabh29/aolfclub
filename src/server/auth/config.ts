@@ -53,6 +53,11 @@ export const authConfig: StartAuthJSConfig = {
         return true;
       } catch (err) {
         console.error("[auth] signIn callback error:", err);
+        // Redirect to landing with a descriptive error instead of triggering
+        // a generic AccessDenied page.
+        if (err instanceof Error && err.message.toLowerCase().includes("not whitelisted")) {
+          return "/?error=not_whitelisted";
+        }
         return false;
       }
     },

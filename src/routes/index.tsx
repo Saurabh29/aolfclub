@@ -1,5 +1,6 @@
-import { For } from "solid-js";
-import { Wind, Flame, GraduationCap, Leaf, Sparkles, MapPin } from "lucide-solid";
+import { For, Show } from "solid-js";
+import { useSearchParams } from "@solidjs/router";
+import { Wind, Flame, GraduationCap, Leaf, Sparkles, MapPin, TriangleAlert } from "lucide-solid";
 import { PublicTopBar } from "~/components/shell/PublicTopBar";
 
 type ProgramIcon = typeof Wind;
@@ -43,9 +44,22 @@ const TESTIMONIALS = [
 ];
 
 export default function LandingPage() {
+  const [searchParams] = useSearchParams();
+  const errorMessages: Record<string, string> = {
+    not_whitelisted: "Your account is not authorised to access this system. Please contact your administrator.",
+  };
+  const errorMsg = () => searchParams.error ? (errorMessages[searchParams.error] ?? "An unexpected sign-in error occurred.") : null;
+
   return (
     <div class="min-h-svh bg-background text-foreground">
       <PublicTopBar />
+
+      <Show when={errorMsg()}>
+        <div class="flex items-start gap-3 bg-destructive/10 border border-destructive/30 text-destructive rounded-lg px-4 py-3 mx-auto mt-4 max-w-2xl text-sm">
+          <TriangleAlert class="w-4 h-4 mt-0.5 shrink-0" />
+          <span>{errorMsg()}</span>
+        </div>
+      </Show>
 
       {/* -- Hero -- */}
       <section class="px-6 py-16 text-center max-w-2xl mx-auto">

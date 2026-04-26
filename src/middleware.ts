@@ -1,16 +1,5 @@
 import { createMiddleware } from "@solidjs/start/middleware";
 import { getAuthSession } from "~/lib/auth";
-import type { GroupType } from "~/lib/schemas/domain/user.schema";
-
-/**
- * Routes each role is allowed to access.
- * Super-admins (isAdmin=true) bypass this table entirely.
- */
-const ROLE_ROUTES: Record<GroupType, string[]> = {
-  ADMIN:     ["/leads", "/members", "/tasks", "/locations", "/community"],
-  TEACHER:   ["/leads", "/members", "/tasks", "/locations", "/community"],
-  VOLUNTEER: ["/tasks", "/community"],
-};
 
 /**
  * Authentication + Authorization + setup-mode middleware.
@@ -80,13 +69,11 @@ export default createMiddleware({
         return new Response(null, { status: 302, headers: { Location: "/" } });
       }
 
-      let activeRole: GroupType | null = null;
       let isAdminFromDB = false;
       try {
         const { usersDataSource } = await import("~/server/data-sources/instances");
         const result = await usersDataSource.getById(userId);
         if (result.success && result.data) {
-          activeRole = result.data.activeRole ?? null;
           isAdminFromDB = result.data.isAdmin ?? false;
           // Stash on event.locals so downstream getSessionInfo() can reuse it
           (event as any).locals = (event as any).locals ?? {};
@@ -98,20 +85,17 @@ export default createMiddleware({
 
       if (isAdminFromDB) return;
 
-      // ── Role-based authorization ──────────────────────────────────────────
+      // ── DB-based role access check (access.repository → Group → Role → Page) ─
 
-      // No role at active location → no access
-      if (!activeRole) {
-        return new Response(null, { status: 302, headers: { Location: "/" } });
-      }
+      // Extract the top-level page name from the path (e.g. "/leads/123" → "leads")
+      const pageName = pathname.split("/").filter(Boolean)[0] ?? "";
+      if (!pageName) return; // bare "/" is public; should not reach here
 
-      const allowed = ROLE_ROUTES[activeRole] ?? [];
-      const isAllowed = allowed.some((route) => pathname.startsWith(route));
+      const { canUserAccessPage } = await import("~/server/db/repositories/access.repository");
+      const isAllowed = await canUserAccessPage(userId, activeLocationId, pageName);
 
       if (!isAllowed) {
-        // Redirect to the first route allowed for this role
-        const fallback = allowed[0] ?? "/";
-        return new Response(null, { status: 302, headers: { Location: fallback } });
+        return new Response(null, { status: 302, headers: { Location: "/" } });
       }
     } catch (err) {
       console.error("[middleware] auth check failed:", err);
