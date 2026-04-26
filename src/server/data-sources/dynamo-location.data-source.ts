@@ -32,6 +32,7 @@ import type { ApiResult } from "~/lib/types";
 import type { DataSource } from "./data-source.interface";
 import { ScanCache } from "./scan-cache";
 import { executeQuery, applyFilters } from "./query-executor";
+import { assertValidQuery, LOCATION_QUERY_CONFIG } from "./query-validation";
 
 export class DynamoDBLocationDataSource
   implements DataSource<Location, LocationField>
@@ -99,6 +100,7 @@ export class DynamoDBLocationDataSource
     spec: QuerySpec<LocationField>
   ): Promise<ApiResult<QueryResult<Location>>> {
     try {
+      assertValidQuery(spec, LOCATION_QUERY_CONFIG);
       const allLocations = await this.cache.getOrScan(() => this.scanAllLocations());
       return { success: true, data: executeQuery(allLocations, spec) };
     } catch (error) {

@@ -79,7 +79,8 @@ export const SortSpecSchema = z.object({
 export interface PaginationSpec {
   pageSize: number;      // Always required
   pageIndex?: number;    // For offset-based (default: 0)
-  cursor?: string;       // For cursor-based
+  /** Reserved for future cursor-based pagination. Not yet implemented by any DataSource. */
+  cursor?: string;
 }
 
 export const PaginationSpecSchema = z.object({

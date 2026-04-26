@@ -2,9 +2,7 @@ import { usersDataSource } from "../data-sources/instances";
 import { createCollectionService } from "./create-collection-service";
 import type { User, UserField, GroupType } from "~/lib/schemas/domain";
 import type { ApiResult } from "~/lib/types";
-import { BatchGetCommand } from "@aws-sdk/lib-dynamodb";
 import { docClient, TABLE_NAME, Keys } from "~/server/db/client";
-import { fromItem } from "~/server/data-sources/dynamo-helpers";
 
 /**
  * User Service - Uses generic collection service factory
@@ -231,35 +229,13 @@ export async function getTeamForLocation(
       };
     }
 
-    // Batch-get all user records (DynamoDB BatchGet supports up to 100 keys)
+    // Batch-get all user records via DataSource (respects abstraction)
     const userIds = Array.from(userRoleMap.keys());
-    const allUsers: User[] = [];
-
-    // Process in chunks of 100 (DynamoDB BatchGetItem limit)
-    for (let i = 0; i < userIds.length; i += 100) {
-      const chunk = userIds.slice(i, i + 100);
-      let keys = chunk.map((uid) => ({
-        PK: Keys.userPK(uid),
-        SK: Keys.metaSK(),
-      }));
-
-      while (keys.length > 0) {
-        const batchResult = await docClient.send(
-          new BatchGetCommand({
-            RequestItems: {
-              [TABLE_NAME]: { Keys: keys },
-            },
-          })
-        );
-        const items = batchResult.Responses?.[TABLE_NAME] ?? [];
-        for (const item of items) {
-          allUsers.push(fromItem<User>(item));
-        }
-        // Retry any unprocessed keys
-        const unprocessed = batchResult.UnprocessedKeys?.[TABLE_NAME]?.Keys;
-        keys = (unprocessed as typeof keys) ?? [];
-      }
+    const batchResult = await usersDataSource.getByIds(userIds);
+    if (!batchResult.success) {
+      return { success: false, error: batchResult.error };
     }
+    const allUsers = batchResult.data;
 
     // Build TeamMember array
     const teamMembers: TeamMember[] = allUsers

@@ -1,5 +1,5 @@
 import { query, action } from "@solidjs/router";
-import { execQuery, unwrap } from "./helpers";
+import { execQuery, unwrap, requireAuth, requireLocationScope, requireAdminRole } from "./helpers";
 import {
   queryUsers,
   getUserById,
@@ -13,9 +13,7 @@ import type { UserField, GroupType } from "~/lib/schemas/domain";
 
 export const queryUsersQuery = query(async (spec: QuerySpec<UserField>) => {
   "use server";
-  const { getSessionInfo } = await import("~/lib/auth");
-  const session = await getSessionInfo();
-  if (!session.userId) throw new Error("Not authenticated");
+  const session = await requireAuth();
   if (!session.isAdmin && !session.activeLocationId) {
     throw new Error("No active location selected.");
   }
@@ -33,9 +31,7 @@ export const getUserByIdQuery = query(async (id: string) => {
  */
 export const getActiveLocationIdQuery = query(async () => {
   "use server";
-  const { getSessionInfo } = await import("~/lib/auth");
-  const session = await getSessionInfo();
-  if (!session.userId) return null;
+  const session = await requireAuth();
   const result = await getActiveLocationId(session.userId);
   return result.success ? (result.data ?? null) : null;
 }, "user-active-location-id");
@@ -47,9 +43,7 @@ export const getActiveLocationIdQuery = query(async () => {
 export const setActiveLocationMutation = action(
   async (locationId: string) => {
     "use server";
-    const { getSessionInfo } = await import("~/lib/auth");
-    const session = await getSessionInfo();
-    if (!session.userId) throw new Error("Not authenticated");
+    const session = await requireAuth();
     const result = await setActiveLocation(session.userId, locationId);
     if (!result.success) throw new Error(result.error);
   },
@@ -62,9 +56,7 @@ export const setActiveLocationMutation = action(
  */
 export const getCommunityTeamQuery = query(async () => {
   "use server";
-  const { getSessionInfo } = await import("~/lib/auth");
-  const session = await getSessionInfo();
-  if (!session.activeLocationId) return [];
+  const session = await requireLocationScope();
   const result = await getTeamForLocation(session.activeLocationId);
   if (!result.success) throw new Error(result.error);
   return result.data;
@@ -76,20 +68,12 @@ export const getCommunityTeamQuery = query(async () => {
  */
 export const assignRoleAction = action(async (userIds: string[], groupType: GroupType) => {
   "use server";
-  const { getSessionInfo } = await import("~/lib/auth");
-  const session = await getSessionInfo();
-
-  if (!session.userId) return { success: false, error: "Not authenticated" } as const;
-  if (!session.activeLocationId) return { success: false, error: "No active location" } as const;
-
-  // Only super-admins or location Admins may assign roles
-  if (!session.isAdmin && session.activeRole !== "ADMIN") {
-    return { success: false, error: "Unauthorized: only Admins can assign roles." } as const;
-  }
+  const session = await requireLocationScope();
+  requireAdminRole(session);
 
   const results = await Promise.allSettled(
     userIds.map((userId) =>
-      assignUserRole(userId, session.activeLocationId!, groupType)
+      assignUserRole(userId, session.activeLocationId, groupType)
     )
   );
 

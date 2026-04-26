@@ -51,9 +51,23 @@ const leadAssignColHelper = createColumnHelper<Lead>();
 const memberAssignColHelper = createColumnHelper<Member>();
 
 /**
- * Build lead columns with an "Assigned To" column appended.
- * The column cell reads reactively from the assignment map and agent list.
+ * Render the "Assigned To" cell. Shared between lead and member columns.
  */
+function renderAssignedToCell(
+  contactId: string,
+  getMap: () => Map<string, string>,
+  getAgents: () => User[]
+) {
+  const agentId = getMap().get(contactId);
+  if (!agentId) return <span class="text-xs text-muted-foreground">Unassigned</span>;
+  const agent = getAgents().find((a) => a.id === agentId);
+  return (
+    <span class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+      {agent?.displayName ?? "Unknown"}
+    </span>
+  );
+}
+
 function buildLeadColumns(
   getMap: () => Map<string, string>,
   getAgents: () => User[]
@@ -63,16 +77,7 @@ function buildLeadColumns(
     leadAssignColHelper.display({
       id: "_assignedTo",
       header: "Assigned To",
-      cell: (info) => {
-        const agentId = getMap().get(info.row.original.id);
-        if (!agentId) return <span class="text-xs text-muted-foreground">Unassigned</span>;
-        const agent = getAgents().find((a) => a.id === agentId);
-        return (
-          <span class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-            {agent?.displayName ?? "Unknown"}
-          </span>
-        );
-      },
+      cell: (info) => renderAssignedToCell(info.row.original.id, getMap, getAgents),
     }),
   ];
 }
@@ -86,16 +91,7 @@ function buildMemberColumns(
     memberAssignColHelper.display({
       id: "_assignedTo",
       header: "Assigned To",
-      cell: (info) => {
-        const agentId = getMap().get(info.row.original.id);
-        if (!agentId) return <span class="text-xs text-muted-foreground">Unassigned</span>;
-        const agent = getAgents().find((a) => a.id === agentId);
-        return (
-          <span class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-            {agent?.displayName ?? "Unknown"}
-          </span>
-        );
-      },
+      cell: (info) => renderAssignedToCell(info.row.original.id, getMap, getAgents),
     }),
   ];
 }
@@ -194,6 +190,8 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
     new Map<string, string>()
   );
   const [showAgentDropdown, setShowAgentDropdown] = createSignal(false);
+  /** "Paint mode" — when set, checking rows auto-assigns them to this agent */
+  const [activeAgentId, setActiveAgentId] = createSignal<string | null>(null);
 
   // -- Augmented columns + client-side sort ----------------------------------
 
@@ -210,29 +208,24 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
    * Within each group sort alphabetically by displayName.
    * Only active when agents are present (assignment UI is shown).
    */
-  const sortedLeadItems = createMemo(() => {
-    const items = [...(controller.data()?.items ?? [])] as Lead[];
+  function sortByAssignment<I extends { id: string; displayName: string }>(items: I[]): I[] {
     if (agents().length === 0) return items;
     const map = inlineAssignmentMap();
-    return items.sort((a, b) => {
+    return [...items].sort((a, b) => {
       const aAssigned = map.has(a.id);
       const bAssigned = map.has(b.id);
       if (aAssigned !== bAssigned) return aAssigned ? 1 : -1;
       return a.displayName.localeCompare(b.displayName);
     });
-  });
+  }
 
-  const sortedMemberItems = createMemo(() => {
-    const items = [...(controller.data()?.items ?? [])] as Member[];
-    if (agents().length === 0) return items;
-    const map = inlineAssignmentMap();
-    return items.sort((a, b) => {
-      const aAssigned = map.has(a.id);
-      const bAssigned = map.has(b.id);
-      if (aAssigned !== bAssigned) return aAssigned ? 1 : -1;
-      return a.displayName.localeCompare(b.displayName);
-    });
-  });
+  const sortedLeadItems = createMemo(() =>
+    sortByAssignment((controller.data()?.items ?? []) as Lead[])
+  );
+
+  const sortedMemberItems = createMemo(() =>
+    sortByAssignment((controller.data()?.items ?? []) as Member[])
+  );
 
   const assignmentCountForAgent = (agentId: string) => {
     let n = 0;
@@ -364,41 +357,85 @@ export const ContactPickerDrawer: Component<ContactPickerDrawerProps> = (props) 
               </Show>
             </div>
 
-            {/* Bulk assign toolbar  -  appears when rows are checked AND agents exist */}
+            {/* Agent assignment bar — persistent paint-mode toolbar */}
+            <Show when={agents().length > 0}>
+              <div class="flex items-center gap-2 px-4 py-2 bg-muted/50 border-b border-border shrink-0 text-sm">
+                <span class="text-xs text-muted-foreground shrink-0">Assign to:</span>
+                <div class="flex flex-wrap gap-1.5">
+                  <For each={agents()}>
+                    {(agent) => (
+                      <button
+                        type="button"
+                        onClick={() => setActiveAgentId((prev) => prev === agent.id ? null : agent.id)}
+                        class={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium border transition-colors ${
+                          activeAgentId() === agent.id
+                            ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                            : "bg-background text-foreground border-border hover:bg-muted"
+                        }`}
+                      >
+                        {agent.displayName}
+                        <Show when={assignmentCountForAgent(agent.id) > 0}>
+                          <Badge variant={activeAgentId() === agent.id ? "secondary" : "outline"} class="ml-0.5 text-[10px] px-1 py-0 h-4 min-w-4 justify-center">
+                            {assignmentCountForAgent(agent.id)}
+                          </Badge>
+                        </Show>
+                      </button>
+                    )}
+                  </For>
+                </div>
+                <Show when={activeAgentId() !== null}>
+                  <span class="text-xs text-primary ml-auto shrink-0">
+                    Paint mode — check contacts to assign
+                  </span>
+                </Show>
+              </div>
+            </Show>
+
+            {/* Bulk assign action bar — appears when rows are checked AND agents exist */}
             <Show when={selectedCount() > 0 && agents().length > 0}>
               <div class="flex items-center gap-3 px-4 py-2 bg-primary/5 border-b border-primary/20 shrink-0 text-sm">
                 <span class="font-medium text-foreground">{selectedCount()} selected</span>
-                <div class="relative">
-                  <button
-                    type="button"
-                    onClick={() => setShowAgentDropdown((v) => !v)}
-                    class="flex items-center gap-1 rounded border border-primary/30 bg-background px-2 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                <Show when={activeAgentId() !== null}>
+                  <Button
+                    size="sm"
+                    onClick={() => assignSelectedToAgent(activeAgentId()!)}
+                    class="h-7 text-xs"
                   >
-                    Assign to <ChevronDown class="w-3 h-3" />
-                  </button>
-                  <Show when={showAgentDropdown()}>
-                    {/* Click-outside overlay */}
-                    <div class="fixed inset-0 z-10" onClick={() => setShowAgentDropdown(false)} />
-                    <div class="absolute top-full left-0 mt-1 z-20 min-w-48 rounded-md border bg-background shadow-lg">
-                      <For each={agents()}>
-                        {(agent) => (
-                          <button
-                            type="button"
-                            onClick={() => assignSelectedToAgent(agent.id)}
-                            class="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-muted transition-colors first:rounded-t-md last:rounded-b-md"
-                          >
-                            <span>{agent.displayName}</span>
-                            <Show when={assignmentCountForAgent(agent.id) > 0}>
-                              <Badge variant="secondary" class="ml-2 text-xs">
-                                {assignmentCountForAgent(agent.id)}
-                              </Badge>
-                            </Show>
-                          </button>
-                        )}
-                      </For>
-                    </div>
-                  </Show>
-                </div>
+                    Assign to {agents().find((a) => a.id === activeAgentId())?.displayName}
+                  </Button>
+                </Show>
+                <Show when={activeAgentId() === null}>
+                  <div class="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowAgentDropdown((v) => !v)}
+                      class="flex items-center gap-1 rounded border border-primary/30 bg-background px-2 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                    >
+                      Assign to <ChevronDown class="w-3 h-3" />
+                    </button>
+                    <Show when={showAgentDropdown()}>
+                      <div class="fixed inset-0 z-10" onClick={() => setShowAgentDropdown(false)} />
+                      <div class="absolute top-full left-0 mt-1 z-20 min-w-48 rounded-md border bg-background shadow-lg">
+                        <For each={agents()}>
+                          {(agent) => (
+                            <button
+                              type="button"
+                              onClick={() => assignSelectedToAgent(agent.id)}
+                              class="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-muted transition-colors first:rounded-t-md last:rounded-b-md"
+                            >
+                              <span>{agent.displayName}</span>
+                              <Show when={assignmentCountForAgent(agent.id) > 0}>
+                                <Badge variant="secondary" class="ml-2 text-xs">
+                                  {assignmentCountForAgent(agent.id)}
+                                </Badge>
+                              </Show>
+                            </button>
+                          )}
+                        </For>
+                      </div>
+                    </Show>
+                  </div>
+                </Show>
               </div>
             </Show>
 

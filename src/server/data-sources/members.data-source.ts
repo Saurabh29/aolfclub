@@ -7,6 +7,7 @@
 
 import { Keys } from "~/server/db/client";
 import { LocationScopedDataSource } from "./location-scoped.data-source";
+import { MEMBER_QUERY_CONFIG } from "./query-validation";
 import type { Member, MemberField } from "~/lib/schemas/domain";
 import {
   createMember,
@@ -30,7 +31,8 @@ export class MembersDataSource extends LocationScopedDataSource<Member, MemberFi
         getByPhoneInLocation: getMemberByPhoneInLocation,
       },
       Keys.memberPK,
-      Keys.metaSK()
+      Keys.metaSK(),
+      MEMBER_QUERY_CONFIG
     );
   }
 }

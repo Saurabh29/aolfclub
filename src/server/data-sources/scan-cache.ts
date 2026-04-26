@@ -12,6 +12,8 @@
 export interface ScanCacheOptions {
   /** Cache TTL in milliseconds. Default: 30 seconds. */
   ttlMs?: number;
+  /** Maximum number of items to cache. If scan returns more, cache is bypassed. Default: 10,000. */
+  maxItems?: number;
   /** Label for debug logging. */
   label?: string;
 }
@@ -20,12 +22,14 @@ export class ScanCache<T> {
   private items: T[] | null = null;
   private cachedAt = 0;
   private readonly ttlMs: number;
+  private readonly maxItems: number;
   private readonly label: string;
   /** Prevents concurrent scan requests from triggering duplicate DynamoDB calls. */
   private inflightScan: Promise<T[]> | null = null;
 
   constructor(options: ScanCacheOptions = {}) {
     this.ttlMs = options.ttlMs ?? 30_000;
+    this.maxItems = options.maxItems ?? 10_000;
     this.label = options.label ?? "ScanCache";
   }
 
@@ -49,8 +53,11 @@ export class ScanCache<T> {
 
     this.inflightScan = scanFn()
       .then((results) => {
-        this.items = results;
-        this.cachedAt = Date.now();
+        // Only cache if within size limit to prevent unbounded memory usage
+        if (results.length <= this.maxItems) {
+          this.items = results;
+          this.cachedAt = Date.now();
+        }
         this.inflightScan = null;
         return results;
       })

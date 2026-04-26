@@ -16,6 +16,8 @@ import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
 import type { DataSource } from "./data-source.interface";
 import { executeQuery } from "./query-executor";
+import type { QueryValidationConfig } from "./query-validation";
+import { assertValidQuery } from "./query-validation";
 
 export interface LocationScopedRepo<T, TCreate> {
   create: (input: TCreate) => Promise<T>;
@@ -34,7 +36,8 @@ export class LocationScopedDataSource<
   constructor(
     private repo: LocationScopedRepo<T, TCreate>,
     private pkFn: (id: string) => string,
-    private metaSK: string
+    private metaSK: string,
+    private validationConfig?: QueryValidationConfig<TField>
   ) {}
 
   async queryByLocation(
@@ -42,6 +45,9 @@ export class LocationScopedDataSource<
     spec: QuerySpec<TField>
   ): Promise<ApiResult<QueryResult<T>>> {
     try {
+      if (this.validationConfig) {
+        assertValidQuery(spec, this.validationConfig);
+      }
       const items = await this.repo.getByLocation(locationId);
       return { success: true, data: executeQuery(items, spec) };
     } catch (error) {

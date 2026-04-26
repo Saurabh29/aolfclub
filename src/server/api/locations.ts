@@ -11,6 +11,7 @@ import {
 } from "../services/locations.service";
 import type { QuerySpec } from "~/lib/schemas/query";
 import type { LocationField, CreateLocationRequest, UpdateLocationRequest } from "~/lib/schemas/domain";
+import { CreateLocationSchema, UpdateLocationSchema } from "~/lib/schemas/domain/location.schema";
 
 export const queryLocationsQuery = query(async (spec: QuerySpec<LocationField>) => {
   "use server";
@@ -39,6 +40,7 @@ export const checkSlugAvailableQuery = query(async (slug: string, excludeId?: st
 
 export const createLocationAction = action(async (data: CreateLocationRequest) => {
   "use server";
+  CreateLocationSchema.parse(data);
   const result = await createLocation(data);
   if (!result.success) return result;
 
@@ -81,22 +83,17 @@ export const createLocationAction = action(async (data: CreateLocationRequest) =
 
 export const updateLocationAction = action(async (id: string, data: UpdateLocationRequest) => {
   "use server";
-  const { getSessionInfo } = await import("~/lib/auth");
-  const session = await getSessionInfo();
-  if (!session.userId) throw new Error("Not authenticated");
-  if (!session.isAdmin && session.activeRole !== "ADMIN") {
-    throw new Error("Unauthorized: only Admins can update locations.");
-  }
+  const { requireAuth, requireAdminRole } = await import("./helpers");
+  const session = await requireAuth();
+  requireAdminRole(session);
+  UpdateLocationSchema.parse(data);
   return await updateLocation(id, data);
 }, "update-location");
 
 export const deleteLocationAction = action(async (id: string) => {
   "use server";
-  const { getSessionInfo } = await import("~/lib/auth");
-  const session = await getSessionInfo();
-  if (!session.userId) throw new Error("Not authenticated");
-  if (!session.isAdmin && session.activeRole !== "ADMIN") {
-    throw new Error("Unauthorized: only Admins can delete locations.");
-  }
+  const { requireAuth, requireAdminRole } = await import("./helpers");
+  const session = await requireAuth();
+  requireAdminRole(session);
   return await deleteLocation(id);
 }, "delete-location");

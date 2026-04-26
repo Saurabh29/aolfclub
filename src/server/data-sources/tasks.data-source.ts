@@ -19,6 +19,7 @@ import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
 import type { DataSource } from "./data-source.interface";
 import { executeQuery } from "./query-executor";
+import { assertValidQuery, TASK_QUERY_CONFIG } from "./query-validation";
 import {
   createTask as repoCreateTask,
   getTaskById as repoGetTaskById,
@@ -40,6 +41,7 @@ export class TasksDataSource implements DataSource<Task, TaskField> {
     spec: QuerySpec<TaskField>
   ): Promise<ApiResult<QueryResult<Task>>> {
     try {
+      assertValidQuery(spec, TASK_QUERY_CONFIG);
       const tasks = await repoGetTasksByLocation(locationId);
       return { success: true, data: executeQuery(tasks, spec) };
     } catch (error) {

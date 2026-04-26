@@ -20,6 +20,7 @@ import type { ApiResult } from "~/lib/types";
 import type { DataSource } from "./data-source.interface";
 import { ScanCache } from "./scan-cache";
 import { executeQuery, applyFilters } from "./query-executor";
+import { assertValidQuery, USER_QUERY_CONFIG } from "./query-validation";
 import {
   createUser as repoCreateUser,
   getUserByEmail as repoGetUserByEmail,
@@ -51,6 +52,7 @@ export class UsersDataSource implements DataSource<User, UserField> {
 
   async query(spec: QuerySpec<UserField>): Promise<ApiResult<QueryResult<User>>> {
     try {
+      assertValidQuery(spec, USER_QUERY_CONFIG);
       const allUsers = await this.cache.getOrScan(() => this.scanAll());
       return { success: true, data: executeQuery(allUsers, spec) };
     } catch (error) {
@@ -133,6 +135,49 @@ export class UsersDataSource implements DataSource<User, UserField> {
       return {
         success: false,
         error: error instanceof Error ? error.message : "getByUniqueField failed",
+      };
+    }
+  }
+
+  /**
+   * Batch-get users by IDs. Handles DynamoDB's 100-key limit automatically.
+   * Uses the same fromItem mapping as getById.
+   */
+  async getByIds(userIds: string[]): Promise<ApiResult<User[]>> {
+    if (userIds.length === 0) return { success: true, data: [] };
+    try {
+      const { BatchGetCommand } = await import("@aws-sdk/lib-dynamodb");
+      const allUsers: User[] = [];
+
+      for (let i = 0; i < userIds.length; i += 100) {
+        const chunk = userIds.slice(i, i + 100);
+        let keys = chunk.map((uid) => ({
+          PK: Keys.userPK(uid),
+          SK: Keys.metaSK(),
+        }));
+
+        while (keys.length > 0) {
+          const batchResult = await docClient.send(
+            new BatchGetCommand({
+              RequestItems: {
+                [TABLE_NAME]: { Keys: keys },
+              },
+            })
+          );
+          const items = batchResult.Responses?.[TABLE_NAME] ?? [];
+          for (const item of items) {
+            allUsers.push(fromItem<User>(item));
+          }
+          const unprocessed = batchResult.UnprocessedKeys?.[TABLE_NAME]?.Keys;
+          keys = (unprocessed as typeof keys) ?? [];
+        }
+      }
+
+      return { success: true, data: allUsers };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "getByIds failed",
       };
     }
   }

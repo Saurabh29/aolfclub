@@ -7,6 +7,7 @@
 
 import { Keys } from "~/server/db/client";
 import { LocationScopedDataSource } from "./location-scoped.data-source";
+import { LEAD_QUERY_CONFIG } from "./query-validation";
 import type { Lead, LeadField } from "~/lib/schemas/domain";
 import {
   createLead,
@@ -30,7 +31,8 @@ export class LeadsDataSource extends LocationScopedDataSource<Lead, LeadField, C
         getByPhoneInLocation: getLeadByPhoneInLocation,
       },
       Keys.leadPK,
-      Keys.metaSK()
+      Keys.metaSK(),
+      LEAD_QUERY_CONFIG
     );
   }
 }
