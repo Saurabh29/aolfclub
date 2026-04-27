@@ -1,19 +1,19 @@
 import { query, action } from "@solidjs/router";
 import { z } from "zod";
-import { execQuery, unwrap, requirePageAccess } from "./helpers";
+import { execQuery, unwrap, requireCapability } from "./helpers";
 import { queryLeadsByLocation, getLeadById, createLead } from "../services/leads.service";
 import type { QuerySpec } from "~/lib/schemas/query";
 import type { LeadField } from "~/lib/schemas/domain";
 
 export const queryLeadsQuery = query(async (spec: QuerySpec<LeadField>) => {
   "use server";
-  const session = await requirePageAccess("leads");
+  const session = await requireCapability("leads:read");
   return execQuery(spec, (s) => queryLeadsByLocation(session.activeLocationId, s));
 }, "query-leads");
 
 export const getLeadByIdQuery = query(async (id: string) => {
   "use server";
-  await requirePageAccess("leads");
+  await requireCapability("leads:read");
   return unwrap(await getLeadById(id));
 }, "lead-by-id");
 
@@ -26,7 +26,7 @@ const CreateLeadInputSchema = z.object({
 
 export const createLeadAction = action(async (input: z.infer<typeof CreateLeadInputSchema>) => {
   "use server";
-  const session = await requirePageAccess("community");
+  const session = await requireCapability("leads:write");
   const validated = CreateLeadInputSchema.parse(input);
   const result = await createLead({
     locationId: session.activeLocationId,

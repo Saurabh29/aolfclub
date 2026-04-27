@@ -8,11 +8,10 @@
  *   - Whitelist entry for jsaurabh@gmail.com with canBootstrap = true
  *     (no User entity — created on first OAuth login)
  *   - Roles:  ADMIN, TEACHER, VOLUNTEER
- *   - Pages:  leads, community, tasks, locations  (no leading slash — matches middleware extraction)
- *   - Role→Page permissions:
- *       ADMIN    → all pages
- *       TEACHER  → all pages
- *       VOLUNTEER → leads only
+ *   - Role→Capability permissions:
+ *       ADMIN    → all capabilities
+ *       TEACHER  → all except locations:write
+ *       VOLUNTEER → leads:read, tasks:read
  *
  * No seed locations — the bootstrap user creates the first location via the UI.
  *
@@ -54,6 +53,7 @@ const Keys = {
   whitelistPK: (email: string) => `WHITELIST#${email.toLowerCase()}`,
   rolePK:   (name: string) => `ROLE#${name}`,
   pagePK:   (name: string) => `PAGE#${name}`,
+  capSK:    (name: string) => `CAP#${name}`,
   metaSK:   () => "META" as const,
   pageSK:   (name: string) => `PAGE#${name}`,
 };
@@ -127,9 +127,9 @@ async function seedDb(): Promise<void> {
   // ── Roles ──────────────────────────────────────────────────────────────────
   console.log("🔑 Seeding roles...");
   const roles = [
-    { roleName: "ADMIN",     description: "Full access to all pages" },
-    { roleName: "TEACHER",   description: "Full access to all pages" },
-    { roleName: "VOLUNTEER", description: "Access to leads only" },
+    { roleName: "ADMIN",     description: "Full access to all capabilities" },
+    { roleName: "TEACHER",   description: "Full access except location management" },
+    { roleName: "VOLUNTEER", description: "Read-only access to leads and tasks" },
   ];
 
   for (const role of roles) {
@@ -150,44 +150,45 @@ async function seedDb(): Promise<void> {
     console.log(`   Role: ${role.roleName}`);
   }
 
-  // ── Pages ──────────────────────────────────────────────────────────────────
-  console.log("📄 Seeding pages...");
-  // Page names must match the segment extracted by middleware:
-  //   pathname.split("/").filter(Boolean)[0]  →  "leads", not "/leads"
-  const pages = [
-    { pageName: "leads",     description: "Leads management" },
-    { pageName: "community", description: "Community (Leads, Members, Team)" },
-    { pageName: "tasks",     description: "Call task management" },
-    { pageName: "locations", description: "Location management" },
+  // ── Role→Capability permissions ────────────────────────────────────────────
+  console.log("🔒 Seeding role→capability permissions...");
+
+  const allCapabilities = [
+    "leads:read",
+    "leads:write",
+    "tasks:read",
+    "tasks:write",
+    "members:read",
+    "members:write",
+    "community:read",
+    "community:write",
+    "locations:read",
+    "locations:write",
+    "import:execute",
   ];
 
-  for (const page of pages) {
-    await docClient.send(
-      new PutCommand({
-        TableName: TABLE_NAME,
-        Item: {
-          PK: Keys.pagePK(page.pageName),
-          SK: Keys.metaSK(),
-          itemType: "Page",
-          pageName: page.pageName,
-          description: page.description,
-          createdAt: timestamp,
-        },
-      })
-    );
-    console.log(`   Page: ${page.pageName}`);
-  }
+  const teacherCapabilities = [
+    "leads:read",
+    "leads:write",
+    "tasks:read",
+    "tasks:write",
+    "members:read",
+    "members:write",
+    "community:read",
+    "community:write",
+    "locations:read",
+    "import:execute",
+  ];
 
-  // ── Role→Page permissions ──────────────────────────────────────────────────
-  console.log("🔒 Seeding role→page permissions...");
-
-  const allPages = ["leads", "community", "tasks", "locations"];
-  const volunteerPages = ["leads"];
+  const volunteerCapabilities = [
+    "leads:read",
+    "tasks:read",
+  ];
 
   const permissionItems = [
-    ...allPages.map((p) => ({ role: "ADMIN",     page: p })),
-    ...allPages.map((p) => ({ role: "TEACHER",   page: p })),
-    ...volunteerPages.map((p) => ({ role: "VOLUNTEER", page: p })),
+    ...allCapabilities.map((c) => ({ role: "ADMIN",     capability: c })),
+    ...teacherCapabilities.map((c) => ({ role: "TEACHER",   capability: c })),
+    ...volunteerCapabilities.map((c) => ({ role: "VOLUNTEER", capability: c })),
   ];
 
   // Batch the permission edges (no transact needed — these are idempotent)
@@ -196,14 +197,14 @@ async function seedDb(): Promise<void> {
     await docClient.send(
       new BatchWriteCommand({
         RequestItems: {
-          [TABLE_NAME]: batch.map(({ role, page }) => ({
+          [TABLE_NAME]: batch.map(({ role, capability }) => ({
             PutRequest: {
               Item: {
                 PK: Keys.rolePK(role),
-                SK: Keys.pageSK(page),
-                itemType: "RolePagePermission",
+                SK: Keys.capSK(capability),
+                itemType: "RoleCapabilityPermission",
                 roleName: role,
-                pageName: page,
+                capability,
                 permission: "ALLOW",
                 updatedAt: timestamp,
               },
@@ -214,8 +215,8 @@ async function seedDb(): Promise<void> {
     );
   }
 
-  for (const { role, page } of permissionItems) {
-    console.log(`   ${role} → ${page}: ALLOW`);
+  for (const { role, capability } of permissionItems) {
+    console.log(`   ${role} → ${capability}: ALLOW`);
   }
 }
 

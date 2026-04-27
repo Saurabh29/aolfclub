@@ -4,3 +4,4 @@ export * from "./lead.schema";
 export * from "./location.schema";
 export * from "./task.schema";
 export * from "./whitelist.schema";
+export * from "./capability.schema";

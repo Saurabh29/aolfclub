@@ -1,5 +1,5 @@
 import { query, action } from "@solidjs/router";
-import { execQuery, unwrap, requireAuth, requireAdminRole } from "./helpers";
+import { execQuery, unwrap, requireAuth, requireCapability } from "./helpers";
 import {
   queryLocations,
   getLocationById,
@@ -16,16 +16,19 @@ import { CreateLocationSchema, UpdateLocationSchema } from "~/lib/schemas/domain
 
 export const queryLocationsQuery = query(async (spec: QuerySpec<LocationField>) => {
   "use server";
+  await requireAuth();
   return execQuery(spec, queryLocations);
 }, "query-locations");
 
 export const getLocationByIdQuery = query(async (id: string) => {
   "use server";
+  await requireAuth();
   return unwrap(await getLocationById(id));
 }, "location-by-id");
 
 export const getLocationBySlugQuery = query(async (slug: string) => {
   "use server";
+  await requireAuth();
   const result = await getLocationBySlug(slug);
   if (!result.success) throw new Error(result.error);
   return result.data;
@@ -33,6 +36,7 @@ export const getLocationBySlugQuery = query(async (slug: string) => {
 
 export const checkSlugAvailableQuery = query(async (slug: string, excludeId?: string) => {
   "use server";
+  await requireAuth();
   const taken = await isSlugTaken(slug, excludeId);
   return !taken;
 }, "location-slug-available");
@@ -83,15 +87,13 @@ export const createLocationAction = action(async (data: CreateLocationRequest) =
 
 export const updateLocationAction = action(async (id: string, data: UpdateLocationRequest) => {
   "use server";
-  const session = await requireAuth();
-  requireAdminRole(session);
+  await requireCapability("locations:write");
   UpdateLocationSchema.parse(data);
   return await updateLocation(id, data);
 }, "update-location");
 
 export const deleteLocationAction = action(async (id: string) => {
   "use server";
-  const session = await requireAuth();
-  requireAdminRole(session);
+  await requireCapability("locations:write");
   return await deleteLocation(id);
 }, "delete-location");

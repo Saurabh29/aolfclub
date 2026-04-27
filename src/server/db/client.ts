@@ -27,9 +27,10 @@
  *   User>Location:          PK = "USER#<userId>",          SK = "LOCATION#<locationId>"
  *   Location>User:          PK = "LOCATION#<id>",          SK = "USER#<userId>"
  *   Role item:              PK = "ROLE#<roleName>",        SK = "META"
- *   Page item:              PK = "PAGE#<pageName>",        SK = "META"
+ *   Page item:              PK = "PAGE#<pageName>",        SK = "META"        (legacy)
  *   Group>Role:             PK = "GROUP#<groupId>",        SK = "ROLE#<roleName>"
- *   Role>Page:              PK = "ROLE#<roleName>",        SK = "PAGE#<pageName>"
+ *   Role>Page:              PK = "ROLE#<roleName>",        SK = "PAGE#<pageName>"  (legacy)
+ *   Role>Capability:        PK = "ROLE#<roleName>",        SK = "CAP#<capability>"
  *   Whitelist:               PK = "WHITELIST#<email>",       SK = "META"
  *   Location admin edge:      PK = "LOCATION_ADMIN#<locId>",  SK = "USER#<userId>"
  *   Task item:              PK = "TASK#<id>",              SK = "META"
@@ -106,6 +107,7 @@ export const Keys = {
   groupSK:      (id: string): string => `GROUP#${id}`,
   roleSK:       (name: string): string => `ROLE#${name}`,
   pageSK:       (name: string): string => `PAGE#${name}`,
+  capSK:        (name: string): string => `CAP#${name}`,
   /** SK for LOCATION#<locId> / LEAD#<leadId> index items */
   leadSK:       (id: string): string => `LEAD#${id}`,
   /** SK for LOCATION#<locId> / MEMBER#<memberId> index items */
@@ -123,6 +125,7 @@ export const Keys = {
   GROUP_PREFIX:          "GROUP#",
   ROLE_PREFIX:           "ROLE#",
   PAGE_PREFIX:           "PAGE#",
+  CAP_PREFIX:            "CAP#",
   WHITELIST_PREFIX:      "WHITELIST#",
   LOCATION_ADMIN_PREFIX: "LOCATION_ADMIN#",
   TASK_PREFIX:           "TASK#",

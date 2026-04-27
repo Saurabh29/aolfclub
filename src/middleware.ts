@@ -2,26 +2,18 @@ import { createMiddleware } from "@solidjs/start/middleware";
 import { getAuthSession } from "~/lib/auth";
 
 /**
- * Authentication + Authorization + setup-mode middleware.
+ * Authentication + setup-mode middleware.
  *
- * Public routes (no session required):
- *   /                -  landing page
- *   /about           -  about page
- *   /api/auth/*      -  Auth.js endpoints
- *   /assets/*        -  static assets
- *   /_build/*        -  Vite build chunks
+ * Per SolidStart docs, middleware should NOT perform authorization because it
+ * does not run on every request (client-side navigations bypass it).
+ * Authorization is enforced in server functions via requireCapability().
  *
- * Setup mode (authenticated + no activeLocationId + canBootstrap=true):
- *   > Only /locations/new is permitted; all other protected routes redirect there.
- *
- * Blocked (authenticated + no activeLocationId + canBootstrap=false):
- *   > Redirect to /  -  user was added without bootstrap rights, wait for an admin
- *     to assign them to a location through the UI.
- *
- * Role enforcement (authenticated + has activeLocationId):
- *   > isAdmin=true → full access (super-admin bypass)
- *   > No activeRole → redirect to /  (user has no role at active location)
- *   > Role present → check against ROLE_ROUTES table; deny if not listed
+ * This middleware handles:
+ *   1. Public route bypass (no session required)
+ *   2. Authentication gate (redirect to "/" if not signed in)
+ *   3. Setup mode routing (bootstrap user → /locations/new)
+ *   4. Blocked user routing (no location + can't bootstrap → "/")
+ *   5. Caching the DB user record on event.locals for downstream use
  */
 export default createMiddleware({
   onRequest: async (event) => {
@@ -40,7 +32,7 @@ export default createMiddleware({
     try {
       const session = await getAuthSession();
 
-      // Not authenticated > back to landing
+      // Not authenticated → back to landing
       if (!session?.user) {
         return new Response(null, { status: 302, headers: { Location: "/" } });
       }
@@ -49,7 +41,6 @@ export default createMiddleware({
         (session as any).user?.id ?? (session as any).user?.userId;
       const activeLocationId = (session as any).user?.activeLocationId ?? null;
       const canBootstrap = (session as any).user?.canBootstrap === true;
-      const isAdmin: boolean = (session as any).user?.isAdmin === true;
 
       // ── Setup mode ─────────────────────────────────────────────────────────
       if (!activeLocationId && canBootstrap) {
@@ -63,39 +54,18 @@ export default createMiddleware({
         return new Response(null, { status: 302, headers: { Location: "/" } });
       }
 
-      // ── Super-admin bypass ─────────────────────────────────────────────────
-      // Read fresh isAdmin + activeRole from DB (not JWT) so revocation is immediate
-      if (!userId) {
-        return new Response(null, { status: 302, headers: { Location: "/" } });
-      }
-
-      let isAdminFromDB = false;
-      try {
-        const { usersDataSource } = await import("~/server/data-sources/instances");
-        const result = await usersDataSource.getById(userId);
-        if (result.success && result.data) {
-          isAdminFromDB = result.data.isAdmin ?? false;
-          // Stash on event.locals so downstream getSessionInfo() can reuse it
-          (event as any).locals = (event as any).locals ?? {};
-          (event as any).locals._cachedUser = result.data;
+      // ── Cache DB user for downstream server functions ──────────────────────
+      if (userId) {
+        try {
+          const { usersDataSource } = await import("~/server/data-sources/instances");
+          const result = await usersDataSource.getById(userId);
+          if (result.success && result.data) {
+            (event as any).locals = (event as any).locals ?? {};
+            (event as any).locals._cachedUser = result.data;
+          }
+        } catch {
+          // fail open — downstream functions will read from DB if cache misses
         }
-      } catch {
-        // fail closed
-      }
-
-      if (isAdminFromDB) return;
-
-      // ── DB-based role access check (access.repository → Group → Role → Page) ─
-
-      // Extract the top-level page name from the path (e.g. "/leads/123" → "leads")
-      const pageName = pathname.split("/").filter(Boolean)[0] ?? "";
-      if (!pageName) return; // bare "/" is public; should not reach here
-
-      const { canUserAccessPage } = await import("~/server/db/repositories/access.repository");
-      const isAllowed = await canUserAccessPage(userId, activeLocationId, pageName);
-
-      if (!isAllowed) {
-        return new Response(null, { status: 302, headers: { Location: "/" } });
       }
     } catch (err) {
       console.error("[middleware] auth check failed:", err);

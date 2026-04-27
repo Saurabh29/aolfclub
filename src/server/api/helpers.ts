@@ -2,7 +2,7 @@ import { z } from "zod";
 import { QuerySpecSchema } from "~/lib/schemas/query";
 import type { QuerySpec, QueryResult } from "~/lib/schemas/query";
 import type { ApiResult } from "~/lib/types";
-import type { GroupType } from "~/lib/schemas/domain";
+import type { GroupType, Capability } from "~/lib/schemas/domain";
 
 // -- Session helpers ----------------------------------------------------------
 
@@ -62,26 +62,26 @@ export function requireAdminRole(session: { isAdmin: boolean; activeRole: GroupT
 }
 
 /**
- * Require that the current user can access the given page at their active location.
- * Checks the full RBAC chain: User → Groups (at location) → Roles → Page permissions.
- * Super-admins and isAdmin users bypass the check.
+ * Require that the current user has a specific capability at their active location.
+ * Checks the full RBAC chain: User → Groups (at location) → Roles → Capabilities.
+ * Super-admins bypass the check.
  *
  * Returns the SessionScope on success (so callers can reuse it).
  */
-export async function requirePageAccess(pageName: string): Promise<SessionScope> {
+export async function requireCapability(capability: Capability): Promise<SessionScope> {
   const scope = await requireLocationScope();
   if (scope.isAdmin) return scope;
 
-  const { canUserAccessPage } = await import(
+  const { hasCapability } = await import(
     "~/server/db/repositories/access.repository"
   );
-  const allowed = await canUserAccessPage(
+  const allowed = await hasCapability(
     scope.userId,
     scope.activeLocationId,
-    pageName,
+    capability,
   );
   if (!allowed) {
-    throw new Error(`Access denied: no permission for "${pageName}".`);
+    throw new Error(`Access denied: missing capability "${capability}".`);
   }
   return scope;
 }

@@ -1,0 +1,249 @@
+{
+  "table": "aolfclub-entities",
+  "exportedAt": "2026-04-27T07:19:25.160Z",
+  "itemCount": 27,
+  "items": [
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "community:read",
+      "SK": "CAP#community:read",
+      "roleName": "ADMIN",
+      "permission": "ALLOW",
+      "PK": "ROLE#ADMIN",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "community:write",
+      "SK": "CAP#community:write",
+      "roleName": "ADMIN",
+      "permission": "ALLOW",
+      "PK": "ROLE#ADMIN",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "import:execute",
+      "SK": "CAP#import:execute",
+      "roleName": "ADMIN",
+      "permission": "ALLOW",
+      "PK": "ROLE#ADMIN",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "leads:read",
+      "SK": "CAP#leads:read",
+      "roleName": "ADMIN",
+      "permission": "ALLOW",
+      "PK": "ROLE#ADMIN",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "leads:write",
+      "SK": "CAP#leads:write",
+      "roleName": "ADMIN",
+      "permission": "ALLOW",
+      "PK": "ROLE#ADMIN",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "locations:read",
+      "SK": "CAP#locations:read",
+      "roleName": "ADMIN",
+      "permission": "ALLOW",
+      "PK": "ROLE#ADMIN",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "locations:write",
+      "SK": "CAP#locations:write",
+      "roleName": "ADMIN",
+      "permission": "ALLOW",
+      "PK": "ROLE#ADMIN",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "members:read",
+      "SK": "CAP#members:read",
+      "roleName": "ADMIN",
+      "permission": "ALLOW",
+      "PK": "ROLE#ADMIN",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "members:write",
+      "SK": "CAP#members:write",
+      "roleName": "ADMIN",
+      "permission": "ALLOW",
+      "PK": "ROLE#ADMIN",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "tasks:read",
+      "SK": "CAP#tasks:read",
+      "roleName": "ADMIN",
+      "permission": "ALLOW",
+      "PK": "ROLE#ADMIN",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "tasks:write",
+      "SK": "CAP#tasks:write",
+      "roleName": "ADMIN",
+      "permission": "ALLOW",
+      "PK": "ROLE#ADMIN",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "createdAt": "2026-04-27T07:19:12.412Z",
+      "itemType": "Role",
+      "SK": "META",
+      "roleName": "ADMIN",
+      "description": "Full access to all capabilities",
+      "PK": "ROLE#ADMIN",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "community:read",
+      "SK": "CAP#community:read",
+      "roleName": "TEACHER",
+      "permission": "ALLOW",
+      "PK": "ROLE#TEACHER",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "community:write",
+      "SK": "CAP#community:write",
+      "roleName": "TEACHER",
+      "permission": "ALLOW",
+      "PK": "ROLE#TEACHER",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "import:execute",
+      "SK": "CAP#import:execute",
+      "roleName": "TEACHER",
+      "permission": "ALLOW",
+      "PK": "ROLE#TEACHER",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "leads:read",
+      "SK": "CAP#leads:read",
+      "roleName": "TEACHER",
+      "permission": "ALLOW",
+      "PK": "ROLE#TEACHER",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "leads:write",
+      "SK": "CAP#leads:write",
+      "roleName": "TEACHER",
+      "permission": "ALLOW",
+      "PK": "ROLE#TEACHER",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "locations:read",
+      "SK": "CAP#locations:read",
+      "roleName": "TEACHER",
+      "permission": "ALLOW",
+      "PK": "ROLE#TEACHER",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "members:read",
+      "SK": "CAP#members:read",
+      "roleName": "TEACHER",
+      "permission": "ALLOW",
+      "PK": "ROLE#TEACHER",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "members:write",
+      "SK": "CAP#members:write",
+      "roleName": "TEACHER",
+      "permission": "ALLOW",
+      "PK": "ROLE#TEACHER",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "tasks:read",
+      "SK": "CAP#tasks:read",
+      "roleName": "TEACHER",
+      "permission": "ALLOW",
+      "PK": "ROLE#TEACHER",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "tasks:write",
+      "SK": "CAP#tasks:write",
+      "roleName": "TEACHER",
+      "permission": "ALLOW",
+      "PK": "ROLE#TEACHER",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "createdAt": "2026-04-27T07:19:12.412Z",
+      "itemType": "Role",
+      "SK": "META",
+      "roleName": "TEACHER",
+      "description": "Full access except location management",
+      "PK": "ROLE#TEACHER",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "leads:read",
+      "SK": "CAP#leads:read",
+      "roleName": "VOLUNTEER",
+      "permission": "ALLOW",
+      "PK": "ROLE#VOLUNTEER",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "itemType": "RoleCapabilityPermission",
+      "capability": "tasks:read",
+      "SK": "CAP#tasks:read",
+      "roleName": "VOLUNTEER",
+      "permission": "ALLOW",
+      "PK": "ROLE#VOLUNTEER",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "createdAt": "2026-04-27T07:19:12.412Z",
+      "itemType": "Role",
+      "SK": "META",
+      "roleName": "VOLUNTEER",
+      "description": "Read-only access to leads and tasks",
+      "PK": "ROLE#VOLUNTEER",
+      "updatedAt": "2026-04-27T07:19:12.412Z"
+    },
+    {
+      "SK": "META",
+      "createdAt": "2026-04-27T07:19:12.412Z",
+      "itemType": "Whitelist",
+      "PK": "WHITELIST#jsaurabh@gmail.com",
+      "email": "jsaurabh@gmail.com",
+      "canBootstrap": true
+    }
+  ]
+}

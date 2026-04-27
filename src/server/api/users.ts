@@ -1,6 +1,6 @@
 import { query, action } from "@solidjs/router";
 import { z } from "zod";
-import { execQuery, unwrap, requireAuth, requireLocationScope, requireAdminRole, requirePageAccess } from "./helpers";
+import { execQuery, unwrap, requireAuth, requireLocationScope, requireAdminRole, requireCapability } from "./helpers";
 import {
   queryUsers,
   getUserById,
@@ -15,12 +15,13 @@ import type { UserField, GroupType } from "~/lib/schemas/domain";
 
 export const queryUsersQuery = query(async (spec: QuerySpec<UserField>) => {
   "use server";
-  const session = await requirePageAccess("community");
+  const session = await requireCapability("community:read");
   return execQuery(spec, queryUsers);
 }, "query-users");
 
 export const getUserByIdQuery = query(async (id: string) => {
   "use server";
+  await requireAuth();
   return unwrap(await getUserById(id));
 }, "user-by-id");
 
@@ -55,7 +56,7 @@ export const setActiveLocationMutation = action(
  */
 export const getCommunityTeamQuery = query(async () => {
   "use server";
-  const session = await requirePageAccess("community");
+  const session = await requireCapability("community:read");
   const result = await getTeamForLocation(session.activeLocationId);
   if (!result.success) throw new Error(result.error);
   return result.data;
@@ -67,7 +68,7 @@ export const getCommunityTeamQuery = query(async () => {
  */
 export const assignRoleAction = action(async (userIds: string[], groupType: GroupType) => {
   "use server";
-  const session = await requirePageAccess("community");
+  const session = await requireCapability("community:write");
   requireAdminRole(session);
 
   const results = await Promise.allSettled(
@@ -109,7 +110,7 @@ const CreateTeamMemberInputSchema = z.object({
 export const createTeamMemberAction = action(
   async (input: z.infer<typeof CreateTeamMemberInputSchema>) => {
     "use server";
-    const session = await requirePageAccess("community");
+    const session = await requireCapability("community:write");
     requireAdminRole(session);
     const validated = CreateTeamMemberInputSchema.parse(input);
     const result = await createTeamMember(
@@ -126,15 +127,16 @@ export const createTeamMemberAction = action(
 
 // -- Accessible pages (for client-side nav filtering) -------------------------
 
-const ALL_PAGES = ["leads", "community", "tasks", "locations"] as const;
-
 /**
  * Return the list of page names the current user can access at their active location.
+ * Derives page visibility from capabilities using PAGE_CAPABILITY_MAP.
  * Used by the shell to build role-aware navigation.
  */
 export const getAccessiblePagesQuery = query(async () => {
   "use server";
   const session = await requireLocationScope();
+
+  const { ALL_PAGES } = await import("~/lib/schemas/domain/capability.schema");
   if (session.isAdmin) return [...ALL_PAGES];
 
   const { getAccessiblePages } = await import(
