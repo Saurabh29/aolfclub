@@ -170,3 +170,27 @@ export const requirePageCapability = query(async (capability: Capability) => {
     throw redirect("/");
   }
 }, "require-page-capability");
+
+/**
+ * Server-side page access guard that reads the current request URL,
+ * checks the PAGE_CAPABILITY_MAP, and throws redirect("/") if the user
+ * lacks access. Safe for pages NOT in the map (they pass through).
+ *
+ * Use with createAsync(..., { deferStream: true }) in the protected layout
+ * so it blocks SSR before any child route data loads.
+ */
+export const enforcePageAccess = query(async (pathname: string) => {
+  "use server";
+  const { PAGE_CAPABILITY_MAP } = await import("~/lib/schemas/domain/capability.schema");
+  const segment = pathname.split("/")[1] ?? "";
+  const requiredCapability = PAGE_CAPABILITY_MAP[segment];
+  if (!requiredCapability) return true; // page not gated
+
+  const { requireCapability } = await import("~/server/api/helpers");
+  try {
+    await requireCapability(requiredCapability);
+  } catch {
+    throw redirect("/");
+  }
+  return true;
+}, "enforce-page-access");
