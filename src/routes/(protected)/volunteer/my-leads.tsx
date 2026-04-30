@@ -7,7 +7,7 @@ import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { getMyAssignedLeadsQuery } from "~/server/api";
-import { getUser, requirePageCapability } from "~/lib/auth";
+import { getUser } from "~/lib/auth";
 import type { Lead, Task, InterestLevel, LeadTag } from "~/lib/schemas/domain";
 import {
   getLeadStatus,
@@ -101,9 +101,6 @@ function leadMatchesFilters(lead: Lead, f: LeadFilters): boolean {
  * Shows assigned leads with campaign filtering and progress tracking
  */
 export default function MyLeadsPage() {
-  // Redirect to home if the user lacks leads:read capability
-  createAsync(() => requirePageCapability("leads:read"), { deferStream: true });
-
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedTaskId, setSelectedTaskId] = createSignal<string | null>(
     (typeof searchParams.task === "string" ? searchParams.task : null)

@@ -1,5 +1,4 @@
 import { query, redirect } from "@solidjs/router";
-import type { Capability } from "~/lib/schemas/domain";
 
 /**
  * Client-side helper to sign in with a specific OAuth provider.
@@ -155,21 +154,6 @@ export async function getSessionInfo(): Promise<SessionInfo> {
     raw,
   };
 }
-
-/**
- * Page-level capability guard for use with createAsync(..., { deferStream: true }).
- * Throws redirect("/") when the user lacks the required capability,
- * so the browser navigates to the home page instead of showing an error.
- */
-export const requirePageCapability = query(async (capability: Capability) => {
-  "use server";
-  const { requireCapability } = await import("~/server/api/helpers");
-  try {
-    await requireCapability(capability);
-  } catch {
-    throw redirect("/");
-  }
-}, "require-page-capability");
 
 /**
  * Server-side page access guard that reads the current request URL,
