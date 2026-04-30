@@ -1,7 +1,9 @@
 import { For, Show } from "solid-js";
 import { useSearchParams } from "@solidjs/router";
+import { createAsync, Navigate } from "@solidjs/router";
 import { Wind, Flame, GraduationCap, Leaf, Sparkles, MapPin, TriangleAlert } from "lucide-solid";
 import { PublicTopBar } from "~/components/shell/PublicTopBar";
+import { getAuthSession } from "~/lib/auth";
 
 type ProgramIcon = typeof Wind;
 
@@ -44,6 +46,19 @@ const TESTIMONIALS = [
 ];
 
 export default function LandingPage() {
+  const session = createAsync(() => getAuthSession());
+
+  // Redirect authenticated users straight to their leads dashboard
+  return (
+    <Show when={session() !== undefined} fallback={null}>
+      <Show when={session()?.user} fallback={<LandingContent />}>
+        <Navigate href="/leads" />
+      </Show>
+    </Show>
+  );
+}
+
+function LandingContent() {
   const [searchParams] = useSearchParams();
   const errorMessages: Record<string, string> = {
     not_authorized: "Your account is not authorised to access this system. Please contact your administrator.",

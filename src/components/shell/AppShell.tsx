@@ -8,7 +8,7 @@
  */
 import { createSignal, Show, type Component, type JSX } from "solid-js";
 import { useLocation, useNavigate, A } from "@solidjs/router";
-import { Home, ClipboardList, Users, MapPin, Leaf } from "lucide-solid";
+import { Home, ClipboardList, Users, MapPin, Leaf, PhoneCall } from "lucide-solid";
 import { AvatarMenu, type StubSession } from "./AvatarMenu";
 import { signInWithProvider } from "~/lib/auth";
 import type { Location } from "~/lib/schemas/domain";
@@ -34,7 +34,7 @@ interface NavItem {
 
 function buildNav(): NavItem[] {
   return [
-    { href: "/leads", label: "My Leads", Icon: Home, page: "leads" },
+    { href: "/leads", label: "My Leads", Icon: PhoneCall, page: "leads" },
     { href: "/tasks", label: "Tasks", Icon: ClipboardList, page: "tasks" },
     { href: "/community", label: "Community", Icon: Users, page: "community" },
     { href: "/locations", label: "Locations", Icon: MapPin, page: "locations" },
@@ -76,6 +76,18 @@ export const AppShell: Component<AppShellProps> = (props) => {
 
         {/* Nav links */}
         <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {/* Home — always visible for all authenticated users */}
+          <A
+            href="/"
+            class={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+              location.pathname === "/"
+                ? "bg-primary text-primary-foreground font-medium"
+                : "text-foreground hover:bg-muted"
+            }`}
+          >
+            <Home class="w-4 h-4 shrink-0" />
+            <span>Home</span>
+          </A>
           <Show
             when={navItems().length > 0}
             fallback={
@@ -156,6 +168,18 @@ export const AppShell: Component<AppShellProps> = (props) => {
         {/* -- Mobile bottom nav -- */}
         <Show when={navItems().length > 0}>
           <nav class="md:hidden fixed bottom-0 left-0 right-0 flex border-t border-border bg-background z-40">
+            {/* Home — always visible */}
+            <A
+              href="/"
+              class={`flex-1 flex flex-col items-center justify-center gap-0.5 py-3 text-xs transition-colors ${
+                location.pathname === "/"
+                  ? "text-primary font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Home class="w-5 h-5" />
+              <span>Home</span>
+            </A>
             {navItems().map((item) => (
               <A
                 href={item.href}
