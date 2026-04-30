@@ -9,7 +9,7 @@
  * Active location is loaded from DB (not from URL).
  */
 import { createSignal, createEffect, Show, type Component } from "solid-js";
-import { createAsync, type RouteSectionProps } from "@solidjs/router";
+import { createAsync, useLocation, useNavigate, type RouteSectionProps } from "@solidjs/router";
 import { AppShell } from "~/components/shell/AppShell";
 import {
   queryLocationsQuery,
@@ -19,6 +19,7 @@ import {
 } from "~/server/api";
 import { getUser, getAuthSession } from "~/lib/auth";
 import type { LocationField, Location } from "~/lib/schemas/domain";
+import { PAGE_CAPABILITY_MAP } from "~/lib/schemas/domain";
 import type { QuerySpec } from "~/lib/schemas/query";
 import type { StubSession } from "~/components/shell/AvatarMenu";
 
@@ -32,6 +33,18 @@ const ProtectedLayout: Component<RouteSectionProps> = (props) => {
 
   // Pages the user is allowed to access (drives nav filtering)
   const accessiblePages = createAsync(() => getAccessiblePagesQuery());
+
+  // Redirect to home if the user navigates to a page they lack capability for
+  const location = useLocation();
+  const navigate = useNavigate();
+  createEffect(() => {
+    const pages = accessiblePages();
+    if (!pages) return; // still loading
+    const segment = location.pathname.split("/")[1] ?? "";
+    if (segment in PAGE_CAPABILITY_MAP && !pages.includes(segment)) {
+      navigate("/", { replace: true });
+    }
+  });
 
   // All active locations  -  for the location switcher in AvatarMenu
   const locationsData = createAsync(async () => {

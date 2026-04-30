@@ -1,4 +1,4 @@
-import { createSignal, createMemo, createResource, Show, For } from "solid-js";
+import { createSignal, createMemo, Show, For } from "solid-js";
 import { createAsync, useSearchParams } from "@solidjs/router";
 import { Home, ClipboardList, AlertCircle, Calendar, CheckCircle2, ArrowRight, PartyPopper, SlidersHorizontal, X } from "lucide-solid";
 import { LeadCard, type CallLogData } from "~/components/volunteer/LeadCard";
@@ -6,10 +6,9 @@ import { MyLeadsFilterSheet, type LeadFilters, type FilterStatus, DEFAULT_LEAD_F
 import { Card } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { queryLeadsQuery, queryTasksQuery } from "~/server/api";
-import { getUser } from "~/lib/auth";
-import type { LeadField, TaskField, Lead, Task, InterestLevel, LeadTag } from "~/lib/schemas/domain";
-import type { QuerySpec } from "~/lib/schemas/query";
+import { getMyAssignedLeadsQuery } from "~/server/api";
+import { getUser, requirePageCapability } from "~/lib/auth";
+import type { Lead, Task, InterestLevel, LeadTag } from "~/lib/schemas/domain";
 import {
   getLeadStatus,
   isLeadOverdue,
@@ -102,6 +101,9 @@ function leadMatchesFilters(lead: Lead, f: LeadFilters): boolean {
  * Shows assigned leads with campaign filtering and progress tracking
  */
 export default function MyLeadsPage() {
+  // Redirect to home if the user lacks leads:read capability
+  createAsync(() => requirePageCapability("leads:read"), { deferStream: true });
+
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedTaskId, setSelectedTaskId] = createSignal<string | null>(
     (typeof searchParams.task === "string" ? searchParams.task : null)
@@ -109,53 +111,18 @@ export default function MyLeadsPage() {
   const [activeFilters, setActiveFilters] = createSignal<LeadFilters>(DEFAULT_LEAD_FILTERS);
   const [filterSheetOpen, setFilterSheetOpen] = createSignal(false);
 
-  // Get volunteer ID from session
+  // Get volunteer ID from session (used for client-side campaign filter UI)
   const user = createAsync(() => getUser());
   const volunteerId = () => (user() as any)?.id as string | undefined;
 
-  // Tasks for this volunteer
-  const [tasksData] = createResource(async () => {
-    const spec: QuerySpec<TaskField> = {
-      filters: [],
-      sorting: [{ field: "createdAt", direction: "desc" }],
-      pagination: { pageSize: 50, pageIndex: 0 },
-    };
-    return await queryTasksQuery(spec);
-  });
+  // Single-shot query: fetches tasks + leads server-side in one call.
+  // Replaces the previous two-stage createResource chain (tasks → IDs → leads)
+  // which broke on SSR hydration: createResource always refetches on the client,
+  // momentarily producing an empty ID set and a leads fetch returning 0 items.
+  const myData = createAsync(() => getMyAssignedLeadsQuery());
 
-  const tasks = createMemo(() => tasksData()?.items || []);
-
-  // Derive which lead IDs are assigned to this volunteer across all tasks
-  const myAssignedLeadIds = createMemo(() => {
-    const vid = volunteerId();
-    if (!vid) return new Set<string>();
-    const ids = new Set<string>();
-    for (const task of tasks()) {
-      if (!task.selectedAgentIds.includes(vid)) continue;
-      for (const assignment of task.assignments) {
-        if (assignment.agentId === vid) {
-          for (const contactId of assignment.contactIds) ids.add(contactId);
-        }
-      }
-    }
-    return ids;
-  });
-
-  // Reactively fetch ONLY the leads assigned to this volunteer (avoids pageSize > 100)
-  const [leadsData] = createResource(
-    () => [...myAssignedLeadIds()],
-    async (ids) => {
-      if (ids.length === 0) return { items: [] as Lead[], totalCount: 0, hasNextPage: false };
-      const spec: QuerySpec<LeadField> = {
-        filters: [{ field: "id", op: "in", value: ids }],
-        sorting: [{ field: "displayName", direction: "asc" }],
-        pagination: { pageSize: 100, pageIndex: 0 },
-      };
-      return await queryLeadsQuery(spec);
-    }
-  );
-
-  const allLeads = createMemo(() => leadsData()?.items || []);
+  const tasks = createMemo(() => myData()?.tasks || []);
+  const allLeads = createMemo(() => myData()?.leads || []);
 
   // Filter leads by selected task + active filters (combined with grouping)
   const filteredAndGrouped = createMemo(() => {
@@ -487,7 +454,7 @@ export default function MyLeadsPage() {
         </section>
       </Show>
 
-      {/* Empty State */}      <Show when={filteredLeads().length === 0 && !leadsData.loading}>
+      {/* Empty State */}      <Show when={filteredLeads().length === 0 && myData() !== undefined}>
         <Card class="p-12 text-center">
           <div class="text-6xl mb-4 flex justify-center"><PartyPopper class="w-12 h-12 text-primary" /></div>
           <h3 class="text-xl font-semibold mb-2">All caught up!</h3>
