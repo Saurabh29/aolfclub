@@ -19,6 +19,7 @@ import {
   type Component,
 } from "solid-js";
 import { Checkbox } from "~/components/ui/checkbox";
+import { TextField, TextFieldInput } from "~/components/ui/text-field";
 import type { CollectionQueryState } from "~/lib/controllers";
 import type { FilterCondition } from "~/lib/schemas/query";
 import type { Lead, LeadField } from "~/lib/schemas/domain/lead.schema";
@@ -28,6 +29,7 @@ import {
   FilterSearchInput,
 } from "~/components/collection/filter-components";
 import { toggleItem } from "~/lib/utils/toggle-item";
+import { useDebounced } from "~/lib/utils/use-debounced";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -82,6 +84,9 @@ export const LeadFilterPane: Component<LeadFilterPaneProps> = (props) => {
   const [hasFollowUp, setHasFollowUp] = createSignal(false);
   const [minCalls, setMinCalls] = createSignal<number | null>(null);
   const [searchText, setSearchText] = createSignal("");
+  // Debounce the text input so we don't fire a server query per keystroke.
+  // 300ms is a good balance between responsiveness and request volume.
+  const debouncedSearch = useDebounced(searchText, 300);
 
   // -- Active filter count (for badge on collapse) ---------------------------
 
@@ -103,7 +108,7 @@ export const LeadFilterPane: Component<LeadFilterPaneProps> = (props) => {
     const nc = neverCalled();
     const fu = hasFollowUp();
     const mc = minCalls();
-    const search = searchText().trim();
+    const search = debouncedSearch().trim();
 
     const filters: FilterCondition<LeadField>[] = [];
 
@@ -210,17 +215,19 @@ export const LeadFilterPane: Component<LeadFilterPaneProps> = (props) => {
           <Show when={!neverCalled()}>
             <div class="flex items-center gap-2">
               <span class="text-sm text-muted-foreground shrink-0">Min calls</span>
-              <input
-                type="number"
-                min="1"
-                placeholder="e.g. 2"
-                value={minCalls() ?? ""}
-                onInput={(e) => {
-                  const v = parseInt(e.currentTarget.value);
-                  setMinCalls(isNaN(v) ? null : v);
-                }}
-                class="w-16 h-7 rounded border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+              <TextField class="w-16">
+                <TextFieldInput
+                  type="number"
+                  min="1"
+                  placeholder="e.g. 2"
+                  value={minCalls() ?? ""}
+                  onInput={(e: InputEvent) => {
+                    const v = parseInt((e.currentTarget as HTMLInputElement).value);
+                    setMinCalls(isNaN(v) ? null : v);
+                  }}
+                  class="h-7 text-sm"
+                />
+              </TextField>
             </div>
           </Show>
         </div>

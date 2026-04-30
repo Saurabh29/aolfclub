@@ -1,4 +1,4 @@
-import { For, Show } from "solid-js";
+import { For, Show, createMemo } from "solid-js";
 import type { CollectionQueryState } from "~/lib/controllers";
 import type { CardRenderer, EmptyStateConfig } from "./types";
 import { useCollectionState, useCollectionPagination } from "./hooks";
@@ -46,27 +46,27 @@ export function CollectionCards<T, TField extends string = string>(
     }
   };
 
-  // Use explicit Tailwind classes for JIT compiler
-  const gridClass = () => {
+  // Memoised so we don't allocate a new className string per render.
+  const gridClass = createMemo(() => {
     const cols = props.columns ?? 3;
     const mdCols = Math.min(cols, 3);
-    
+
     // Map to explicit classes for Tailwind JIT
     const mdColsClass = {
       1: "md:grid-cols-1",
       2: "md:grid-cols-2",
       3: "md:grid-cols-3",
     }[mdCols] || "md:grid-cols-2";
-    
+
     const lgColsClass = {
       1: "lg:grid-cols-1",
       2: "lg:grid-cols-2",
       3: "lg:grid-cols-3",
       4: "lg:grid-cols-4",
     }[cols] || "lg:grid-cols-3";
-    
+
     return `grid grid-cols-1 ${mdColsClass} ${lgColsClass} gap-4`;
-  };
+  });
 
   return (
     <div class={props.containerClass}>

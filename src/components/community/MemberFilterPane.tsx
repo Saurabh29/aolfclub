@@ -25,6 +25,7 @@ import {
   FilterSearchInput,
 } from "~/components/collection/filter-components";
 import { toggleItem } from "~/lib/utils/toggle-item";
+import { useDebounced } from "~/lib/utils/use-debounced";
 
 // -- Component -----------------------------------------------------------------
 
@@ -37,6 +38,8 @@ export const MemberFilterPane: Component<MemberFilterPaneProps> = (props) => {
   const currentYear = new Date().getFullYear();
 
   const [searchText, setSearchText] = createSignal("");
+  // Debounce the text input so we don't fire a server query per keystroke.
+  const debouncedSearch = useDebounced(searchText, 300);
   const [selectedPrograms, setSelectedPrograms] = createSignal<string[]>([]);
   const [selectedDonePrograms, setSelectedDonePrograms] = createSignal<string[]>([]);
   const [memberSinceYear, setMemberSinceYear] = createSignal<string | null>(null);
@@ -53,7 +56,7 @@ export const MemberFilterPane: Component<MemberFilterPaneProps> = (props) => {
     const donePrograms = selectedDonePrograms();
     const sinceStr = memberSinceYear();
     const since = sinceStr !== null ? parseInt(sinceStr) : null;
-    const search = searchText().trim();
+    const search = debouncedSearch().trim();
 
     const filters: FilterCondition<MemberField>[] = [];
 
